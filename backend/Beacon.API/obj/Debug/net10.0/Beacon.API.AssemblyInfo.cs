@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Beacon.API")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c19f6262f471cbbadda5b67e0d68ca1cd1e37685")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9a689d9265f67861c8ea3e63c72b7c43de22d749")]
 [assembly: System.Reflection.AssemblyProductAttribute("Beacon.API")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Beacon.API")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
