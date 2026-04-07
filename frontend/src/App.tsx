@@ -5,6 +5,7 @@ import RegisterPage from './pages/RegisterPage.tsx'
 import LogoutPage from './pages/LogoutPage.tsx'
 import ResidentsPage from './pages/ResidentsPage.tsx'
 import { AuthProvider } from './context/AuthContext.tsx'
+import AdminResidentPage from './pages/AdminResidentPage.tsx'
 
 function App() {
 
@@ -17,6 +18,7 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/logout" element={<LogoutPage />} />
         <Route path="/residents" element={<ResidentsPage />} />
+        <Route path="/admin/residents" element={<AdminResidentPage />} />
       </Routes>
     </Router>
 

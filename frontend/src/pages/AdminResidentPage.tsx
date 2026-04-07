@@ -19,7 +19,7 @@ const emptyResident: ResidentInput = {
 
 function AdminResidentPage() {
   const {authSession, isLoading} = useAuth();
-  const isAdmin = authSession.roles.includes('Admin');
+  const isAdmin = (authSession?.roles ?? []).includes('Admin');
   const [resident, setResident] = useState<Resident[]>([]);
   const [formState, setFormState] = useState<ResidentInput>(emptyResident);
   const [errorMessage, setErrorMessage] = useState('');
@@ -64,15 +64,20 @@ function updateField<K extends keyof ResidentInput>(
     key: K, 
     value: ResidentInput[K]
 ) {
-    setFormState(current => ({...current, [key]: value}));
+    setFormState((current: ResidentInput) => ({...current, [key]: value}));
 }
 
 return (
     <div className="flex flex-col items-center justify-center h-screen">
         <Header />
         <h1 className="text-2xl font-bold">Admin Resident Page</h1>
+        {errorMessage ? <p className="text-red-600">{errorMessage}</p> : null}
+        {successMessage ? <p className="text-green-600">{successMessage}</p> : null}
         <form onSubmit={handleSubmit} className="flex flex-col items-center justify-center">
             <input type="text" name="caseControlNo" placeholder="Case Control No" value={formState.caseControlNo} onChange={e => updateField('caseControlNo', e.target.value)} />
+            <button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Saving...' : 'Create resident'}
+            </button>
         </form>
     </div>
 );

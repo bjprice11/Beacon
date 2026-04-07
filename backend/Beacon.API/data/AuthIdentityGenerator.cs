@@ -13,8 +13,8 @@ namespace Beacon.API.Data
             {
                 if (!await roleManager.RoleExistsAsync(roleName))
                 {
-                    await roleManager.CreateAsync(new IdentityRole(roleName));
-
+                    var createRoleResult = await roleManager.CreateAsync(new IdentityRole(roleName));
+                    
                     if (!createRoleResult.Succeeded)
                     {
                         throw new Exception($"Failed to create role {roleName}: {string.Join(", ", createRoleResult.Errors.Select(e => e.Description))}");
@@ -31,10 +31,10 @@ namespace Beacon.API.Data
             {
                 adminUser = new ApplicationUser { UserName = adminEmail, Email = adminEmail, EmailConfirmed = true };
             }
-            var CreateAdminResult = await userManager.CreateAsync(adminUser, adminPassword);
-            if (!CreateAdminResult.Succeeded)
+            var createAdminResult = await userManager.CreateAsync(adminUser, adminPassword);
+            if (!createAdminResult.Succeeded)
             {
-                throw new Exception($"Failed to create admin user {adminEmail}: {string.Join(", ", CreateAdminResult.Errors.Select(e => e.Description))}");
+                throw new Exception($"Failed to create admin user {adminEmail}: {string.Join(", ", createAdminResult.Errors.Select(e => e.Description))}");
             }
 
             if (!await userManager.IsInRoleAsync(adminUser, AuthRoles.Admin)    )
