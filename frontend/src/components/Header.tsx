@@ -20,12 +20,14 @@ function Header() {
     return (
         <header>
             <div><h1>Beacon</h1></div>
-        <div>
-            <NavLink to="/login">Login</NavLink>
-            <NavLink to="/register">Register</NavLink>
-            <NavLink to="/logout">Logout</NavLink>
-        </div>    
-        
+            <div>
+                <span className={statusClassName}>{statusText}</span>
+            </div>
+            <div>
+                <NavLink to="/login">Login</NavLink>
+                <NavLink to="/register">Register</NavLink>
+                <NavLink to="/logout">Logout</NavLink>
+            </div>
         </header>
     )
 }
