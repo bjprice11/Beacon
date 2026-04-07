@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Beacon.API.Controllers;
 
 [Route("[controller]")]
+[ApiController]
 
 public class BeaconController : ControllerBase
 {
