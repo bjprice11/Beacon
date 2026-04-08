@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Beacon.API.Infrastructure;
 using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +12,16 @@ var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
 var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
 
 builder.Services.AddControllers();
+
+// Railway (and most PaaS) run behind a reverse proxy that terminates TLS.
+// Respect X-Forwarded-Proto so OAuth redirect_uri becomes https://... instead of http://...
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    // Trust proxy headers (common in container/PaaS environments).
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 builder.Services.Configure<IdentityOptions>(options =>
 {
@@ -128,6 +139,8 @@ if (!app.Environment.IsDevelopment())
 {
     app.UseHsts();
 }
+
+app.UseForwardedHeaders();
 app.UseSecurityHeaders();
 app.UseCors("Frontend");
 
