@@ -140,6 +140,116 @@ public class BeaconController : ControllerBase
             .ToList();
     }
 
+    //ADMIN: ALL RESIDENTS WITH SAFEHOUSE CITY
+    [HttpGet("AllResidents")]
+    public IActionResult GetAllResidents()
+    {
+        var residents = _beaconContext.Residents
+            .Join(_beaconContext.Safehouses,
+                r => r.SafehouseId,
+                s => s.SafehouseId,
+                (r, s) => new
+                {
+                    r.ResidentId,
+                    Name = (r.FirstName ?? "") + " " + (r.LastInitial ?? ""),
+                    SafehouseCity = s.City,
+                    r.Sex,
+                    r.DateOfBirth,
+                    r.Religion,
+                    r.CaseCategory,
+                    r.DateOfAdmission,
+                    r.ReintegrationStatus,
+                    r.CurrentRiskLevel
+                })
+            .ToList();
+        return Ok(residents);
+    }
+
+    //ADMIN: ALL PARTNERS WITH ASSIGNED SAFEHOUSE
+    [HttpGet("AllPartners")]
+    public IActionResult GetAllPartners()
+    {
+        var partners = _beaconContext.Partners
+            .GroupJoin(_beaconContext.PartnerAssignments,
+                p => p.PartnerId,
+                pa => pa.PartnerId,
+                (p, assignments) => new { p, assignments })
+            .SelectMany(
+                x => x.assignments
+                    .Join(_beaconContext.Safehouses,
+                        pa => pa.SafehouseId,
+                        s => s.SafehouseId,
+                        (pa, s) => s.City)
+                    .DefaultIfEmpty(),
+                (x, city) => new
+                {
+                    x.p.PartnerId,
+                    x.p.PartnerName,
+                    OrganizationType = x.p.PartnerType,
+                    x.p.RoleType,
+                    x.p.Email,
+                    x.p.Phone,
+                    x.p.Region,
+                    x.p.Status,
+                    x.p.StartDate,
+                    AssignedSafehouse = city
+                })
+            .ToList();
+        return Ok(partners);
+    }
+
+    //ADMIN: ALL DONORS
+    [HttpGet("AllDonors")]
+    public IActionResult GetAllDonors()
+    {
+        var donors = _beaconContext.Supporters
+            .Select(s => new
+            {
+                DonorId = s.SupporterId,
+                s.DisplayName,
+                Relationship = s.RelationshipType,
+                s.Region,
+                s.Country,
+                s.Email,
+                s.Phone,
+                s.Status,
+                FirstDonation = s.FirstDonationDate,
+                s.AcquisitionChannel
+            })
+            .ToList();
+        return Ok(donors);
+    }
+
+    //ADMIN: ALL DONATIONS WITH SUPPORTER NAME AND ALLOCATIONS
+    [HttpGet("AllDonations")]
+    public IActionResult GetAllDonations()
+    {
+        var donations = _beaconContext.Donations
+            .Join(_beaconContext.Supporters,
+                d => d.SupporterId,
+                s => s.SupporterId,
+                (d, s) => new { d, SupporterName = s.DisplayName ?? (s.FirstName + " " + s.LastName) })
+            .Join(_beaconContext.DonationAllocations,
+                x => x.d.DonationId,
+                a => a.DonationId,
+                (x, a) => new
+                {
+                    x.d.DonationId,
+                    x.SupporterName,
+                    x.d.DonationType,
+                    x.d.DonationDate,
+                    x.d.IsRecurring,
+                    x.d.Amount,
+                    x.d.EstimatedValue,
+                    x.d.ImpactUnit,
+                    a.ProgramArea,
+                    x.d.Notes
+                })
+            .OrderByDescending(x => x.DonationDate)
+            .ToList();
+        return Ok(donations);
+    }
+
     //GET DONOR DASHBOARD: personal info + donation history with program areas
     [HttpGet("DonorDashboard/{id}")]
     public IActionResult GetDonorDashboard(int id)

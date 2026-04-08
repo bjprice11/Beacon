@@ -11,7 +11,7 @@ function formatDate(dateStr: string): string {
   return `${mm}-${dd}-${yyyy}`;
 }
 
-function ResidentDetailPage() {
+function ResidentPage() {
   const { id } = useParams();
   const [resident, setResident] = useState<Resident | null>(null);
   const [loading, setLoading] = useState(true);
@@ -86,4 +86,4 @@ function ResidentDetailPage() {
   );
 }
 
-export default ResidentDetailPage;
+export default ResidentPage;
