@@ -74,7 +74,7 @@ builder.Services.AddCors(options =>
                     return false;
                 }
 
-                if (corsAllowedOrigins.Contains(origin, StringComparer.Ordinal))
+                if (corsAllowedOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase))
                 {
                     return true;
                 }
@@ -105,15 +105,12 @@ builder.Services.AddCors(options =>
     });
 });
 
+// Single registration: duplicate AddDbContext overwrote snake_case and broke PostgreSQL table names.
 builder.Services.AddDbContext<AuthIdentityDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("BeaconConnection"))
         .UseSnakeCaseNamingConvention());
 
 builder.Services.AddSingleton<PostSuccessPredictor>();
-
-
-builder.Services.AddDbContext<AuthIdentityDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("BeaconConnection")));
 
 builder.Services
     .AddIdentityApiEndpoints<ApplicationUser>()
@@ -186,7 +183,9 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseForwardedHeaders();
-// CORS must run before auth and before other middleware that might short-circuit with errors.
+
+app.UseRouting();
+// CORS must run after routing and before auth/endpoints so preflight + error paths get headers.
 app.UseCors("Frontend");
 app.UseSecurityHeaders();
 
