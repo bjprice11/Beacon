@@ -24,7 +24,7 @@ function LoginPage() {
     try {
       await loginUser(email, password, rememberMe);
       await refreshAuthSession();
-      navigate('/catalog');
+      navigate('/');
 
     } catch (error) {
       setErrorMessage(
