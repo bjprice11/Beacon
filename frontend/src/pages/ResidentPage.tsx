@@ -21,7 +21,7 @@ interface ResidentDetail {
   currentRiskLevel?: string;
 }
 
-function ResidentDetailPage() {
+function ResidentPage() {
   const { id } = useParams();
   const [resident, setResident] = useState<ResidentDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -87,4 +87,4 @@ function ResidentDetailPage() {
   );
 }
 
-export default ResidentDetailPage;
+export default ResidentPage;

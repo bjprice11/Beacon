@@ -12,7 +12,12 @@ import AdminResidentPage from './pages/AdminResidentPage.tsx'
 import LandingPage from './pages/LandingPage.tsx'
 import DonorDashboardPage from './pages/DonorDashboardPage.tsx'
 import AdminDashboardPage from './pages/AdminDashboardPage.tsx'
-import ResidentDetailPage from './pages/ResidentDetailPage.tsx'
+import ResidentPage from './pages/ResidentPage.tsx'
+import AdminAllResidentsPage from './pages/AdminAllResidentsPage.tsx'
+import AdminAllPartnersPage from './pages/AdminAllPartnersPage.tsx'
+import AdminAllDonorsPage from './pages/AdminAllDonorsPage.tsx'
+import AdminAllDonationsPage from './pages/AdminAllDonationsPage.tsx'
+import AdminAllSafehousesPage from './pages/AdminAllSafehousesPage.tsx'
 
 function App() {
 
@@ -32,7 +37,12 @@ function App() {
         <Route path="/partner/:id" element={<PartnerPage />} />
         <Route path="/safehouse/:id" element={<SafehousePage />} />
         <Route path="/admin" element={<AdminDashboardPage />} />
-        <Route path="/resident/:id" element={<ResidentDetailPage />} />
+        <Route path="/admin/all-residents" element={<AdminAllResidentsPage />} />
+        <Route path="/admin/all-partners" element={<AdminAllPartnersPage />} />
+        <Route path="/admin/all-donors" element={<AdminAllDonorsPage />} />
+        <Route path="/admin/all-donations" element={<AdminAllDonationsPage />} />
+        <Route path="/admin/all-safehouses" element={<AdminAllSafehousesPage />} />
+        <Route path="/resident/:id" element={<ResidentPage />} />
       </Routes>
     </Router>
 
