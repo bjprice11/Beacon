@@ -16,6 +16,7 @@ const anonymousAuthSession: AuthSession = {
     email: null,
     roles: [],
     supporterId: null,
+    needsProfileCompletion: false,
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
