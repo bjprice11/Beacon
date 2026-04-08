@@ -254,6 +254,7 @@ public class BeaconController : ControllerBase
                     r.DateOfBirth,
                     r.Religion,
                     r.CaseCategory,
+                    r.CaseStatus,
                     r.DateOfAdmission,
                     r.ReintegrationStatus,
                     r.CurrentRiskLevel
