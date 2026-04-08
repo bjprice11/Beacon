@@ -1,10 +1,21 @@
 import { type FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { buildExternalLoginUrl, getExternalAuthProviders, registerUser } from '../lib/authAPI';
+import {
+  buildExternalLoginUrl,
+  getExternalAuthProviders,
+  registerUserWithProfile,
+} from '../lib/authAPI';
+import { useAuth } from '../context/AuthContext';
 
 function RegisterPage() {
   const navigate = useNavigate();
+  const { refreshAuthSession } = useAuth();
+
+  const [showModal, setShowModal] = useState(false);
+  const [displayName, setDisplayName] = useState('');
+  const [organizationName, setOrganizationName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
@@ -40,8 +51,28 @@ function RegisterPage() {
     };
   }, []);
 
-  
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function resetModalFields() {
+    setDisplayName('');
+    setOrganizationName('');
+    setEmail('');
+    setPhone('');
+    setPassword('');
+    setConfirmPassword('');
+    setErrorMessage('');
+  }
+
+  function openModal() {
+    resetModalFields();
+    setShowModal(true);
+  }
+
+  function closeModal() {
+    if (!isSubmitting) {
+      setShowModal(false);
+    }
+  }
+
+  async function handleModalSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setErrorMessage('');
     setSuccessMessage('');
@@ -54,9 +85,17 @@ function RegisterPage() {
     setIsSubmitting(true);
 
     try {
-      await registerUser(email, password);
-      setSuccessMessage('Registration succeeded. You can log in now.');
-      setTimeout(() => navigate('/login'), 800);
+      await registerUserWithProfile({
+        email,
+        password,
+        displayName,
+        organizationName: organizationName.trim() || null,
+        phone: phone.trim() || null,
+      });
+      await refreshAuthSession();
+      setSuccessMessage('Welcome! Redirecting…');
+      setShowModal(false);
+      setTimeout(() => navigate('/'), 600);
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : 'Unable to register.'
@@ -74,66 +113,23 @@ function RegisterPage() {
             <div className="card-body p-4">
               <h2 className="h4 mb-3">Register</h2>
               <p className="text-muted">
-                Create an account against the ASP.NET Core Identity endpoints.
+                Create a donor account. We will ask for your name, contact
+                details, and password.
               </p>
-              <form onSubmit={handleSubmit}>
-                <div className="mb-3">
-                  <label className="form-label" htmlFor="email">
-                    Email
-                  </label>
-                  <input
-                    id="email"
-                    type="email"
-                    className="form-control"
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    required
-                  />
+
+              {successMessage && !showModal ? (
+                <div className="alert alert-success" role="alert">
+                  {successMessage}
                 </div>
-                <div className="mb-3">
-                  <label className="form-label" htmlFor="password">
-                    Password
-                  </label>
-                  <input
-                    id="password"
-                    type="password"
-                    className="form-control"
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    required
-                  />
-                </div>
-                <div className="mb-3">
-                  <label className="form-label" htmlFor="confirmPassword">
-                    Confirm password
-                  </label>
-                  <input
-                    id="confirmPassword"
-                    type="password"
-                    className="form-control"
-                    value={confirmPassword}
-                    onChange={(event) => setConfirmPassword(event.target.value)}
-                    required
-                  />
-                </div>
-                {errorMessage ? (
-                  <div className="alert alert-danger" role="alert">
-                    {errorMessage}
-                  </div>
-                ) : null}
-                {successMessage ? (
-                  <div className="alert alert-success" role="alert">
-                    {successMessage}
-                  </div>
-                ) : null}
-                <button
-                  type="submit"
-                  className="btn btn-primary w-100"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? 'Creating account...' : 'Create account'}
-                </button>
-              </form>
+              ) : null}
+
+              <button
+                type="button"
+                className="btn btn-primary w-100"
+                onClick={openModal}
+              >
+                Register with email
+              </button>
 
               {isGoogleAvailable ? (
                 <>
@@ -146,13 +142,14 @@ function RegisterPage() {
                   <button
                     type="button"
                     className="btn btn-outline-dark w-100"
-                    disabled={isSubmitting}
                     onClick={() => {
                       try {
                         window.location.assign(buildExternalLoginUrl('Google', '/'));
                       } catch (e) {
                         setErrorMessage(
-                          e instanceof Error ? e.message : 'Unable to start Google sign-in.'
+                          e instanceof Error
+                            ? e.message
+                            : 'Unable to start Google sign-in.'
                         );
                       }
                     }}
@@ -161,6 +158,13 @@ function RegisterPage() {
                   </button>
                 </>
               ) : null}
+
+              {errorMessage && !showModal ? (
+                <div className="alert alert-danger mt-3 mb-0" role="alert">
+                  {errorMessage}
+                </div>
+              ) : null}
+
               <p className="mt-3 mb-0">
                 Already registered? <Link to="/login">Go to login</Link>.
               </p>
@@ -168,6 +172,159 @@ function RegisterPage() {
           </div>
         </div>
       </div>
+
+      {showModal ? (
+        <>
+          <div
+            className="modal fade show d-block"
+            tabIndex={-1}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="registerModalTitle"
+            style={{ backgroundColor: 'rgba(0, 0, 0, 0.45)' }}
+          >
+            <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h2 className="modal-title h5" id="registerModalTitle">
+                    Create your account
+                  </h2>
+                  <button
+                    type="button"
+                    className="btn-close"
+                    aria-label="Close"
+                    disabled={isSubmitting}
+                    onClick={closeModal}
+                  />
+                </div>
+                <form onSubmit={handleModalSubmit}>
+                  <div className="modal-body">
+                    <p className="text-muted small mb-3">
+                      Join date is saved automatically when you submit (UTC).
+                    </p>
+                    <div className="mb-3">
+                      <label className="form-label" htmlFor="reg-displayName">
+                        Full name
+                      </label>
+                      <input
+                        id="reg-displayName"
+                        type="text"
+                        className="form-control"
+                        autoComplete="name"
+                        value={displayName}
+                        onChange={(e) => setDisplayName(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="mb-3">
+                      <label
+                        className="form-label"
+                        htmlFor="reg-organizationName"
+                      >
+                        Organization name{' '}
+                        <span className="text-muted">(optional)</span>
+                      </label>
+                      <input
+                        id="reg-organizationName"
+                        type="text"
+                        className="form-control"
+                        autoComplete="organization"
+                        value={organizationName}
+                        onChange={(e) => setOrganizationName(e.target.value)}
+                      />
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label" htmlFor="reg-email">
+                        Email
+                      </label>
+                      <input
+                        id="reg-email"
+                        type="email"
+                        className="form-control"
+                        autoComplete="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label" htmlFor="reg-phone">
+                        Phone <span className="text-muted">(optional)</span>
+                      </label>
+                      <input
+                        id="reg-phone"
+                        type="tel"
+                        className="form-control"
+                        autoComplete="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                      />
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label" htmlFor="reg-password">
+                        Password
+                      </label>
+                      <input
+                        id="reg-password"
+                        type="password"
+                        className="form-control"
+                        autoComplete="new-password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        minLength={15}
+                      />
+                      <div className="form-text">
+                        At least 15 characters (per site policy).
+                      </div>
+                    </div>
+                    <div className="mb-3">
+                      <label
+                        className="form-label"
+                        htmlFor="reg-confirmPassword"
+                      >
+                        Confirm password
+                      </label>
+                      <input
+                        id="reg-confirmPassword"
+                        type="password"
+                        className="form-control"
+                        autoComplete="new-password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                        minLength={15}
+                      />
+                    </div>
+                    {errorMessage ? (
+                      <div className="alert alert-danger" role="alert">
+                        {errorMessage}
+                      </div>
+                    ) : null}
+                  </div>
+                  <div className="modal-footer">
+                    <button
+                      type="button"
+                      className="btn btn-outline-secondary"
+                      disabled={isSubmitting}
+                      onClick={closeModal}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="btn btn-primary"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? 'Creating account…' : 'Submit'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </>
+      ) : null}
     </div>
   );
 }

@@ -5,4 +5,6 @@ export interface AuthSession {
     roles: string[],
     /** Present when the Identity user is linked to a `Supporter` row (`IdentityUserId`). */
     supporterId?: number | null,
+    /** True when donor profile (e.g. after Google) still needs name/org/phone. */
+    needsProfileCompletion?: boolean,
 }

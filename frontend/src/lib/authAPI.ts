@@ -65,7 +65,40 @@ export async function getAuthSession(): Promise<AuthSession> {
     if (!response.ok) {
         throw new Error('Failed to fetch auth session');
     }
-    return response.json();
+    const data = await response.json();
+    return {
+        ...data,
+        needsProfileCompletion: Boolean(data?.needsProfileCompletion),
+    } as AuthSession;
+}
+
+export type CompleteProfilePayload = {
+    displayName: string;
+    organizationName: string | null;
+    phone: string | null;
+};
+
+export async function completeDonorProfile(
+    payload: CompleteProfilePayload
+): Promise<void> {
+    const baseUrl = requireApiBaseUrl();
+    const response = await fetch(`${baseUrl}/api/auth/complete-profile`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            displayName: payload.displayName,
+            organizationName: payload.organizationName?.trim() || null,
+            phone: payload.phone?.trim() || null,
+        }),
+    });
+    if (!response.ok) {
+        throw new Error(
+            await readApiError(response, 'Failed to save profile')
+        );
+    }
 }
 
 export async function getExternalAuthProviders(): Promise<ExternalAuthProvider[]> {
@@ -108,6 +141,40 @@ export async function registerUser(
     if (!response.ok) {
         throw new Error(
             await readApiError(response, 'Failed to register user')
+        );
+    }
+}
+
+export type RegisterWithProfilePayload = {
+    email: string;
+    password: string;
+    displayName: string;
+    organizationName: string | null;
+    phone: string | null;
+};
+
+/** Creates Identity user + supporter profile; signs you in with cookies. */
+export async function registerUserWithProfile(
+    payload: RegisterWithProfilePayload
+): Promise<void> {
+    const baseUrl = requireApiBaseUrl();
+    const response = await fetch(`${baseUrl}/api/auth/register-with-profile`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+            email: payload.email,
+            password: payload.password,
+            displayName: payload.displayName,
+            organizationName: payload.organizationName?.trim() || null,
+            phone: payload.phone?.trim() || null,
+        }),
+    });
+    if (!response.ok) {
+        throw new Error(
+            await readApiError(response, 'Failed to register')
         );
     }
 }
