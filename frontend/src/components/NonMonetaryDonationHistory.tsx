@@ -35,8 +35,8 @@ function NonMonetaryDonationHistory({ history }: NonMonetaryDonationHistoryProps
                 <td>{item.donationDate}</td>
                 <td>{item.donationType ?? "N/A"}</td>
                 <td>
-                  {item.amount != null
-                    ? `₱${item.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+                  {item.estimatedValue != null
+                    ? `₱${item.estimatedValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
                     : "N/A"}
                 </td>
                 <td>{item.impactUnit ?? "N/A"}</td>
