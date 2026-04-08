@@ -13,6 +13,7 @@ import LandingPage from './pages/LandingPage.tsx'
 import DonorDashboardPage from './pages/DonorDashboardPage.tsx'
 import AdminDashboardPage from './pages/AdminDashboardPage.tsx'
 import ResidentDetailPage from './pages/ResidentDetailPage.tsx'
+import DonationsPage from './pages/DonationsPage.tsx'
 
 function App() {
 
@@ -26,6 +27,7 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/logout" element={<LogoutPage />} />
         <Route path="/residents" element={<ResidentsPage />} />
+        <Route path="/donations" element={<DonationsPage />} />
         <Route path="/admin/residents" element={<AdminResidentPage />} />
         <Route path="/donor-dashboard/:id" element={<DonorDashboardPage />} />
         <Route path="/donor/:id" element={<DonorPage />} />

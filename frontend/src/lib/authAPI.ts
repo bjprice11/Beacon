@@ -1,6 +1,73 @@
+import { BASE_URL } from '../config/api';
 import type { AuthSession } from '../types/AuthSession';
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? '';
+
+export type BeaconMeResponse = {
+    supporterId: number | null;
+    displayName: string | null;
+    firstName: string | null;
+    supporterType: string | null;
+};
+
+const emptyBeaconMe: BeaconMeResponse = {
+    supporterId: null,
+    displayName: null,
+    firstName: null,
+    supporterType: null,
+};
+
+function parseBeaconMePayload(data: unknown): BeaconMeResponse {
+    if (typeof data !== 'object' || data === null) {
+        return emptyBeaconMe;
+    }
+    const o = data as Record<string, unknown>;
+
+    const supporterId =
+        o.supporterId === null
+            ? null
+            : typeof o.supporterId === 'number' && Number.isFinite(o.supporterId)
+              ? o.supporterId
+              : null;
+
+    const displayName =
+        o.displayName === null
+            ? null
+            : typeof o.displayName === 'string'
+              ? o.displayName
+              : null;
+
+    const firstName =
+        o.firstName === null
+            ? null
+            : typeof o.firstName === 'string'
+              ? o.firstName
+              : null;
+
+    const supporterType =
+        o.supporterType === null
+            ? null
+            : typeof o.supporterType === 'string'
+              ? o.supporterType
+              : null;
+
+    return { supporterId, displayName, firstName, supporterType };
+}
+
+export async function getBeaconMe(): Promise<BeaconMeResponse> {
+    try {
+        const response = await fetch(`${BASE_URL}/Me`, {
+            credentials: 'include',
+        });
+        if (!response.ok) {
+            return emptyBeaconMe;
+        }
+        const data: unknown = await response.json();
+        return parseBeaconMePayload(data);
+    } catch {
+        return emptyBeaconMe;
+    }
+}
 
 
 async function readApiError(
@@ -49,7 +116,31 @@ export async function getAuthSession(): Promise<AuthSession> {
     if (!response.ok) {
         throw new Error('Failed to fetch auth session');
     }
-    return response.json();
+    const data: unknown = await response.json();
+    if (typeof data !== 'object' || data === null) {
+        throw new Error('Failed to fetch auth session');
+    }
+    const o = data as Record<string, unknown>;
+    const rolesRaw = o.roles;
+    const roles =
+        Array.isArray(rolesRaw)
+            ? rolesRaw.filter((r): r is string => typeof r === 'string')
+            : [];
+
+    return {
+        isAuthenticated: o.isAuthenticated === true,
+        userName:
+            o.userName === null
+                ? null
+                : typeof o.userName === 'string'
+                  ? o.userName
+                  : null,
+        email:
+            o.email === null ? null : typeof o.email === 'string' ? o.email : null,
+        roles,
+        supporterId: null,
+        displayName: null,
+    };
 }
 
 export async function registerUser(

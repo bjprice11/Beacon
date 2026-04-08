@@ -9,9 +9,12 @@ export const search = async (q: string): Promise<SearchResult[]> => {
   return await response.json();
 };
 
-export const getDonor = async (id: number): Promise<Supporter> => {
-  const response = await fetch(`${BASE_URL}/Donor/${id}`);
-  return await response.json();
+export const getDonor = async (id: number): Promise<Supporter | null> => {
+  const response = await fetch(`${BASE_URL}/Supporter/${id}`, {
+    credentials: "include",
+  });
+  if (!response.ok) return null;
+  return (await response.json()) as Supporter;
 };
 
 export const getPartner = async (id: number): Promise<Partner> => {

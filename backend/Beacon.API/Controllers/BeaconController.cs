@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Beacon.API.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
@@ -15,9 +16,30 @@ public class BeaconController : ControllerBase
 
     public BeaconController(PostgresContext temp) => _beaconContext = temp;
 
-    //GET LIST OF ALL RESIDENTS
+    private async Task<int?> GetSupporterIdForCurrentUserAsync()
+    {
+        var claimEmail = User.FindFirstValue(ClaimTypes.Email);
+        var normalizedEmail = claimEmail?.Trim().ToLower();
+        if (string.IsNullOrEmpty(normalizedEmail))
+            return null;
+
+        var supporter = await _beaconContext.Supporters
+            .AsNoTracking()
+            .FirstOrDefaultAsync(s =>
+                s.Email != null && s.Email.Trim().ToLower() == normalizedEmail);
+
+        return supporter?.SupporterId;
+    }
+
+    //GET LIST OF ALL RESIDENTS (legacy route)
     [HttpGet("Residents")]
-    public IActionResult GetResidentList()
+    public OkObjectResult GetResidentsLegacy() => GetResidentList();
+
+    [HttpGet("AllResidents")]
+    public IEnumerable<Resident> GetResidents() => _beaconContext.Residents.ToList();
+
+    [HttpGet("ResidentList")]
+    public OkObjectResult GetResidentList()
     {
         var residents = _beaconContext.Residents
             .Join(_beaconContext.Safehouses,
@@ -27,7 +49,7 @@ public class BeaconController : ControllerBase
                 {
                     r.ResidentId,
                     Name = (r.FirstName ?? "") + " " + (r.LastInitial ?? ""),
-                    SafehouseName = s.City,
+                    SafehouseName = s.Name,
                     r.CaseStatus,
                     r.Sex,
                     r.DateOfBirth
@@ -64,7 +86,52 @@ public class BeaconController : ControllerBase
         return Created($"/residents/{resident.ResidentId}", resident);
     }
 
-    //SEARCH BAR FUNCTIONALITY
+    [HttpGet("Me")]
+    [Authorize]
+    public async Task<IActionResult> GetMeForCurrentUser()
+    {
+        var supporterId = await GetSupporterIdForCurrentUserAsync();
+        if (!supporterId.HasValue)
+        {
+            return Ok(new
+            {
+                supporterId = (int?)null,
+                displayName = (string?)null,
+                firstName = (string?)null,
+                supporterType = (string?)null
+            });
+        }
+
+        var supporter = await _beaconContext.Supporters
+            .AsNoTracking()
+            .Where(s => s.SupporterId == supporterId.Value)
+            .Select(s => new
+            {
+                s.DisplayName,
+                s.FirstName,
+                s.SupporterType
+            })
+            .FirstOrDefaultAsync();
+
+        if (supporter is null)
+        {
+            return Ok(new
+            {
+                supporterId = (int?)null,
+                displayName = (string?)null,
+                firstName = (string?)null,
+                supporterType = (string?)null
+            });
+        }
+
+        return Ok(new
+        {
+            supporterId = (int?)supporterId.Value,
+            displayName = supporter.DisplayName,
+            firstName = supporter.FirstName,
+            supporterType = supporter.SupporterType
+        });
+    }
     [HttpGet("Search")]
     public OkObjectResult Search([FromQuery] string q)
     {
@@ -144,11 +211,183 @@ public class BeaconController : ControllerBase
             .ToList();
     }
 
+    [HttpGet("Donations")]
+    [Authorize]
+    public async Task<IActionResult> GetDonations([FromQuery] int? supporterId, [FromQuery] bool includeAllocations = false)
+    {
+        var isAdmin = User.IsInRole(AuthRoles.Admin);
+        if (supporterId is null)
+        {
+            if (!isAdmin)
+                return Forbid();
+        }
+        else
+        {
+            var myId = await GetSupporterIdForCurrentUserAsync();
+            if (!isAdmin && myId != supporterId)
+                return Forbid();
+        }
+
+        if (includeAllocations && supporterId is null)
+        {
+            return BadRequest(new
+            {
+                message = "includeAllocations requires supporterId."
+            });
+        }
+
+        var query = _beaconContext.Donations.AsNoTracking().AsQueryable();
+        if (supporterId is int filterId)
+            query = query.Where(d => d.SupporterId == filterId);
+
+        if (includeAllocations && supporterId is int _)
+        {
+            var list = await query
+                .OrderByDescending(d => d.DonationDate)
+                .ThenByDescending(d => d.DonationId)
+                .Select(d => new
+                {
+                    donationId = d.DonationId,
+                    supporterId = d.SupporterId,
+                    supporterDisplayName = d.Supporter.DisplayName ??
+                        ((d.Supporter.FirstName ?? "") + " " + (d.Supporter.LastName ?? "")).Trim(),
+                    donationType = d.DonationType,
+                    donationDate = d.DonationDate,
+                    amount = d.Amount,
+                    currencyCode = d.CurrencyCode,
+                    campaignName = d.CampaignName,
+                    isRecurring = d.IsRecurring,
+                    allocations = d.DonationAllocations
+                        .OrderBy(a => a.ProgramArea)
+                        .Select(a => new
+                        {
+                            programArea = a.ProgramArea,
+                            amountAllocated = a.AmountAllocated,
+                            allocationDate = a.AllocationDate
+                        })
+                        .ToList()
+                })
+                .ToListAsync();
+
+            return Ok(list);
+        }
+
+        var listSimple = await query
+            .OrderByDescending(d => d.DonationDate)
+            .ThenByDescending(d => d.DonationId)
+            .Select(d => new
+            {
+                donationId = d.DonationId,
+                supporterId = d.SupporterId,
+                supporterDisplayName = d.Supporter.DisplayName ??
+                    ((d.Supporter.FirstName ?? "") + " " + (d.Supporter.LastName ?? "")).Trim(),
+                donationType = d.DonationType,
+                donationDate = d.DonationDate,
+                amount = d.Amount,
+                currencyCode = d.CurrencyCode,
+                campaignName = d.CampaignName,
+                isRecurring = d.IsRecurring
+            })
+            .ToListAsync();
+
+        return Ok(listSimple);
+    }
+
+    [HttpGet("Donations/{id:int}")]
+    [Authorize]
+    public async Task<IActionResult> GetDonation(int id)
+    {
+        var isAdmin = User.IsInRole(AuthRoles.Admin);
+
+        var ownerRow = await _beaconContext.Donations
+            .AsNoTracking()
+            .Where(d => d.DonationId == id)
+            .Select(d => new { d.SupporterId })
+            .SingleOrDefaultAsync();
+
+        if (ownerRow is null)
+            return NotFound();
+
+        if (!isAdmin)
+        {
+            var myId = await GetSupporterIdForCurrentUserAsync();
+            if (myId != ownerRow.SupporterId)
+                return Forbid();
+        }
+
+        var row = await _beaconContext.Donations
+            .AsNoTracking()
+            .Where(d => d.DonationId == id)
+            .Select(d => new
+            {
+                donationId = d.DonationId,
+                supporterId = d.SupporterId,
+                supporterDisplayName = d.Supporter.DisplayName ??
+                    ((d.Supporter.FirstName ?? "") + " " + (d.Supporter.LastName ?? "")).Trim(),
+                donationType = d.DonationType,
+                donationDate = d.DonationDate,
+                isRecurring = d.IsRecurring,
+                campaignName = d.CampaignName,
+                channelSource = d.ChannelSource,
+                currencyCode = d.CurrencyCode,
+                amount = d.Amount,
+                estimatedValue = d.EstimatedValue,
+                impactUnit = d.ImpactUnit,
+                notes = d.Notes,
+                referralPostId = d.ReferralPostId,
+                allocationCount = d.DonationAllocations.Count,
+                inKindItemCount = d.InKindDonationItems.Count,
+                allocations = d.DonationAllocations
+                    .OrderBy(a => a.ProgramArea)
+                    .Select(a => new
+                    {
+                        programArea = a.ProgramArea,
+                        amountAllocated = a.AmountAllocated,
+                        allocationDate = a.AllocationDate
+                    })
+                    .ToList()
+            })
+            .SingleOrDefaultAsync();
+
+        if (row is null)
+            return NotFound();
+
+        return Ok(row);
+    }
+
+    //GET INDIVIDUAL DONORS, SAFEHOUSES, RESIDENTS, OR PARTNERS BY ID
+    [HttpGet("Supporter/{id}")]
+    [Authorize]
+    public async Task<IActionResult> GetDonor(int id)
+    {
+        var isAdmin = User.IsInRole(AuthRoles.Admin);
+        if (!isAdmin)
+        {
+            var myId = await GetSupporterIdForCurrentUserAsync();
+            if (myId != id)
+                return Forbid();
+        }
+
+        var donor = await _beaconContext.Supporters.AsNoTracking()
+            .FirstOrDefaultAsync(s => s.SupporterId == id);
+        if (donor == null) return NotFound();
+        return Ok(donor);
+    }
+
     //GET DONOR DASHBOARD: personal info + donation history with program areas
     [HttpGet("DonorDashboard/{id}")]
-    public IActionResult GetDonorDashboard(int id)
+    [Authorize]
+    public async Task<IActionResult> GetDonorDashboard(int id)
     {
-        var supporter = _beaconContext.Supporters.FirstOrDefault(s => s.SupporterId == id);
+        var isAdmin = User.IsInRole(AuthRoles.Admin);
+        if (!isAdmin)
+        {
+            var myId = await GetSupporterIdForCurrentUserAsync();
+            if (myId != id)
+                return Forbid();
+        }
+
+        var supporter = await _beaconContext.Supporters.AsNoTracking().FirstOrDefaultAsync(s => s.SupporterId == id);
         if (supporter == null) return NotFound();
 
         var history = _beaconContext.Donations

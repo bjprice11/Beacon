@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import {getAuthSession} from '../lib/authAPI';
+import { getAuthSession, getBeaconMe } from '../lib/authAPI';
 import type { AuthSession } from '../types/AuthSession';
 
 interface AuthContextValue{
@@ -15,6 +15,8 @@ const anonymousAuthSession: AuthSession = {
     userName: null,
     email: null,
     roles: [],
+    supporterId: null,
+    displayName: null,
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -26,7 +28,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const refreshAuthSession = useCallback(async () => {
         try {
             const session = await getAuthSession();
-            setAuthSession(session);
+            if (session.isAuthenticated) {
+                const beaconMe = await getBeaconMe();
+                setAuthSession({
+                    ...session,
+                    supporterId: beaconMe.supporterId,
+                    displayName: beaconMe.displayName,
+                });
+            } else {
+                setAuthSession({
+                    ...session,
+                    supporterId: null,
+                    displayName: null,
+                });
+            }
         } catch {
             setAuthSession(anonymousAuthSession);
         } finally {

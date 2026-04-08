@@ -26,6 +26,7 @@ function Header() {
             <NavLink to="/login">Login</NavLink>
             <NavLink to="/register">Register</NavLink>
             <NavLink to="/logout">Logout</NavLink>
+            <NavLink to="/donations">Donations</NavLink>
             {isAdmin ?( <NavLink to="/admin/residents">Admin</NavLink>) : null}
             <span className={statusClassName} style={{ marginLeft: '0.75rem' }}>
                 {statusText}
