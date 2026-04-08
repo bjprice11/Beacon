@@ -1,6 +1,5 @@
 import { type FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import Header from '../components/Header';
 import { buildExternalLoginUrl, getExternalAuthProviders, registerUser } from '../lib/authAPI';
 
 function RegisterPage() {
