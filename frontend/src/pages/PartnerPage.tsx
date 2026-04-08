@@ -31,7 +31,7 @@ function PartnerPage() {
 
   useEffect(() => {
     if (!id) return;
-    fetch(`${BASE_URL}/Partner/${id}`)
+    fetch(`${BASE_URL}/Partner/${id}`, { credentials: "include" })
       .then((res) => {
         if (!res.ok) throw new Error("Partner not found");
         return res.json();

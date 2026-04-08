@@ -50,7 +50,7 @@ function AdminAllDonationsPage() {
   const pageSize = 15;
 
   useEffect(() => {
-    fetch(`${BASE_URL}/AllDonations`)
+    fetch(`${BASE_URL}/AllDonations`, { credentials: "include" })
       .then((res) => res.json())
       .then(setDonations)
       .catch((err) => setError((err as Error).message))

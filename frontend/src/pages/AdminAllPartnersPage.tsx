@@ -32,7 +32,7 @@ function AdminAllPartnersPage() {
   const [view, setView] = useState<"table" | "card">("table");
 
   useEffect(() => {
-    fetch(`${BASE_URL}/AllPartners`)
+    fetch(`${BASE_URL}/AllPartners`, { credentials: "include" })
       .then((res) => res.json())
       .then(setPartners)
       .catch((err) => setError((err as Error).message))

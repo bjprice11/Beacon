@@ -99,6 +99,9 @@ if (!string.IsNullOrEmpty(googleClientId) && !string.IsNullOrEmpty(googleClientS
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy(AuthPolicies.ManageResidents, policy => policy.RequireRole(AuthRoles.Admin));
+    options.AddPolicy(AuthPolicies.AdminOnly, policy => policy.RequireRole(AuthRoles.Admin));
+    options.AddPolicy(AuthPolicies.DonorOnly, policy => policy.RequireRole(AuthRoles.Supporter, AuthRoles.Admin));
+    options.AddPolicy(AuthPolicies.PartnerOnly, policy => policy.RequireRole(AuthRoles.Partner, AuthRoles.Admin));
 });
 
 builder.Services.AddOpenApi();

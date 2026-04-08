@@ -44,7 +44,7 @@ function AdminAllResidentsPage() {
   const [view, setView] = useState<"table" | "card">("table");
 
   useEffect(() => {
-    fetch(`${BASE_URL}/AllResidents`)
+    fetch(`${BASE_URL}/AllResidents`, { credentials: "include" })
       .then((res) => res.json())
       .then(setResidents)
       .catch((err) => setError((err as Error).message))
