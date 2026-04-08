@@ -20,7 +20,7 @@ export const getResidentList = async (): Promise<ResidentList[]> => {
 
 
 export async function getManagingResidents(): Promise<Resident[]> {
-  const response = await fetch (`${BASE_URL}/Beacon/Residents/admin`, {
+  const response = await fetch (`${BASE_URL}/admin/residents`, {
     credentials: "include",
   });
   if (!response.ok) {
@@ -30,7 +30,7 @@ export async function getManagingResidents(): Promise<Resident[]> {
 };
 
 export async function createResident(resident: ResidentInput): Promise<Resident> {
-  const response = await fetch (`${BASE_URL}/Beacon/Residents`, {
+  const response = await fetch (`${BASE_URL}`, {
     method: "POST",
     credentials: "include",
     headers: {

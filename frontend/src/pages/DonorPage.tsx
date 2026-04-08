@@ -34,7 +34,7 @@ function DonorPage() {
 
   useEffect(() => {
     if (!id) return;
-    fetch(`${BASE_URL}/Donor/${id}`)
+    fetch(`${BASE_URL}/Donor/${id}`, { credentials: "include" })
       .then((res) => {
         if (!res.ok) throw new Error("Donor not found");
         return res.json();
