@@ -3,16 +3,20 @@ import { BrowserRouter as Router, Routes, Route} from 'react-router-dom'
 import LoginPage from './pages/LoginPage.tsx'
 import RegisterPage from './pages/RegisterPage.tsx'
 import LogoutPage from './pages/LogoutPage.tsx'
-import ResidentsPage from './pages/ResidentsPage.tsx'
 import DonorPage from './pages/DonorPage.tsx'
 import PartnerPage from './pages/PartnerPage.tsx'
 import SafehousePage from './pages/SafehousePage.tsx'
 import { AuthProvider } from './context/AuthContext.tsx'
-import AdminResidentPage from './pages/AdminResidentPage.tsx'
 import LandingPage from './pages/LandingPage.tsx'
 import DonorDashboardPage from './pages/DonorDashboardPage.tsx'
 import AdminDashboardPage from './pages/AdminDashboardPage.tsx'
-import ResidentDetailPage from './pages/ResidentDetailPage.tsx'
+import ResidentPage from './pages/ResidentPage.tsx'
+import AdminAllResidentsPage from './pages/AdminAllResidentsPage.tsx'
+import AdminAllPartnersPage from './pages/AdminAllPartnersPage.tsx'
+import AdminAllDonorsPage from './pages/AdminAllDonorsPage.tsx'
+import AdminAllDonationsPage from './pages/AdminAllDonationsPage.tsx'
+import AdminAllSafehousesPage from './pages/AdminAllSafehousesPage.tsx'
+import Navbar from './components/Navbar.tsx'
 
 function App() {
 
@@ -20,19 +24,23 @@ function App() {
     <>
     <AuthProvider>
     <Router>
+      <Navbar />
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/logout" element={<LogoutPage />} />
-        <Route path="/residents" element={<ResidentsPage />} />
-        <Route path="/admin/residents" element={<AdminResidentPage />} />
         <Route path="/donor-dashboard/:id" element={<DonorDashboardPage />} />
         <Route path="/donor/:id" element={<DonorPage />} />
         <Route path="/partner/:id" element={<PartnerPage />} />
         <Route path="/safehouse/:id" element={<SafehousePage />} />
         <Route path="/admin" element={<AdminDashboardPage />} />
-        <Route path="/resident/:id" element={<ResidentDetailPage />} />
+        <Route path="/admin/all-residents" element={<AdminAllResidentsPage />} />
+        <Route path="/admin/all-partners" element={<AdminAllPartnersPage />} />
+        <Route path="/admin/all-donors" element={<AdminAllDonorsPage />} />
+        <Route path="/admin/all-donations" element={<AdminAllDonationsPage />} />
+        <Route path="/admin/all-safehouses" element={<AdminAllSafehousesPage />} />
+        <Route path="/resident/:id" element={<ResidentPage />} />
       </Routes>
     </Router>
 
