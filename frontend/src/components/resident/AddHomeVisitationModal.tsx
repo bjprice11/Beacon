@@ -1,9 +1,15 @@
 import { useEffect, useState } from "react";
+import type { HomeVisitationRow } from "../../types/residentRecords";
 import { BASE_URL } from "../../config/api";
 import { ResidentRecordModal } from "./ResidentRecordModal";
 import {
+  dateForDateInput,
+  mergePicklistOption,
+  messageFromJsonPayload,
   parseServerErrors,
   picklistStrings,
+  putBeaconJson,
+  readResponseJson,
   requiredFieldMsg,
   validateResidentIdInput,
 } from "./residentRecordFormUtils";
@@ -15,6 +21,7 @@ type Props = {
   open: boolean;
   onClose: () => void;
   initialResidentId?: number;
+  existingRecord?: HomeVisitationRow | null;
   onCreated: () => void;
 };
 
@@ -31,8 +38,10 @@ export function AddHomeVisitationModal({
   open,
   onClose,
   initialResidentId,
+  existingRecord = null,
   onCreated,
 }: Props) {
+  const isEdit = existingRecord != null;
   const [residentIdInput, setResidentIdInput] = useState("");
   const [visitDate, setVisitDate] = useState("");
   const [socialWorker, setSocialWorker] = useState("");
@@ -64,32 +73,57 @@ export function AddHomeVisitationModal({
         ? String(Math.trunc(initialResidentId))
         : "",
     );
-    setVisitDate("");
-    setSocialWorker("");
-    setVisitType("");
-    setLocationVisited("");
-    setFamilyMembersPresent("");
-    setPurpose("");
-    setObservations("");
-    setFamilyCooperationLevel("");
-    setSafetyConcernsNoted(false);
-    setFollowUpNeeded(false);
-    setFollowUpNotes("");
-    setVisitOutcome("");
+    if (existingRecord) {
+      setVisitDate(dateForDateInput(existingRecord.visitDate));
+      setSocialWorker(existingRecord.socialWorker ?? "");
+      setVisitType(existingRecord.visitType ?? "");
+      setLocationVisited(existingRecord.locationVisited ?? "");
+      setFamilyMembersPresent(existingRecord.familyMembersPresent ?? "");
+      setPurpose(existingRecord.purpose ?? "");
+      setObservations(existingRecord.observations ?? "");
+      setFamilyCooperationLevel(existingRecord.familyCooperationLevel ?? "");
+      setSafetyConcernsNoted(existingRecord.safetyConcernsNoted === true);
+      setFollowUpNeeded(existingRecord.followUpNeeded === true);
+      setFollowUpNotes(existingRecord.followUpNotes ?? "");
+      setVisitOutcome(existingRecord.visitOutcome ?? "");
+    } else {
+      setVisitDate("");
+      setSocialWorker("");
+      setVisitType("");
+      setLocationVisited("");
+      setFamilyMembersPresent("");
+      setPurpose("");
+      setObservations("");
+      setFamilyCooperationLevel("");
+      setSafetyConcernsNoted(false);
+      setFollowUpNeeded(false);
+      setFollowUpNotes("");
+      setVisitOutcome("");
+    }
 
     fetch(`${BASE_URL}/HomeVisitationPicklists`, { credentials: "include" })
       .then((r) => (r.ok ? r.json() : {}))
       .then((data: unknown) => {
-        setVisitTypes(picklistStrings(data, "visit_types"));
-        setCooperationOptions(picklistStrings(data, "family_cooperation_levels"));
-        setOutcomeOptions(picklistStrings(data, "visit_outcomes"));
+        let vt = picklistStrings(data, "visit_types");
+        let coop = picklistStrings(data, "family_cooperation_levels");
+        let out = picklistStrings(data, "visit_outcomes");
+        if (existingRecord) {
+          vt = mergePicklistOption(vt, existingRecord.visitType);
+          coop = mergePicklistOption(coop, existingRecord.familyCooperationLevel);
+          out = mergePicklistOption(out, existingRecord.visitOutcome);
+        }
+        setVisitTypes(vt);
+        setCooperationOptions(coop);
+        setOutcomeOptions(out);
       })
       .catch(() => {
-        setVisitTypes([]);
-        setCooperationOptions([]);
-        setOutcomeOptions([]);
+        setVisitTypes(existingRecord ? mergePicklistOption([], existingRecord.visitType) : []);
+        setCooperationOptions(
+          existingRecord ? mergePicklistOption([], existingRecord.familyCooperationLevel) : [],
+        );
+        setOutcomeOptions(existingRecord ? mergePicklistOption([], existingRecord.visitOutcome) : []);
       });
-  }, [open, initialResidentId]);
+  }, [open, initialResidentId, existingRecord]);
 
   function validate(): Partial<Record<FieldKey, string>> {
     const e: Partial<Record<FieldKey, string>> = {};
@@ -112,39 +146,37 @@ export function AddHomeVisitationModal({
     const residentId = Math.trunc(Number(residentIdInput.trim()));
     setSubmitting(true);
     try {
-      const res = await fetch(`${BASE_URL}/HomeVisitation`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          resident_id: residentId,
-          visit_date: visitDate,
-          social_worker: socialWorker.trim() || null,
-          visit_type: visitType.trim() || null,
-          location_visited: locationVisited.trim() || null,
-          family_members_present: familyMembersPresent.trim() || null,
-          purpose: purpose.trim() || null,
-          observations: observations.trim() || null,
-          family_cooperation_level: familyCooperationLevel.trim() || null,
-          safety_concerns_noted: safetyConcernsNoted,
-          follow_up_needed: followUpNeeded,
-          follow_up_notes: followUpNotes.trim() || null,
-          visit_outcome: visitOutcome.trim() || null,
-        }),
-      });
+      const body = {
+        resident_id: residentId,
+        visit_date: visitDate,
+        social_worker: socialWorker.trim() || null,
+        visit_type: visitType.trim() || null,
+        location_visited: locationVisited.trim() || null,
+        family_members_present: familyMembersPresent.trim() || null,
+        purpose: purpose.trim() || null,
+        observations: observations.trim() || null,
+        family_cooperation_level: familyCooperationLevel.trim() || null,
+        safety_concerns_noted: safetyConcernsNoted,
+        follow_up_needed: followUpNeeded,
+        follow_up_notes: followUpNotes.trim() || null,
+        visit_outcome: visitOutcome.trim() || null,
+      };
+      const res = isEdit
+        ? await putBeaconJson(`/HomeVisitation/${existingRecord!.visitationId}`, body)
+        : await fetch(`${BASE_URL}/HomeVisitation`, {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json", Accept: "application/json" },
+            body: JSON.stringify(body),
+          });
 
-      if (res.status === 201) {
+      if (res.status === 201 || res.status === 200) {
         onCreated();
         onClose();
         return;
       }
 
-      let payload: unknown;
-      try {
-        payload = await res.json();
-      } catch {
-        payload = null;
-      }
+      const { payload } = await readResponseJson(res);
 
       if (res.status === 400 && payload) {
         setFieldErrors((prev) => ({ ...prev, ...parseServerErrors(FIELD_KEYS, payload) }));
@@ -156,7 +188,13 @@ export function AddHomeVisitationModal({
         return;
       }
 
-      setFormError(res.status === 401 ? "You must be signed in." : "Could not save.");
+      setFormError(
+        res.status === 401
+          ? "You must be signed in."
+          : res.status === 403
+            ? "You do not have permission to save."
+            : messageFromJsonPayload(payload, "Could not save."),
+      );
     } catch {
       setFormError("Network error. Try again.");
     } finally {
@@ -165,7 +203,12 @@ export function AddHomeVisitationModal({
   }
 
   return (
-    <ResidentRecordModal title="Add Home Visit" open={open} onClose={onClose} narrow>
+    <ResidentRecordModal
+      title={isEdit ? "Update Home Visit" : "Add Home Visit"}
+      open={open}
+      onClose={onClose}
+      narrow
+    >
       <form className="p-4" onSubmit={handleSubmit} noValidate>
         {formError ? (
           <div className="alert alert-warning small" role="alert">
@@ -185,6 +228,7 @@ export function AddHomeVisitationModal({
             className={`form-control form-control-sm${fieldErrors.resident_id ? " is-invalid" : ""}`}
             value={residentIdInput}
             onChange={(e) => setResidentIdInput(e.target.value)}
+            readOnly={isEdit}
           />
           {fieldErrors.resident_id ? (
             <div className="invalid-feedback d-block">{fieldErrors.resident_id}</div>
@@ -378,7 +422,7 @@ export function AddHomeVisitationModal({
             Cancel
           </button>
           <button type="submit" className="btn btn-sm btn-primary" disabled={submitting}>
-            {submitting ? "Saving…" : "Save Record"}
+            {submitting ? "Saving…" : isEdit ? "Save changes" : "Save Record"}
           </button>
         </div>
       </form>

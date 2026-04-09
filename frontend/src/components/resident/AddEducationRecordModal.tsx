@@ -1,6 +1,17 @@
 import { useEffect, useState } from "react";
+import type { EducationRecordRow } from "../../types/residentRecords";
 import { BASE_URL } from "../../config/api";
 import { ResidentRecordModal } from "./ResidentRecordModal";
+import {
+  dateForDateInput,
+  decimalFieldString,
+  mergePicklistOption,
+  messageFromJsonPayload,
+  normalizeCompletionForForm,
+  normalizeEnrollmentForForm,
+  putBeaconJson,
+  readResponseJson,
+} from "./residentRecordFormUtils";
 
 type FieldKey =
   | "resident_id"
@@ -16,6 +27,8 @@ type Props = {
   onClose: () => void;
   /** Prefills Resident ID when opened from a resident page; leave unset for admin flows where staff enter it manually. */
   initialResidentId?: number;
+  /** When set, form updates this record (PUT). When null/undefined, creates (POST). */
+  existingRecord?: EducationRecordRow | null;
   onCreated: () => void;
 };
 
@@ -59,8 +72,10 @@ export function AddEducationRecordModal({
   open,
   onClose,
   initialResidentId,
+  existingRecord = null,
   onCreated,
 }: Props) {
+  const isEdit = existingRecord != null;
   const [schoolNames, setSchoolNames] = useState<string[]>([]);
   const [residentIdInput, setResidentIdInput] = useState("");
   const [recordDate, setRecordDate] = useState("");
@@ -91,20 +106,32 @@ export function AddEducationRecordModal({
         ? String(Math.trunc(initialResidentId))
         : "",
     );
-    setRecordDate("");
-    setSchoolName("");
-    setEnrollmentStatus("");
-    setAttendanceRate("");
-    setProgressPercent("");
-    setCompletionStatus("");
-    setNotes("");
+    if (existingRecord) {
+      setRecordDate(dateForDateInput(existingRecord.recordDate));
+      setSchoolName((existingRecord.schoolName ?? "").trim());
+      setEnrollmentStatus(normalizeEnrollmentForForm(existingRecord.enrollmentStatus));
+      setAttendanceRate(decimalFieldString(existingRecord.attendanceRate));
+      setProgressPercent(decimalFieldString(existingRecord.progressPercent));
+      setCompletionStatus(normalizeCompletionForForm(existingRecord.completionStatus));
+      setNotes(existingRecord.notes ?? "");
+    } else {
+      setRecordDate("");
+      setSchoolName("");
+      setEnrollmentStatus("");
+      setAttendanceRate("");
+      setProgressPercent("");
+      setCompletionStatus("");
+      setNotes("");
+    }
     fetch(`${BASE_URL}/EducationRecordSchoolNames`, { credentials: "include" })
       .then((r) => (r.ok ? r.json() : []))
-      .then((data: unknown) =>
-        setSchoolNames(Array.isArray(data) ? (data as string[]).filter(Boolean) : []),
-      )
-      .catch(() => setSchoolNames([]));
-  }, [open, initialResidentId]);
+      .then((data: unknown) => {
+        const base = Array.isArray(data) ? (data as string[]).filter(Boolean) : [];
+        const school = existingRecord ? (existingRecord.schoolName ?? "").trim() : "";
+        setSchoolNames(mergePicklistOption(base, school));
+      })
+      .catch(() => setSchoolNames(existingRecord ? mergePicklistOption([], existingRecord.schoolName) : []));
+  }, [open, initialResidentId, existingRecord]);
 
   function labelSuffix(key: FieldKey) {
     return fieldErrors[key] ? (
@@ -166,34 +193,32 @@ export function AddEducationRecordModal({
 
     setSubmitting(true);
     try {
-      const res = await fetch(`${BASE_URL}/EducationRecord`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          resident_id: residentId,
-          record_date: recordDate,
-          school_name: schoolName.trim(),
-          enrollment_status: enrollmentStatus,
-          attendance_rate: att,
-          progress_percent: prog,
-          completion_status: completionStatus,
-          notes: notes.trim() || null,
-        }),
-      });
+      const body = {
+        resident_id: residentId,
+        record_date: recordDate,
+        school_name: schoolName.trim(),
+        enrollment_status: enrollmentStatus,
+        attendance_rate: att,
+        progress_percent: prog,
+        completion_status: completionStatus,
+        notes: notes.trim() || null,
+      };
+      const res = isEdit
+        ? await putBeaconJson(`/EducationRecord/${existingRecord!.educationRecordId}`, body)
+        : await fetch(`${BASE_URL}/EducationRecord`, {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json", Accept: "application/json" },
+            body: JSON.stringify(body),
+          });
 
-      if (res.status === 201) {
+      if (res.status === 201 || res.status === 200) {
         onCreated();
         onClose();
         return;
       }
 
-      let payload: unknown;
-      try {
-        payload = await res.json();
-      } catch {
-        payload = null;
-      }
+      const { payload } = await readResponseJson(res);
 
       if (res.status === 400 && payload) {
         const serverErr = parseServerErrors(payload);
@@ -206,7 +231,13 @@ export function AddEducationRecordModal({
         return;
       }
 
-      setFormError(res.status === 401 ? "You must be signed in." : "Could not save.");
+      setFormError(
+        res.status === 401
+          ? "You must be signed in."
+          : res.status === 403
+            ? "You do not have permission to save."
+            : messageFromJsonPayload(payload, "Could not save."),
+      );
     } catch {
       setFormError("Network error. Try again.");
     } finally {
@@ -216,7 +247,7 @@ export function AddEducationRecordModal({
 
   return (
     <ResidentRecordModal
-      title="Add Education Record"
+      title={isEdit ? "Update Education Record" : "Add Education Record"}
       open={open}
       onClose={onClose}
       narrow
@@ -242,6 +273,8 @@ export function AddEducationRecordModal({
             className={`form-control form-control-sm${fieldErrors.resident_id ? " is-invalid" : ""}`}
             value={residentIdInput}
             onChange={(e) => setResidentIdInput(e.target.value)}
+            readOnly={isEdit}
+            title={isEdit ? "Resident cannot be changed for an existing record." : undefined}
           />
           {fieldErrors.resident_id ? (
             <div className="invalid-feedback d-block">{fieldErrors.resident_id}</div>
@@ -428,7 +461,7 @@ export function AddEducationRecordModal({
             Cancel
           </button>
           <button type="submit" className="btn btn-sm btn-primary" disabled={submitting}>
-            {submitting ? "Saving…" : "Save Record"}
+            {submitting ? "Saving…" : isEdit ? "Save changes" : "Save Record"}
           </button>
         </div>
       </form>

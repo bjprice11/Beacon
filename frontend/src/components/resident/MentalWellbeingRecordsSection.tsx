@@ -20,7 +20,8 @@ type Props = {
 
 export function MentalWellbeingRecordsSection({ records, residentId, onRecordsChanged }: Props) {
   const [open, setOpen] = useState(false);
-  const [addOpen, setAddOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<ProcessRecordingRow | null>(null);
   const [modalPage, setModalPage] = useState(1);
   const count = records.length;
   const pageSize = RESIDENT_RECORD_MODAL_PAGE_SIZE;
@@ -73,7 +74,10 @@ export function MentalWellbeingRecordsSection({ records, residentId, onRecordsCh
             <button
               type="button"
               className="btn btn-outline-primary flex-grow-1"
-              onClick={() => setAddOpen(true)}
+              onClick={() => {
+                setEditing(null);
+                setFormOpen(true);
+              }}
             >
               Add
             </button>
@@ -82,9 +86,13 @@ export function MentalWellbeingRecordsSection({ records, residentId, onRecordsCh
       </div>
 
       <AddProcessRecordingModal
-        open={addOpen}
-        onClose={() => setAddOpen(false)}
+        open={formOpen}
+        onClose={() => {
+          setFormOpen(false);
+          setEditing(null);
+        }}
         initialResidentId={Number.isFinite(residentId) ? residentId : undefined}
+        existingRecord={editing}
         onCreated={onRecordsChanged}
       />
 
@@ -113,6 +121,7 @@ export function MentalWellbeingRecordsSection({ records, residentId, onRecordsCh
                   <th>Interventions</th>
                   <th>Follow-up</th>
                   <th>Narrative</th>
+                  <th className="text-end">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -136,6 +145,19 @@ export function MentalWellbeingRecordsSection({ records, residentId, onRecordsCh
                         text={p.sessionNarrative}
                         ariaLabel="Show or hide full session narrative"
                       />
+                    </td>
+                    <td className="text-end">
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-primary"
+                        onClick={() => {
+                          setOpen(false);
+                          setEditing(p);
+                          setFormOpen(true);
+                        }}
+                      >
+                        Update
+                      </button>
                     </td>
                   </tr>
                 ))}

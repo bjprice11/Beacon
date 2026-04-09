@@ -24,7 +24,8 @@ export function IncidentReportsSection({
   onRecordsChanged,
 }: Props) {
   const [open, setOpen] = useState(false);
-  const [addOpen, setAddOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<IncidentReportRow | null>(null);
   const [modalPage, setModalPage] = useState(1);
   const count = records.length;
   const pageSize = RESIDENT_RECORD_MODAL_PAGE_SIZE;
@@ -77,7 +78,10 @@ export function IncidentReportsSection({
             <button
               type="button"
               className="btn btn-outline-primary flex-grow-1"
-              onClick={() => setAddOpen(true)}
+              onClick={() => {
+                setEditing(null);
+                setFormOpen(true);
+              }}
             >
               Add
             </button>
@@ -86,8 +90,11 @@ export function IncidentReportsSection({
       </div>
 
       <AddIncidentReportModal
-        open={addOpen}
-        onClose={() => setAddOpen(false)}
+        open={formOpen}
+        onClose={() => {
+          setFormOpen(false);
+          setEditing(null);
+        }}
         initialResidentId={Number.isFinite(residentId) ? residentId : undefined}
         initialSafehouseId={
           initialSafehouseId !== undefined &&
@@ -96,6 +103,7 @@ export function IncidentReportsSection({
             ? initialSafehouseId
             : undefined
         }
+        existingRecord={editing}
         onCreated={onRecordsChanged}
       />
 
@@ -120,6 +128,7 @@ export function IncidentReportsSection({
                   <th>Resolution date</th>
                   <th>Reported by</th>
                   <th>Follow-up req.</th>
+                  <th className="text-end">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -133,6 +142,19 @@ export function IncidentReportsSection({
                     <td>{formatDate(i.resolutionDate)}</td>
                     <td>{dashIfEmpty(i.reportedBy)}</td>
                     <td>{fmtBool(i.followUpRequired)}</td>
+                    <td className="text-end">
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-primary"
+                        onClick={() => {
+                          setOpen(false);
+                          setEditing(i);
+                          setFormOpen(true);
+                        }}
+                      >
+                        Update
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
