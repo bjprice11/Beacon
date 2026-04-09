@@ -1350,6 +1350,15 @@ a.admin-all-residents-card-link:focus-visible .admin-all-residents-card {
   outline-offset: 2px;
 }
 
+button.admin-dashboard__nav-link {
+  width: 100%;
+  margin: 0;
+  font: inherit;
+  text-align: left;
+  background: none;
+  cursor: pointer;
+}
+
 .donor-dashboard {
   background:
     radial-gradient(circle at 12% 22%, rgba(114, 159, 147, 0.12), transparent 40%),
