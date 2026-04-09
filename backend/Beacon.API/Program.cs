@@ -9,6 +9,8 @@ using Beacon.API.Infrastructure;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Cors.Infrastructure;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.HttpOverrides;
 using Beacon.Api.Services.PostPlanner;
 
@@ -250,6 +252,36 @@ using (var scope = app.Services.CreateScope())
 
 // Must run before HSTS / HTTPS redirect / auth so OAuth redirect_uri and cookies use the public Railway host and https.
 app.UseForwardedHeaders();
+
+// Unhandled exceptions must still emit Access-Control-Allow-* or browsers hide the failure behind a CORS error.
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async context =>
+    {
+        var ex = context.Features.Get<IExceptionHandlerFeature>()?.Error;
+        var log = context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("GlobalException");
+        if (ex != null)
+            log.LogError(ex, "Unhandled exception");
+
+        var corsProvider = context.RequestServices.GetRequiredService<ICorsPolicyProvider>();
+        var corsService = context.RequestServices.GetRequiredService<ICorsService>();
+        if (await corsProvider.GetPolicyAsync(context, "Frontend") is { } corsPolicy)
+        {
+            var eval = corsService.EvaluatePolicy(context, corsPolicy);
+            corsService.ApplyResult(eval, context.Response);
+        }
+
+        if (context.Response.HasStarted)
+            return;
+
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        context.Response.ContentType = "application/json; charset=utf-8";
+        var detail = app.Environment.IsDevelopment() && ex != null
+            ? ex.Message
+            : "An unexpected error occurred.";
+        await context.Response.WriteAsJsonAsync(new { title = "Server error", detail });
+    });
+});
 
 if (app.Environment.IsDevelopment())
 {
