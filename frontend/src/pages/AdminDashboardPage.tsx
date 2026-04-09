@@ -15,6 +15,7 @@ const navLinks = [
   { to: "/admin/all-donors", label: "Donors" },
   { to: "/admin/all-donations", label: "Donations" },
   { to: "/admin/risk", label: "Risk Center" },
+  { to: "/admin/post-planner", label: "Post Planner" },
 ] as const;
 
 type ResidentRecordModalKey =
