@@ -334,6 +334,7 @@ public class BeaconController : ControllerBase
             r.DateOfBirth,
             r.Sex,
             r.CaseStatus,
+            SafehouseId = r.SafehouseId,
             SafehouseCity = safehouse?.City,
             r.LengthOfStay,
             r.CurrentRiskLevel,
@@ -458,6 +459,180 @@ public class BeaconController : ControllerBase
         return StatusCode(StatusCodes.Status201Created,
             new CreateEducationRecordResult { EducationRecordId = entity.EducationRecordId });
     }
+
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
+    [HttpPost("HealthWellbeingRecord")]
+    public async Task<IActionResult> CreateHealthWellbeingRecord([FromBody] CreateHealthWellbeingRecordRequest? body)
+    {
+        if (body == null)
+            return BadRequest(new { message = "Invalid request body.", errors = (object?)null });
+
+        var errors = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        if (body.ResidentId <= 0)
+            errors["resident_id"] = "Required";
+        else if (!await _beaconContext.Residents.AsNoTracking().AnyAsync(x => x.ResidentId == body.ResidentId))
+            return NotFound(new { message = "Resident not found." });
+
+        if (body.RecordDate == default)
+            errors["record_date"] = "Required";
+
+        if (errors.Count > 0)
+            return BadRequest(new { message = "Please complete all required fields.", errors });
+
+        var entity = new HealthWellbeingRecord
+        {
+            ResidentId = body.ResidentId,
+            RecordDate = body.RecordDate,
+            GeneralHealthScore = body.GeneralHealthScore,
+            NutritionScore = body.NutritionScore,
+            SleepQualityScore = body.SleepQualityScore,
+            EnergyLevelScore = body.EnergyLevelScore,
+            HeightCm = body.HeightCm,
+            WeightKg = body.WeightKg,
+            Bmi = body.Bmi,
+            MedicalCheckupDone = body.MedicalCheckupDone,
+            DentalCheckupDone = body.DentalCheckupDone,
+            PsychologicalCheckupDone = body.PsychologicalCheckupDone,
+            Notes = NullIfWhiteSpace(body.Notes),
+        };
+        _beaconContext.Set<HealthWellbeingRecord>().Add(entity);
+        await _beaconContext.SaveChangesAsync();
+        return StatusCode(StatusCodes.Status201Created,
+            new CreateHealthWellbeingRecordResult { HealthRecordId = entity.HealthRecordId });
+    }
+
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
+    [HttpPost("ProcessRecording")]
+    public async Task<IActionResult> CreateProcessRecording([FromBody] CreateProcessRecordingRequest? body)
+    {
+        if (body == null)
+            return BadRequest(new { message = "Invalid request body.", errors = (object?)null });
+
+        var errors = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        if (body.ResidentId <= 0)
+            errors["resident_id"] = "Required";
+        else if (!await _beaconContext.Residents.AsNoTracking().AnyAsync(x => x.ResidentId == body.ResidentId))
+            return NotFound(new { message = "Resident not found." });
+
+        if (body.SessionDate == default)
+            errors["session_date"] = "Required";
+
+        if (body.SessionDurationMinutes is < 0)
+            errors["session_duration_minutes"] = "Must be zero or greater.";
+
+        if (errors.Count > 0)
+            return BadRequest(new { message = "Please complete all required fields.", errors });
+
+        var entity = new ProcessRecording
+        {
+            ResidentId = body.ResidentId,
+            SessionDate = body.SessionDate,
+            SocialWorker = NullIfWhiteSpace(body.SocialWorker),
+            SessionType = NullIfWhiteSpace(body.SessionType),
+            SessionDurationMinutes = body.SessionDurationMinutes,
+            EmotionalStateObserved = NullIfWhiteSpace(body.EmotionalStateObserved),
+            EmotionalStateEnd = NullIfWhiteSpace(body.EmotionalStateEnd),
+            SessionNarrative = NullIfWhiteSpace(body.SessionNarrative),
+            InterventionsApplied = NullIfWhiteSpace(body.InterventionsApplied),
+            FollowUpActions = NullIfWhiteSpace(body.FollowUpActions),
+            ProgressNoted = body.ProgressNoted,
+            ConcernsFlagged = body.ConcernsFlagged,
+            ReferralMade = body.ReferralMade,
+            NotesRestricted = NullIfWhiteSpace(body.NotesRestricted),
+        };
+        _beaconContext.Set<ProcessRecording>().Add(entity);
+        await _beaconContext.SaveChangesAsync();
+        return StatusCode(StatusCodes.Status201Created,
+            new CreateProcessRecordingResult { RecordingId = entity.RecordingId });
+    }
+
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
+    [HttpPost("HomeVisitation")]
+    public async Task<IActionResult> CreateHomeVisitation([FromBody] CreateHomeVisitationRequest? body)
+    {
+        if (body == null)
+            return BadRequest(new { message = "Invalid request body.", errors = (object?)null });
+
+        var errors = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        if (body.ResidentId <= 0)
+            errors["resident_id"] = "Required";
+        else if (!await _beaconContext.Residents.AsNoTracking().AnyAsync(x => x.ResidentId == body.ResidentId))
+            return NotFound(new { message = "Resident not found." });
+
+        if (body.VisitDate == default)
+            errors["visit_date"] = "Required";
+
+        if (errors.Count > 0)
+            return BadRequest(new { message = "Please complete all required fields.", errors });
+
+        var entity = new HomeVisitation
+        {
+            ResidentId = body.ResidentId,
+            VisitDate = body.VisitDate,
+            SocialWorker = NullIfWhiteSpace(body.SocialWorker),
+            VisitType = NullIfWhiteSpace(body.VisitType),
+            LocationVisited = NullIfWhiteSpace(body.LocationVisited),
+            FamilyMembersPresent = NullIfWhiteSpace(body.FamilyMembersPresent),
+            Purpose = NullIfWhiteSpace(body.Purpose),
+            Observations = NullIfWhiteSpace(body.Observations),
+            FamilyCooperationLevel = NullIfWhiteSpace(body.FamilyCooperationLevel),
+            SafetyConcernsNoted = body.SafetyConcernsNoted,
+            FollowUpNeeded = body.FollowUpNeeded,
+            FollowUpNotes = NullIfWhiteSpace(body.FollowUpNotes),
+            VisitOutcome = NullIfWhiteSpace(body.VisitOutcome),
+        };
+        _beaconContext.Set<HomeVisitation>().Add(entity);
+        await _beaconContext.SaveChangesAsync();
+        return StatusCode(StatusCodes.Status201Created,
+            new CreateHomeVisitationResult { VisitationId = entity.VisitationId });
+    }
+
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
+    [HttpPost("IncidentReport")]
+    public async Task<IActionResult> CreateIncidentReport([FromBody] CreateIncidentReportRequest? body)
+    {
+        if (body == null)
+            return BadRequest(new { message = "Invalid request body.", errors = (object?)null });
+
+        var errors = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        if (body.ResidentId <= 0)
+            errors["resident_id"] = "Required";
+        else if (!await _beaconContext.Residents.AsNoTracking().AnyAsync(x => x.ResidentId == body.ResidentId))
+            return NotFound(new { message = "Resident not found." });
+
+        if (body.SafehouseId <= 0)
+            errors["safehouse_id"] = "Required";
+        else if (!await _beaconContext.Safehouses.AsNoTracking().AnyAsync(s => s.SafehouseId == body.SafehouseId))
+            errors["safehouse_id"] = "Safehouse not found.";
+
+        if (body.IncidentDate == default)
+            errors["incident_date"] = "Required";
+
+        if (errors.Count > 0)
+            return BadRequest(new { message = "Please complete all required fields.", errors });
+
+        var entity = new IncidentReport
+        {
+            ResidentId = body.ResidentId,
+            SafehouseId = body.SafehouseId,
+            IncidentDate = body.IncidentDate,
+            IncidentType = NullIfWhiteSpace(body.IncidentType),
+            Severity = NullIfWhiteSpace(body.Severity),
+            Description = NullIfWhiteSpace(body.Description),
+            ResponseTaken = NullIfWhiteSpace(body.ResponseTaken),
+            Resolved = body.Resolved,
+            ResolutionDate = body.ResolutionDate,
+            ReportedBy = NullIfWhiteSpace(body.ReportedBy),
+            FollowUpRequired = body.FollowUpRequired,
+        };
+        _beaconContext.Set<IncidentReport>().Add(entity);
+        await _beaconContext.SaveChangesAsync();
+        return StatusCode(StatusCodes.Status201Created,
+            new CreateIncidentReportResult { IncidentId = entity.IncidentId });
+    }
+
+    private static string? NullIfWhiteSpace(string? s) =>
+        string.IsNullOrWhiteSpace(s) ? null : s.Trim();
 
     //GET SINGLE DONOR WITH FULL DONATION HISTORY
     [Authorize(Policy = AuthPolicies.DonorOnly)]

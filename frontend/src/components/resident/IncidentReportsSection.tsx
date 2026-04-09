@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { IncidentReportRow } from "../../types/residentRecords";
 import Pagination from "../Pagination";
+import { AddIncidentReportModal } from "./AddIncidentReportModal";
 import { ResidentRecordModal } from "./ResidentRecordModal";
 import {
   dashIfEmpty,
@@ -9,10 +10,21 @@ import {
   RESIDENT_RECORD_MODAL_PAGE_SIZE,
 } from "./residentRecordFormat";
 
-type Props = { records: IncidentReportRow[] };
+type Props = {
+  records: IncidentReportRow[];
+  residentId: number;
+  initialSafehouseId?: number;
+  onRecordsChanged: () => void;
+};
 
-export function IncidentReportsSection({ records }: Props) {
+export function IncidentReportsSection({
+  records,
+  residentId,
+  initialSafehouseId,
+  onRecordsChanged,
+}: Props) {
   const [open, setOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
   const [modalPage, setModalPage] = useState(1);
   const count = records.length;
   const pageSize = RESIDENT_RECORD_MODAL_PAGE_SIZE;
@@ -54,15 +66,38 @@ export function IncidentReportsSection({ records }: Props) {
               {count}
             </span>
           </div>
-          <button
-            type="button"
-            className="btn btn-primary mt-auto"
-            onClick={() => setOpen(true)}
-          >
-            View
-          </button>
+          <div className="d-flex gap-2 mt-auto">
+            <button
+              type="button"
+              className="btn btn-primary flex-grow-1"
+              onClick={() => setOpen(true)}
+            >
+              View
+            </button>
+            <button
+              type="button"
+              className="btn btn-outline-primary flex-grow-1"
+              onClick={() => setAddOpen(true)}
+            >
+              Add
+            </button>
+          </div>
         </div>
       </div>
+
+      <AddIncidentReportModal
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        initialResidentId={Number.isFinite(residentId) ? residentId : undefined}
+        initialSafehouseId={
+          initialSafehouseId !== undefined &&
+          initialSafehouseId !== null &&
+          Number.isFinite(initialSafehouseId)
+            ? initialSafehouseId
+            : undefined
+        }
+        onCreated={onRecordsChanged}
+      />
 
       <ResidentRecordModal
         title="Incident Reports"

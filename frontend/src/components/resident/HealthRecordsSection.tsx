@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { HealthWellbeingRow } from "../../types/residentRecords";
 import Pagination from "../Pagination";
+import { AddHealthRecordModal } from "./AddHealthRecordModal";
 import { ResidentRecordModal } from "./ResidentRecordModal";
 import {
   fmtBool,
@@ -10,10 +11,15 @@ import {
   RESIDENT_RECORD_MODAL_PAGE_SIZE,
 } from "./residentRecordFormat";
 
-type Props = { records: HealthWellbeingRow[] };
+type Props = {
+  records: HealthWellbeingRow[];
+  residentId: number;
+  onRecordsChanged: () => void;
+};
 
-export function HealthRecordsSection({ records }: Props) {
+export function HealthRecordsSection({ records, residentId, onRecordsChanged }: Props) {
   const [open, setOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
   const [modalPage, setModalPage] = useState(1);
   const count = records.length;
   const pageSize = RESIDENT_RECORD_MODAL_PAGE_SIZE;
@@ -55,15 +61,31 @@ export function HealthRecordsSection({ records }: Props) {
               {count}
             </span>
           </div>
-          <button
-            type="button"
-            className="btn btn-primary mt-auto"
-            onClick={() => setOpen(true)}
-          >
-            View
-          </button>
+          <div className="d-flex gap-2 mt-auto">
+            <button
+              type="button"
+              className="btn btn-primary flex-grow-1"
+              onClick={() => setOpen(true)}
+            >
+              View
+            </button>
+            <button
+              type="button"
+              className="btn btn-outline-primary flex-grow-1"
+              onClick={() => setAddOpen(true)}
+            >
+              Add
+            </button>
+          </div>
         </div>
       </div>
+
+      <AddHealthRecordModal
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        initialResidentId={Number.isFinite(residentId) ? residentId : undefined}
+        onCreated={onRecordsChanged}
+      />
 
       <ResidentRecordModal
         title="Health"

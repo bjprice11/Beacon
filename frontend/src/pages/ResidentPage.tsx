@@ -141,16 +141,33 @@ function ResidentPage() {
               />
             </div>
             <div className="col">
-              <HealthRecordsSection records={healthWellbeingRecords} />
+              <HealthRecordsSection
+                records={healthWellbeingRecords}
+                residentId={residentIdNum}
+                onRecordsChanged={refetchResidentQuiet}
+              />
             </div>
             <div className="col">
-              <MentalWellbeingRecordsSection records={processRecordings} />
+              <MentalWellbeingRecordsSection
+                records={processRecordings}
+                residentId={residentIdNum}
+                onRecordsChanged={refetchResidentQuiet}
+              />
             </div>
             <div className="col">
-              <HomeVisitsRecordsSection records={homeVisitations} />
+              <HomeVisitsRecordsSection
+                records={homeVisitations}
+                residentId={residentIdNum}
+                onRecordsChanged={refetchResidentQuiet}
+              />
             </div>
             <div className="col">
-              <IncidentReportsSection records={incidentReports} />
+              <IncidentReportsSection
+                records={incidentReports}
+                residentId={residentIdNum}
+                initialSafehouseId={resident.safehouseId}
+                onRecordsChanged={refetchResidentQuiet}
+              />
             </div>
           </div>
         </div>
