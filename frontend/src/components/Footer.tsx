@@ -1,9 +1,6 @@
 import { Link } from "react-router-dom";
-import { useCookieConsent } from "../context/CookieConsentContext";
 
 function Footer() {
-  const { openCookiePreferences } = useCookieConsent();
-
   return (
     <footer className="landing-footer">
       <div className="container">
@@ -61,19 +58,7 @@ function Footer() {
         </div>
         <hr className="landing-footer__rule" />
         <p className="landing-footer__copy">
-          &copy; {new Date().getFullYear()} Beacon Sanctuary. All rights reserved.
-          {" | "}
-          <Link to="/privacy-policy">Privacy Policy</Link>
-          {" | "}
-          <Link to="/cookie-policy">Cookie Policy</Link>
-          {" | "}
-          <button
-            type="button"
-            className="btn btn-link p-0 align-baseline landing-footer__cookie-btn"
-            onClick={openCookiePreferences}
-          >
-            Cookie preferences
-          </button>
+          &copy; {new Date().getFullYear()} Beacon Sanctuary. All rights reserved. | <Link to="/privacy-policy">Privacy Policy</Link>
         </p>
       </div>
     </footer>
