@@ -134,7 +134,7 @@ a.admin-all-residents-card-link:focus-visible .admin-all-residents-card {
 .beacon-navbar--fixed:not(.beacon-navbar--auth-overlay) {
   top: 40px;
 }
-/* Login / logout: no announcement bar — flush to top */
+/* Login / logout / register: no announcement bar — flush to top */
 .beacon-navbar--fixed.beacon-navbar--auth-overlay {
   top: 0;
 }
@@ -289,7 +289,7 @@ a.admin-all-residents-card-link:focus-visible .admin-all-residents-card {
   background: #fff !important;
   color: var(--beacon-primary) !important;
 }
-/* Login / logout overlay: solid white CTA, dark label (matches marketing mock) */
+/* Auth overlay routes (login / logout / register): solid white CTA, dark label */
 .beacon-navbar--auth-overlay .beacon-navbar__cta {
   background: #fff !important;
   color: #1a231c !important;
@@ -3151,26 +3151,30 @@ main#main-content.main-below-fixed-nav.main-below-fixed-nav--tight {
   box-sizing: border-box;
 }
 
-/* Logout — same dark backdrop + overlay nav as login (no video) */
-.logout-page {
+/* Logout & register — same dark backdrop + overlay nav as login (no video) */
+.logout-page,
+.register-page {
   position: relative;
   isolation: isolate;
   overflow: hidden;
 }
-.logout-page.beacon-page--auth {
+.logout-page.beacon-page--auth,
+.register-page.beacon-page--auth {
   min-height: 100vh;
   min-height: 100dvh;
   padding-top: 5.75rem;
   box-sizing: border-box;
 }
-.logout-page__bg {
+.logout-page__bg,
+.register-page__bg {
   position: absolute;
   inset: 0;
   z-index: 0;
   pointer-events: none;
   background: linear-gradient(160deg, #141f18 0%, #1f3328 45%, #16261c 100%);
 }
-.logout-page__bg::after {
+.logout-page__bg::after,
+.register-page__bg::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -3182,7 +3186,8 @@ main#main-content.main-below-fixed-nav.main-below-fixed-nav--tight {
   );
   pointer-events: none;
 }
-.logout-page__content {
+.logout-page__content,
+.register-page__content {
   position: relative;
   z-index: 1;
 }

@@ -13,7 +13,9 @@ function Navbar() {
   const location = useLocation();
   const isLanding = location.pathname === "/";
   const isAuthOverlay =
-    location.pathname === "/login" || location.pathname === "/logout";
+    location.pathname === "/login" ||
+    location.pathname === "/logout" ||
+    location.pathname === "/register";
 
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
