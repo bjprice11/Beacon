@@ -6,6 +6,7 @@ import {
   type PostPredictionResponse,
 } from "../../api/postPlanner";
 import { Link } from "react-router-dom";
+import AdminDashboardBackLink from "../../components/AdminDashboardBackLink";
 
 const PLATFORMS = ["Facebook", "Instagram", "Twitter", "TikTok", "YouTube"];
 const POST_TYPES = ["Organic", "Paid", "Story", "Reel"];
@@ -76,6 +77,7 @@ export default function PostPlanner() {
 
       return (
     <div className="beacon-page container py-4">
+      <AdminDashboardBackLink />
       {/* Centered header */}
       <div className="row justify-content-center text-center mb-4">
         <div className="col-lg-8">

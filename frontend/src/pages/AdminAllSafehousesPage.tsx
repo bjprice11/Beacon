@@ -4,6 +4,7 @@ import { BASE_URL } from "../config/api";
 import type { Safehouse } from "../types/Safehouse";
 import Pagination from "../components/Pagination";
 import AdminSearchInput from "../components/AdminSearchInput";
+import AdminDashboardBackLink from "../components/AdminDashboardBackLink";
 import { useAdminSearch } from "../context/AdminSearchContext";
 
 function AdminAllSafehousesPage() {
@@ -64,6 +65,7 @@ function AdminAllSafehousesPage() {
 
   return (
     <div className="beacon-page container py-4">
+      <AdminDashboardBackLink />
       <AdminSearchInput placeholder="Search safehouses by city, province, country, or status..." />
       <p className="landing-section__eyebrow mb-1">Admin</p>
       <h1 className="mb-4">All Safehouses</h1>

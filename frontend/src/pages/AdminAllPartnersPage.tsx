@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import Pagination from "../components/Pagination";
 import AdminSearchInput from "../components/AdminSearchInput";
+import AdminDashboardBackLink from "../components/AdminDashboardBackLink";
+import AdminGlassFilterBar, {
+  type AdminGlassFilterSection,
+} from "../components/AdminGlassFilterBar";
 import { useAdminSearch } from "../context/AdminSearchContext";
 import { BASE_URL } from "../config/api";
 
@@ -10,6 +14,18 @@ function formatDate(dateStr: string): string {
   const dd = String(d.getDate()).padStart(2, "0");
   const yyyy = d.getFullYear();
   return `${mm}-${dd}-${yyyy}`;
+}
+
+function uniqueField<T>(
+  items: T[],
+  pick: (p: T) => string | undefined,
+): string[] {
+  const set = new Set<string>();
+  for (const x of items) {
+    const v = pick(x)?.trim();
+    if (v) set.add(v);
+  }
+  return Array.from(set).sort((a, b) => a.localeCompare(b));
 }
 
 interface AdminPartner {
@@ -33,9 +49,16 @@ function AdminAllPartnersPage() {
   const pageSize = 15;
   const [view, setView] = useState<"table" | "card">("table");
   const { query } = useAdminSearch();
+  const [openFilterMenu, setOpenFilterMenu] = useState<string | null>(null);
+  const [listFilters, setListFilters] = useState({
+    status: "",
+    region: "",
+    organization: "",
+    role: "",
+  });
 
   useEffect(() => {
-    fetch(`${BASE_URL}/AllPartners`, { credentials: 'include' })
+    fetch(`${BASE_URL}/AllPartners`, { credentials: "include" })
       .then((res) => res.json())
       .then(setPartners)
       .catch((err) => setError((err as Error).message))
@@ -43,36 +66,138 @@ function AdminAllPartnersPage() {
   }, []);
 
   const normalizedQuery = query.trim().toLowerCase();
+
+  const statusOptions = useMemo(
+    () => uniqueField(partners, (p) => p.status),
+    [partners],
+  );
+  const regionOptions = useMemo(
+    () => uniqueField(partners, (p) => p.region),
+    [partners],
+  );
+  const orgOptions = useMemo(
+    () => uniqueField(partners, (p) => p.organizationType),
+    [partners],
+  );
+  const roleOptions = useMemo(
+    () => uniqueField(partners, (p) => p.roleType),
+    [partners],
+  );
+
+  const partnerGlassSections = useMemo<AdminGlassFilterSection[]>(
+    () => [
+      {
+        id: "status",
+        tabLabel: "Status",
+        allOption: { title: "All statuses", meta: "Any partner status" },
+        choices: statusOptions.map((v) => ({
+          value: v,
+          title: v,
+          meta: "Filter by status",
+        })),
+      },
+      {
+        id: "region",
+        tabLabel: "Region",
+        allOption: { title: "All regions", meta: "Any region" },
+        choices: regionOptions.map((v) => ({
+          value: v,
+          title: v,
+          meta: "Filter by region",
+        })),
+      },
+      {
+        id: "organization",
+        tabLabel: "Org type",
+        allOption: {
+          title: "All organization types",
+          meta: "Any org category",
+        },
+        choices: orgOptions.map((v) => ({
+          value: v,
+          title: v,
+          meta: "Filter by organization type",
+        })),
+      },
+      {
+        id: "role",
+        tabLabel: "Role",
+        allOption: { title: "All roles", meta: "Any partnership role" },
+        choices: roleOptions.map((v) => ({
+          value: v,
+          title: v,
+          meta: "Filter by role type",
+        })),
+      },
+    ],
+    [statusOptions, regionOptions, orgOptions, roleOptions],
+  );
+
   const filteredPartners = useMemo(
     () =>
       partners.filter((partner) => {
-        if (!normalizedQuery) return true;
-        return [
-          partner.partnerName,
-          partner.organizationType,
-          partner.roleType,
-          partner.email,
-          partner.phone,
-          partner.region,
-          partner.status,
-          partner.assignedSafehouse,
-          String(partner.partnerId),
-        ]
-          .filter(Boolean)
-          .some((value) => String(value).toLowerCase().includes(normalizedQuery));
+        if (normalizedQuery) {
+          const matchesSearch = [
+            partner.partnerName,
+            partner.organizationType,
+            partner.roleType,
+            partner.email,
+            partner.phone,
+            partner.region,
+            partner.status,
+            partner.assignedSafehouse,
+            String(partner.partnerId),
+          ]
+            .filter(Boolean)
+            .some((value) =>
+              String(value).toLowerCase().includes(normalizedQuery),
+            );
+          if (!matchesSearch) return false;
+        }
+
+        if (
+          listFilters.status &&
+          (partner.status?.trim() ?? "") !== listFilters.status
+        ) {
+          return false;
+        }
+        if (
+          listFilters.region &&
+          (partner.region?.trim() ?? "") !== listFilters.region
+        ) {
+          return false;
+        }
+        if (
+          listFilters.organization &&
+          (partner.organizationType?.trim() ?? "") !==
+            listFilters.organization
+        ) {
+          return false;
+        }
+        if (
+          listFilters.role &&
+          (partner.roleType?.trim() ?? "") !== listFilters.role
+        ) {
+          return false;
+        }
+
+        return true;
       }),
-    [partners, normalizedQuery],
+    [partners, normalizedQuery, listFilters],
   );
 
   useEffect(() => {
     setPage(1);
-  }, [normalizedQuery, view]);
+  }, [normalizedQuery, view, listFilters]);
 
   const totalCount = filteredPartners.length;
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
   const currentPage = Math.min(Math.max(page, 1), totalPages);
   const startIndex = (currentPage - 1) * pageSize;
-  const visiblePartners = filteredPartners.slice(startIndex, startIndex + pageSize);
+  const visiblePartners = filteredPartners.slice(
+    startIndex,
+    startIndex + pageSize,
+  );
 
   if (loading) {
     return (
@@ -94,7 +219,20 @@ function AdminAllPartnersPage() {
 
   return (
     <div className="beacon-page container py-4">
+      <AdminDashboardBackLink />
       <AdminSearchInput placeholder="Search partners by name, role, safehouse, or status..." />
+
+      <AdminGlassFilterBar
+        ariaLabel="Filter partners"
+        openMenu={openFilterMenu}
+        setOpenMenu={setOpenFilterMenu}
+        values={listFilters}
+        onValueChange={(sectionId, value) =>
+          setListFilters((prev) => ({ ...prev, [sectionId]: value }))
+        }
+        sections={partnerGlassSections}
+      />
+
       <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
         <div>
           <p className="landing-section__eyebrow mb-1">Admin</p>
@@ -102,12 +240,14 @@ function AdminAllPartnersPage() {
         </div>
         <div className="btn-group">
           <button
+            type="button"
             className={`btn ${view === "table" ? "btn-primary" : "btn-outline-primary"}`}
             onClick={() => setView("table")}
           >
             Table
           </button>
           <button
+            type="button"
             className={`btn ${view === "card" ? "btn-primary" : "btn-outline-primary"}`}
             onClick={() => setView("card")}
           >
@@ -157,61 +297,29 @@ function AdminAllPartnersPage() {
         <div className="row g-4">
           {visiblePartners.map((p, i) => (
             <div key={`${p.partnerId}-${i}`} className="col-sm-6 col-lg-4">
-              <div className="card h-100">
-                <div className="card-body">
+              <div className="admin-all-residents-card card h-100 shadow-sm">
+                <div className="card-body d-flex flex-column">
                   <h5 className="card-title mb-3">{p.partnerName}</h5>
-                  <table className="table table-sm mb-0">
-                    <tbody>
-                      {p.organizationType && (
-                        <tr>
-                          <th>Org Type</th>
-                          <td>{p.organizationType}</td>
-                        </tr>
-                      )}
-                      {p.roleType && (
-                        <tr>
-                          <th>Role</th>
-                          <td>{p.roleType}</td>
-                        </tr>
-                      )}
-                      {p.email && (
-                        <tr>
-                          <th>Email</th>
-                          <td>{p.email}</td>
-                        </tr>
-                      )}
-                      {p.phone && (
-                        <tr>
-                          <th>Phone</th>
-                          <td>{p.phone}</td>
-                        </tr>
-                      )}
-                      {p.region && (
-                        <tr>
-                          <th>Region</th>
-                          <td>{p.region}</td>
-                        </tr>
-                      )}
-                      {p.status && (
-                        <tr>
-                          <th>Status</th>
-                          <td>{p.status}</td>
-                        </tr>
-                      )}
-                      {p.startDate && (
-                        <tr>
-                          <th>Start Date</th>
-                          <td>{formatDate(p.startDate)}</td>
-                        </tr>
-                      )}
-                      {p.assignedSafehouse && (
-                        <tr>
-                          <th>Safehouse</th>
-                          <td>{p.assignedSafehouse}</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
+                  <dl className="row small mb-0 flex-grow-1">
+                    <dt className="col-5 text-muted fw-normal">Org type</dt>
+                    <dd className="col-7 mb-2">
+                      {p.organizationType ?? "\u2014"}
+                    </dd>
+                    <dt className="col-5 text-muted fw-normal">Role</dt>
+                    <dd className="col-7 mb-2">{p.roleType ?? "\u2014"}</dd>
+                    <dt className="col-5 text-muted fw-normal">Region</dt>
+                    <dd className="col-7 mb-2">{p.region ?? "\u2014"}</dd>
+                    <dt className="col-5 text-muted fw-normal">Status</dt>
+                    <dd className="col-7 mb-2">{p.status ?? "\u2014"}</dd>
+                    <dt className="col-5 text-muted fw-normal">Safehouse</dt>
+                    <dd className="col-7 mb-2">
+                      {p.assignedSafehouse ?? "\u2014"}
+                    </dd>
+                    <dt className="col-5 text-muted fw-normal">Start</dt>
+                    <dd className="col-7 mb-0">
+                      {p.startDate ? formatDate(p.startDate) : "\u2014"}
+                    </dd>
+                  </dl>
                 </div>
               </div>
             </div>
