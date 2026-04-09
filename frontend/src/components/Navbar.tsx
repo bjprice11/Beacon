@@ -97,6 +97,7 @@ function Navbar() {
               Sign In
             </NavLink>
           )}
+          {!isLoading && isAuthenticated && (
           <Link
             to="/register"
             className="beacon-navbar__cta"
@@ -104,6 +105,7 @@ function Navbar() {
           >
             Register
           </Link>
+          )}
         </div>
 
         {/* Hamburger (mobile) */}
@@ -128,9 +130,11 @@ function Navbar() {
           ) : (
             <NavLink to="/login" onClick={() => setMenuOpen(false)}>Sign In</NavLink>
           )}
-          <Link to="/register" className="beacon-navbar__cta" onClick={() => setMenuOpen(false)}>
-            Register
-          </Link>
+          {!isLoading && isAuthenticated && (
+            <Link to="/register" className="beacon-navbar__cta" onClick={() => setMenuOpen(false)}>
+              Register
+            </Link>
+          )}
         </div>
       )}
     </nav>
