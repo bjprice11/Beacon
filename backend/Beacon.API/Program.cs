@@ -112,7 +112,9 @@ builder.Services.AddCors(options =>
 
 // Single registration: duplicate AddDbContext overwrote snake_case and broke PostgreSQL table names.
 builder.Services.AddDbContext<AuthIdentityDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("BeaconConnection"))
+    options.UseNpgsql(
+            builder.Configuration.GetConnectionString("BeaconConnection"),
+            npgsql => npgsql.EnableRetryOnFailure(5, TimeSpan.FromSeconds(2), null))
         .UseSnakeCaseNamingConvention());
 
 // Persist DP keys in Postgres so OAuth correlation survives multiple Railway instances / cold starts.
