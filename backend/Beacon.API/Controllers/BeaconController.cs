@@ -345,6 +345,119 @@ public class BeaconController : ControllerBase
         });
     }
 
+    /// <summary>Distinct school names from existing records plus a small default list for new entries.</summary>
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
+    [HttpGet("EducationRecordSchoolNames")]
+    public IActionResult GetEducationRecordSchoolNames()
+    {
+        try
+        {
+            var fromDb = _beaconContext.Set<EducationRecord>()
+                .AsNoTracking()
+                .Where(e => e.SchoolName != null && e.SchoolName != "")
+                .Select(e => e.SchoolName!)
+                .Distinct()
+                .ToList();
+            string[] defaults =
+            [
+                "Beacon Learning Center",
+                "Community High School",
+                "Online Academy",
+                "GED Preparation Program",
+            ];
+            var merged = fromDb
+                .Concat(defaults)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(s => s, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            return Ok(merged);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "GetEducationRecordSchoolNames failed.");
+            return Ok(Array.Empty<string>());
+        }
+    }
+
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
+    [HttpPost("EducationRecord")]
+    public async Task<IActionResult> CreateEducationRecord([FromBody] CreateEducationRecordRequest? body)
+    {
+        if (body == null)
+            return BadRequest(new { message = "Invalid request body.", errors = (object?)null });
+
+        var errors = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        if (body.ResidentId <= 0)
+            errors["residentId"] = "Required";
+
+        var residentExists = body.ResidentId > 0 &&
+                             await _beaconContext.Residents.AsNoTracking()
+                                 .AnyAsync(r => r.ResidentId == body.ResidentId);
+        if (body.ResidentId > 0 && !residentExists)
+            return NotFound(new { message = "Resident not found." });
+
+        if (body.RecordDate == default)
+            errors["recordDate"] = "Required";
+
+        if (string.IsNullOrWhiteSpace(body.SchoolName))
+            errors["schoolName"] = "Required";
+
+        var enrollment = (body.EnrollmentStatus ?? "").Trim();
+        if (enrollment is not ("Enrolled" or "Not Enrolled"))
+            errors["enrollmentStatus"] = "Choose Enrolled or Not Enrolled.";
+
+        var completion = (body.CompletionStatus ?? "").Trim();
+        if (completion is not ("NotStarted" or "InProgress"))
+            errors["completionStatus"] = "Choose Not started or In progress.";
+
+        if (body.AttendanceRate is null)
+            errors["attendanceRate"] = "Required";
+        else
+        {
+            var att = Math.Round(body.AttendanceRate.Value, 3, MidpointRounding.AwayFromZero);
+            if (att < 0m || att > 1m)
+                errors["attendanceRate"] = "Must be between 0 and 1.";
+        }
+
+        if (body.ProgressPercent is null)
+            errors["progressPercent"] = "Required";
+        else
+        {
+            var prog = Math.Round(body.ProgressPercent.Value, 1, MidpointRounding.AwayFromZero);
+            if (prog < 0m || prog > 100m)
+                errors["progressPercent"] = "Must be between 0 and 100.";
+        }
+
+        if (errors.Count > 0)
+            return BadRequest(new
+            {
+                message = "Please complete all required fields.",
+                errors,
+            });
+
+        var attendanceRounded = Math.Round(body.AttendanceRate!.Value, 3, MidpointRounding.AwayFromZero);
+        var progressRounded = Math.Round(body.ProgressPercent!.Value, 1, MidpointRounding.AwayFromZero);
+
+        var entity = new EducationRecord
+        {
+            ResidentId = body.ResidentId,
+            RecordDate = body.RecordDate,
+            SchoolName = body.SchoolName.Trim(),
+            EnrollmentStatus = enrollment,
+            AttendanceRate = attendanceRounded,
+            ProgressPercent = progressRounded,
+            CompletionStatus = completion,
+            Notes = string.IsNullOrWhiteSpace(body.Notes) ? null : body.Notes.Trim(),
+            EducationLevel = null,
+        };
+
+        _beaconContext.Set<EducationRecord>().Add(entity);
+        await _beaconContext.SaveChangesAsync();
+
+        return StatusCode(StatusCodes.Status201Created, new { educationRecordId = entity.EducationRecordId });
+    }
+
     //GET SINGLE DONOR WITH FULL DONATION HISTORY
     [Authorize(Policy = AuthPolicies.DonorOnly)]
     [HttpGet("Donor/{id}")]
