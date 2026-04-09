@@ -1,10 +1,16 @@
 import { useEffect, useState } from "react";
+import type { ProcessRecordingRow } from "../../types/residentRecords";
 import { BASE_URL } from "../../config/api";
 import { ResidentRecordModal } from "./ResidentRecordModal";
 import {
+  dateForDateInput,
+  mergePicklistOption,
+  messageFromJsonPayload,
   optionalInt,
   parseServerErrors,
   picklistStrings,
+  putBeaconJson,
+  readResponseJson,
   requiredFieldMsg,
   validateResidentIdInput,
 } from "./residentRecordFormUtils";
@@ -21,6 +27,7 @@ type Props = {
   open: boolean;
   onClose: () => void;
   initialResidentId?: number;
+  existingRecord?: ProcessRecordingRow | null;
   onCreated: () => void;
 };
 
@@ -37,8 +44,10 @@ export function AddProcessRecordingModal({
   open,
   onClose,
   initialResidentId,
+  existingRecord = null,
   onCreated,
 }: Props) {
+  const isEdit = existingRecord != null;
   const [residentIdInput, setResidentIdInput] = useState("");
   const [sessionDate, setSessionDate] = useState("");
   const [socialWorker, setSocialWorker] = useState("");
@@ -71,33 +80,65 @@ export function AddProcessRecordingModal({
         ? String(Math.trunc(initialResidentId))
         : "",
     );
-    setSessionDate("");
-    setSocialWorker("");
-    setSessionType("");
-    setSessionDurationMinutes("");
-    setEmotionalStateObserved("");
-    setEmotionalStateEnd("");
-    setInterventionsApplied("");
-    setFollowUpActions("");
-    setProgressNoted(false);
-    setConcernsFlagged(false);
-    setReferralMade(false);
-    setSessionNarrative("");
-    setNotesRestricted("");
+    if (existingRecord) {
+      setSessionDate(dateForDateInput(existingRecord.sessionDate));
+      setSocialWorker(existingRecord.socialWorker ?? "");
+      setSessionType(existingRecord.sessionType ?? "");
+      setSessionDurationMinutes(
+        existingRecord.sessionDurationMinutes != null
+          ? String(existingRecord.sessionDurationMinutes)
+          : "",
+      );
+      setEmotionalStateObserved(existingRecord.emotionalStateObserved ?? "");
+      setEmotionalStateEnd(existingRecord.emotionalStateEnd ?? "");
+      setInterventionsApplied(existingRecord.interventionsApplied ?? "");
+      setFollowUpActions(existingRecord.followUpActions ?? "");
+      setProgressNoted(existingRecord.progressNoted === true);
+      setConcernsFlagged(existingRecord.concernsFlagged === true);
+      setReferralMade(existingRecord.referralMade === true);
+      setSessionNarrative(existingRecord.sessionNarrative ?? "");
+      setNotesRestricted(existingRecord.notesRestricted ?? "");
+    } else {
+      setSessionDate("");
+      setSocialWorker("");
+      setSessionType("");
+      setSessionDurationMinutes("");
+      setEmotionalStateObserved("");
+      setEmotionalStateEnd("");
+      setInterventionsApplied("");
+      setFollowUpActions("");
+      setProgressNoted(false);
+      setConcernsFlagged(false);
+      setReferralMade(false);
+      setSessionNarrative("");
+      setNotesRestricted("");
+    }
 
     fetch(`${BASE_URL}/ProcessRecordingPicklists`, { credentials: "include" })
       .then((r) => (r.ok ? r.json() : {}))
       .then((data: unknown) => {
-        setSessionTypes(picklistStrings(data, "session_types"));
-        setEmotionalObservedOptions(picklistStrings(data, "emotional_states_observed"));
-        setEmotionalEndOptions(picklistStrings(data, "emotional_states_end"));
+        let st = picklistStrings(data, "session_types");
+        let eo = picklistStrings(data, "emotional_states_observed");
+        let ee = picklistStrings(data, "emotional_states_end");
+        if (existingRecord) {
+          st = mergePicklistOption(st, existingRecord.sessionType);
+          eo = mergePicklistOption(eo, existingRecord.emotionalStateObserved);
+          ee = mergePicklistOption(ee, existingRecord.emotionalStateEnd);
+        }
+        setSessionTypes(st);
+        setEmotionalObservedOptions(eo);
+        setEmotionalEndOptions(ee);
       })
       .catch(() => {
-        setSessionTypes([]);
-        setEmotionalObservedOptions([]);
-        setEmotionalEndOptions([]);
+        setSessionTypes(existingRecord ? mergePicklistOption([], existingRecord.sessionType) : []);
+        setEmotionalObservedOptions(
+          existingRecord ? mergePicklistOption([], existingRecord.emotionalStateObserved) : [],
+        );
+        setEmotionalEndOptions(
+          existingRecord ? mergePicklistOption([], existingRecord.emotionalStateEnd) : [],
+        );
       });
-  }, [open, initialResidentId]);
+  }, [open, initialResidentId, existingRecord]);
 
   function validate(): Partial<Record<FieldKey, string>> {
     const e: Partial<Record<FieldKey, string>> = {};
@@ -128,40 +169,38 @@ export function AddProcessRecordingModal({
 
     setSubmitting(true);
     try {
-      const res = await fetch(`${BASE_URL}/ProcessRecording`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          resident_id: residentId,
-          session_date: sessionDate,
-          social_worker: socialWorker.trim() || null,
-          session_type: sessionType.trim() || null,
-          session_duration_minutes: dur,
-          emotional_state_observed: emotionalStateObserved.trim() || null,
-          emotional_state_end: emotionalStateEnd.trim() || null,
-          interventions_applied: interventionsApplied.trim() || null,
-          follow_up_actions: followUpActions.trim() || null,
-          progress_noted: progressNoted,
-          concerns_flagged: concernsFlagged,
-          referral_made: referralMade,
-          session_narrative: sessionNarrative.trim() || null,
-          notes_restricted: notesRestricted.trim() || null,
-        }),
-      });
+      const body = {
+        resident_id: residentId,
+        session_date: sessionDate,
+        social_worker: socialWorker.trim() || null,
+        session_type: sessionType.trim() || null,
+        session_duration_minutes: dur,
+        emotional_state_observed: emotionalStateObserved.trim() || null,
+        emotional_state_end: emotionalStateEnd.trim() || null,
+        interventions_applied: interventionsApplied.trim() || null,
+        follow_up_actions: followUpActions.trim() || null,
+        progress_noted: progressNoted,
+        concerns_flagged: concernsFlagged,
+        referral_made: referralMade,
+        session_narrative: sessionNarrative.trim() || null,
+        notes_restricted: notesRestricted.trim() || null,
+      };
+      const res = isEdit
+        ? await putBeaconJson(`/ProcessRecording/${existingRecord!.recordingId}`, body)
+        : await fetch(`${BASE_URL}/ProcessRecording`, {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json", Accept: "application/json" },
+            body: JSON.stringify(body),
+          });
 
-      if (res.status === 201) {
+      if (res.status === 201 || res.status === 200) {
         onCreated();
         onClose();
         return;
       }
 
-      let payload: unknown;
-      try {
-        payload = await res.json();
-      } catch {
-        payload = null;
-      }
+      const { payload } = await readResponseJson(res);
 
       if (res.status === 400 && payload) {
         setFieldErrors((prev) => ({ ...prev, ...parseServerErrors(FIELD_KEYS, payload) }));
@@ -173,7 +212,13 @@ export function AddProcessRecordingModal({
         return;
       }
 
-      setFormError(res.status === 401 ? "You must be signed in." : "Could not save.");
+      setFormError(
+        res.status === 401
+          ? "You must be signed in."
+          : res.status === 403
+            ? "You do not have permission to save."
+            : messageFromJsonPayload(payload, "Could not save."),
+      );
     } catch {
       setFormError("Network error. Try again.");
     } finally {
@@ -182,7 +227,12 @@ export function AddProcessRecordingModal({
   }
 
   return (
-    <ResidentRecordModal title="Add Mental Wellbeing Record" open={open} onClose={onClose} narrow>
+    <ResidentRecordModal
+      title={isEdit ? "Update Mental Wellbeing Record" : "Add Mental Wellbeing Record"}
+      open={open}
+      onClose={onClose}
+      narrow
+    >
       <form className="p-4" onSubmit={handleSubmit} noValidate>
         {formError ? (
           <div className="alert alert-warning small" role="alert">
@@ -202,6 +252,7 @@ export function AddProcessRecordingModal({
             className={`form-control form-control-sm${fieldErrors.resident_id ? " is-invalid" : ""}`}
             value={residentIdInput}
             onChange={(e) => setResidentIdInput(e.target.value)}
+            readOnly={isEdit}
           />
           {fieldErrors.resident_id ? (
             <div className="invalid-feedback d-block">{fieldErrors.resident_id}</div>
@@ -412,7 +463,7 @@ export function AddProcessRecordingModal({
             Cancel
           </button>
           <button type="submit" className="btn btn-sm btn-primary" disabled={submitting}>
-            {submitting ? "Saving…" : "Save Record"}
+            {submitting ? "Saving…" : isEdit ? "Save changes" : "Save Record"}
           </button>
         </div>
       </form>

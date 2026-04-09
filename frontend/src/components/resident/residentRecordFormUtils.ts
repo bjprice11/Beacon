@@ -1,4 +1,85 @@
+import { BASE_URL } from "../../config/api";
+
 export const requiredFieldMsg = "This field is required.";
+
+/** HTML date input value (yyyy-MM-dd) from API date strings. */
+export function dateForDateInput(value: string | undefined | null): string {
+  if (value == null || value === "") return "";
+  const s = String(value).trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+  const d = new Date(s);
+  if (Number.isNaN(d.getTime())) return "";
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+/** Text field initial value for optional decimals from API. */
+export function decimalFieldString(n: number | null | undefined): string {
+  if (n == null || Number.isNaN(n)) return "";
+  return String(n);
+}
+
+export function normalizeEnrollmentForForm(raw: string | undefined | null): "" | "Enrolled" | "Not Enrolled" {
+  const s = (raw ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+  if (s === "enrolled") return "Enrolled";
+  if (s === "not enrolled" || s.replace(/\s/g, "") === "notenrolled") return "Not Enrolled";
+  return "";
+}
+
+export function normalizeCompletionForForm(raw: string | undefined | null): "" | "NotStarted" | "InProgress" {
+  const t = (raw ?? "").replace(/\s+/g, "").toLowerCase();
+  if (t === "notstarted") return "NotStarted";
+  if (t === "inprogress") return "InProgress";
+  return "";
+}
+
+export function mergePicklistOption(options: string[], value: string | undefined | null): string[] {
+  const v = (value ?? "").trim();
+  if (!v) return options;
+  if (options.some((o) => o === v)) return options;
+  return [...options, v].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+}
+
+export function messageFromJsonPayload(payload: unknown, fallback: string): string {
+  if (payload && typeof payload === "object") {
+    const o = payload as Record<string, unknown>;
+    const detail = o.detail;
+    if (typeof detail === "string" && detail.length > 0) return detail;
+    const message = o.message;
+    if (typeof message === "string" && message.length > 0) return message;
+    const title = o.title;
+    if (typeof title === "string" && title.length > 0) return title;
+  }
+  return fallback;
+}
+
+export async function readResponseJson(res: Response): Promise<{ payload: unknown; raw: string }> {
+  const raw = await res.text();
+  let payload: unknown = null;
+  if (raw.trim()) {
+    try {
+      payload = JSON.parse(raw) as unknown;
+    } catch {
+      payload = null;
+    }
+  }
+  return { payload, raw };
+}
+
+export function putBeaconJson(pathUnderBeacon: string, body: unknown): Promise<Response> {
+  const path = pathUnderBeacon.startsWith("/") ? pathUnderBeacon : `/${pathUnderBeacon}`;
+  return fetch(`${BASE_URL}${path}`, {
+    method: "PUT",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+}
 
 export function validateResidentIdInput(raw: string): string | undefined {
   const t = raw.trim();

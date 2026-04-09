@@ -23,7 +23,8 @@ export function EducationRecordsSection({
   onEducationRecordsChanged,
 }: Props) {
   const [open, setOpen] = useState(false);
-  const [addOpen, setAddOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<EducationRecordRow | null>(null);
   const [modalPage, setModalPage] = useState(1);
   const count = records.length;
   const pageSize = RESIDENT_RECORD_MODAL_PAGE_SIZE;
@@ -76,7 +77,10 @@ export function EducationRecordsSection({
             <button
               type="button"
               className="btn btn-outline-primary flex-grow-1"
-              onClick={() => setAddOpen(true)}
+              onClick={() => {
+                setEditing(null);
+                setFormOpen(true);
+              }}
             >
               Add
             </button>
@@ -85,9 +89,13 @@ export function EducationRecordsSection({
       </div>
 
       <AddEducationRecordModal
-        open={addOpen}
-        onClose={() => setAddOpen(false)}
+        open={formOpen}
+        onClose={() => {
+          setFormOpen(false);
+          setEditing(null);
+        }}
         initialResidentId={Number.isFinite(residentId) ? residentId : undefined}
+        existingRecord={editing}
         onCreated={onEducationRecordsChanged}
       />
 
@@ -111,6 +119,7 @@ export function EducationRecordsSection({
                   <th>Attendance %</th>
                   <th>Progress %</th>
                   <th>Completion</th>
+                  <th className="text-end">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -123,6 +132,19 @@ export function EducationRecordsSection({
                     <td>{fmtNum(e.attendanceRate)}</td>
                     <td>{fmtNum(e.progressPercent)}</td>
                     <td>{formatCompletionStatus(e.completionStatus)}</td>
+                    <td className="text-end">
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-primary"
+                        onClick={() => {
+                          setOpen(false);
+                          setEditing(e);
+                          setFormOpen(true);
+                        }}
+                      >
+                        Update
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

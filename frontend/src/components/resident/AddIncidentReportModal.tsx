@@ -1,9 +1,15 @@
 import { useEffect, useState } from "react";
+import type { IncidentReportRow } from "../../types/residentRecords";
 import { BASE_URL } from "../../config/api";
 import { ResidentRecordModal } from "./ResidentRecordModal";
 import {
+  dateForDateInput,
+  mergePicklistOption,
+  messageFromJsonPayload,
   parseServerErrors,
   picklistStrings,
+  putBeaconJson,
+  readResponseJson,
   requiredFieldMsg,
   validateResidentIdInput,
 } from "./residentRecordFormUtils";
@@ -18,6 +24,7 @@ type Props = {
   onClose: () => void;
   initialResidentId?: number;
   initialSafehouseId?: number;
+  existingRecord?: IncidentReportRow | null;
   onCreated: () => void;
 };
 
@@ -43,8 +50,10 @@ export function AddIncidentReportModal({
   onClose,
   initialResidentId,
   initialSafehouseId,
+  existingRecord = null,
   onCreated,
 }: Props) {
+  const isEdit = existingRecord != null;
   const [residentIdInput, setResidentIdInput] = useState("");
   const [safehouseIdInput, setSafehouseIdInput] = useState("");
   const [safehouses, setSafehouses] = useState<SafehouseOption[]>([]);
@@ -74,32 +83,58 @@ export function AddIncidentReportModal({
         ? String(Math.trunc(initialResidentId))
         : "",
     );
+    const shFromRow =
+      existingRecord != null &&
+      typeof existingRecord.safehouseId === "number" &&
+      Number.isFinite(existingRecord.safehouseId)
+        ? String(Math.trunc(existingRecord.safehouseId))
+        : "";
     setSafehouseIdInput(
-      initialSafehouseId !== undefined &&
-        initialSafehouseId !== null &&
-        Number.isFinite(initialSafehouseId)
-        ? String(Math.trunc(initialSafehouseId))
-        : "",
+      shFromRow !== ""
+        ? shFromRow
+        : initialSafehouseId !== undefined &&
+            initialSafehouseId !== null &&
+            Number.isFinite(initialSafehouseId)
+          ? String(Math.trunc(initialSafehouseId))
+          : "",
     );
-    setIncidentDate("");
-    setIncidentType("");
-    setSeverity("");
-    setDescription("");
-    setResponseTaken("");
-    setResolved(false);
-    setResolutionDate("");
-    setReportedBy("");
-    setFollowUpRequired(false);
+    if (existingRecord) {
+      setIncidentDate(dateForDateInput(existingRecord.incidentDate));
+      setIncidentType(existingRecord.incidentType ?? "");
+      setSeverity(existingRecord.severity ?? "");
+      setDescription(existingRecord.description ?? "");
+      setResponseTaken(existingRecord.responseTaken ?? "");
+      setResolved(existingRecord.resolved === true);
+      setResolutionDate(dateForDateInput(existingRecord.resolutionDate));
+      setReportedBy(existingRecord.reportedBy ?? "");
+      setFollowUpRequired(existingRecord.followUpRequired === true);
+    } else {
+      setIncidentDate("");
+      setIncidentType("");
+      setSeverity("");
+      setDescription("");
+      setResponseTaken("");
+      setResolved(false);
+      setResolutionDate("");
+      setReportedBy("");
+      setFollowUpRequired(false);
+    }
 
     fetch(`${BASE_URL}/IncidentReportPicklists`, { credentials: "include" })
       .then((r) => (r.ok ? r.json() : {}))
       .then((data: unknown) => {
-        setIncidentTypes(picklistStrings(data, "incident_types"));
-        setSeverities(picklistStrings(data, "severities"));
+        let it = picklistStrings(data, "incident_types");
+        let sev = picklistStrings(data, "severities");
+        if (existingRecord) {
+          it = mergePicklistOption(it, existingRecord.incidentType);
+          sev = mergePicklistOption(sev, existingRecord.severity);
+        }
+        setIncidentTypes(it);
+        setSeverities(sev);
       })
       .catch(() => {
-        setIncidentTypes([]);
-        setSeverities([]);
+        setIncidentTypes(existingRecord ? mergePicklistOption([], existingRecord.incidentType) : []);
+        setSeverities(existingRecord ? mergePicklistOption([], existingRecord.severity) : []);
       });
 
     fetch(`${BASE_URL}/Safehouses`, { credentials: "include" })
@@ -122,7 +157,7 @@ export function AddIncidentReportModal({
         );
       })
       .catch(() => setSafehouses([]));
-  }, [open, initialResidentId, initialSafehouseId]);
+  }, [open, initialResidentId, initialSafehouseId, existingRecord]);
 
   function validate(): Partial<Record<FieldKey, string>> {
     const e: Partial<Record<FieldKey, string>> = {};
@@ -149,37 +184,35 @@ export function AddIncidentReportModal({
 
     setSubmitting(true);
     try {
-      const res = await fetch(`${BASE_URL}/IncidentReport`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          resident_id: residentId,
-          safehouse_id: safehouseId,
-          incident_date: incidentDate,
-          incident_type: incidentType.trim() || null,
-          severity: severity.trim() || null,
-          description: description.trim() || null,
-          response_taken: responseTaken.trim() || null,
-          resolved: resolved,
-          resolution_date: resolutionDate.trim() || null,
-          reported_by: reportedBy.trim() || null,
-          follow_up_required: followUpRequired,
-        }),
-      });
+      const body = {
+        resident_id: residentId,
+        safehouse_id: safehouseId,
+        incident_date: incidentDate,
+        incident_type: incidentType.trim() || null,
+        severity: severity.trim() || null,
+        description: description.trim() || null,
+        response_taken: responseTaken.trim() || null,
+        resolved,
+        resolution_date: resolutionDate.trim() || null,
+        reported_by: reportedBy.trim() || null,
+        follow_up_required: followUpRequired,
+      };
+      const res = isEdit
+        ? await putBeaconJson(`/IncidentReport/${existingRecord!.incidentId}`, body)
+        : await fetch(`${BASE_URL}/IncidentReport`, {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json", Accept: "application/json" },
+            body: JSON.stringify(body),
+          });
 
-      if (res.status === 201) {
+      if (res.status === 201 || res.status === 200) {
         onCreated();
         onClose();
         return;
       }
 
-      let payload: unknown;
-      try {
-        payload = await res.json();
-      } catch {
-        payload = null;
-      }
+      const { payload } = await readResponseJson(res);
 
       if (res.status === 400 && payload) {
         setFieldErrors((prev) => ({ ...prev, ...parseServerErrors(FIELD_KEYS, payload) }));
@@ -191,7 +224,13 @@ export function AddIncidentReportModal({
         return;
       }
 
-      setFormError(res.status === 401 ? "You must be signed in." : "Could not save.");
+      setFormError(
+        res.status === 401
+          ? "You must be signed in."
+          : res.status === 403
+            ? "You do not have permission to save."
+            : messageFromJsonPayload(payload, "Could not save."),
+      );
     } catch {
       setFormError("Network error. Try again.");
     } finally {
@@ -200,7 +239,12 @@ export function AddIncidentReportModal({
   }
 
   return (
-    <ResidentRecordModal title="Add Incident Report" open={open} onClose={onClose} narrow>
+    <ResidentRecordModal
+      title={isEdit ? "Update Incident Report" : "Add Incident Report"}
+      open={open}
+      onClose={onClose}
+      narrow
+    >
       <form className="p-4" onSubmit={handleSubmit} noValidate>
         {formError ? (
           <div className="alert alert-warning small" role="alert">
@@ -220,6 +264,7 @@ export function AddIncidentReportModal({
             className={`form-control form-control-sm${fieldErrors.resident_id ? " is-invalid" : ""}`}
             value={residentIdInput}
             onChange={(e) => setResidentIdInput(e.target.value)}
+            readOnly={isEdit}
           />
           {fieldErrors.resident_id ? (
             <div className="invalid-feedback d-block">{fieldErrors.resident_id}</div>
@@ -400,7 +445,7 @@ export function AddIncidentReportModal({
             Cancel
           </button>
           <button type="submit" className="btn btn-sm btn-primary" disabled={submitting}>
-            {submitting ? "Saving…" : "Save Record"}
+            {submitting ? "Saving…" : isEdit ? "Save changes" : "Save Record"}
           </button>
         </div>
       </form>

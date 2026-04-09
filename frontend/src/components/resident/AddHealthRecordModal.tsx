@@ -1,9 +1,15 @@
 import { useEffect, useState } from "react";
+import type { HealthWellbeingRow } from "../../types/residentRecords";
 import { BASE_URL } from "../../config/api";
 import { ResidentRecordModal } from "./ResidentRecordModal";
 import {
+  dateForDateInput,
+  decimalFieldString,
+  messageFromJsonPayload,
   optionalDecimal,
   parseServerErrors,
+  putBeaconJson,
+  readResponseJson,
   requiredFieldMsg,
   validateResidentIdInput,
 } from "./residentRecordFormUtils";
@@ -26,6 +32,7 @@ type Props = {
   open: boolean;
   onClose: () => void;
   initialResidentId?: number;
+  existingRecord?: HealthWellbeingRow | null;
   onCreated: () => void;
 };
 
@@ -38,7 +45,14 @@ function labelSuffix(fieldErrors: Partial<Record<FieldKey, string>>, key: FieldK
   ) : null;
 }
 
-export function AddHealthRecordModal({ open, onClose, initialResidentId, onCreated }: Props) {
+export function AddHealthRecordModal({
+  open,
+  onClose,
+  initialResidentId,
+  existingRecord = null,
+  onCreated,
+}: Props) {
+  const isEdit = existingRecord != null;
   const [residentIdInput, setResidentIdInput] = useState("");
   const [recordDate, setRecordDate] = useState("");
   const [generalHealthScore, setGeneralHealthScore] = useState("");
@@ -67,19 +81,34 @@ export function AddHealthRecordModal({ open, onClose, initialResidentId, onCreat
         ? String(Math.trunc(initialResidentId))
         : "",
     );
-    setRecordDate("");
-    setGeneralHealthScore("");
-    setNutritionScore("");
-    setSleepQualityScore("");
-    setEnergyLevelScore("");
-    setHeightCm("");
-    setWeightKg("");
-    setBmi("");
-    setMedicalDone(false);
-    setDentalDone(false);
-    setPsychDone(false);
-    setNotes("");
-  }, [open, initialResidentId]);
+    if (existingRecord) {
+      setRecordDate(dateForDateInput(existingRecord.recordDate));
+      setGeneralHealthScore(decimalFieldString(existingRecord.generalHealthScore));
+      setNutritionScore(decimalFieldString(existingRecord.nutritionScore));
+      setSleepQualityScore(decimalFieldString(existingRecord.sleepQualityScore));
+      setEnergyLevelScore(decimalFieldString(existingRecord.energyLevelScore));
+      setHeightCm(decimalFieldString(existingRecord.heightCm));
+      setWeightKg(decimalFieldString(existingRecord.weightKg));
+      setBmi(decimalFieldString(existingRecord.bmi));
+      setMedicalDone(existingRecord.medicalCheckupDone === true);
+      setDentalDone(existingRecord.dentalCheckupDone === true);
+      setPsychDone(existingRecord.psychologicalCheckupDone === true);
+      setNotes(existingRecord.notes ?? "");
+    } else {
+      setRecordDate("");
+      setGeneralHealthScore("");
+      setNutritionScore("");
+      setSleepQualityScore("");
+      setEnergyLevelScore("");
+      setHeightCm("");
+      setWeightKg("");
+      setBmi("");
+      setMedicalDone(false);
+      setDentalDone(false);
+      setPsychDone(false);
+      setNotes("");
+    }
+  }, [open, initialResidentId, existingRecord]);
 
   function validateOptionalScore0To5(
     raw: string,
@@ -131,39 +160,37 @@ export function AddHealthRecordModal({ open, onClose, initialResidentId, onCreat
     const residentId = Math.trunc(Number(residentIdInput.trim()));
     setSubmitting(true);
     try {
-      const res = await fetch(`${BASE_URL}/HealthWellbeingRecord`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          resident_id: residentId,
-          record_date: recordDate,
-          general_health_score: optionalDecimal(generalHealthScore),
-          nutrition_score: optionalDecimal(nutritionScore),
-          sleep_quality_score: optionalDecimal(sleepQualityScore),
-          energy_level_score: optionalDecimal(energyLevelScore),
-          height_cm: optionalDecimal(heightCm),
-          weight_kg: optionalDecimal(weightKg),
-          bmi: optionalDecimal(bmi),
-          medical_checkup_done: medicalDone,
-          dental_checkup_done: dentalDone,
-          psychological_checkup_done: psychDone,
-          notes: notes.trim() || null,
-        }),
-      });
+      const body = {
+        resident_id: residentId,
+        record_date: recordDate,
+        general_health_score: optionalDecimal(generalHealthScore),
+        nutrition_score: optionalDecimal(nutritionScore),
+        sleep_quality_score: optionalDecimal(sleepQualityScore),
+        energy_level_score: optionalDecimal(energyLevelScore),
+        height_cm: optionalDecimal(heightCm),
+        weight_kg: optionalDecimal(weightKg),
+        bmi: optionalDecimal(bmi),
+        medical_checkup_done: medicalDone,
+        dental_checkup_done: dentalDone,
+        psychological_checkup_done: psychDone,
+        notes: notes.trim() || null,
+      };
+      const res = isEdit
+        ? await putBeaconJson(`/HealthWellbeingRecord/${existingRecord!.healthRecordId}`, body)
+        : await fetch(`${BASE_URL}/HealthWellbeingRecord`, {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json", Accept: "application/json" },
+            body: JSON.stringify(body),
+          });
 
-      if (res.status === 201) {
+      if (res.status === 201 || res.status === 200) {
         onCreated();
         onClose();
         return;
       }
 
-      let payload: unknown;
-      try {
-        payload = await res.json();
-      } catch {
-        payload = null;
-      }
+      const { payload } = await readResponseJson(res);
 
       if (res.status === 400 && payload) {
         setFieldErrors((prev) => ({ ...prev, ...parseServerErrors(FIELD_KEYS, payload) }));
@@ -175,7 +202,13 @@ export function AddHealthRecordModal({ open, onClose, initialResidentId, onCreat
         return;
       }
 
-      setFormError(res.status === 401 ? "You must be signed in." : "Could not save.");
+      setFormError(
+        res.status === 401
+          ? "You must be signed in."
+          : res.status === 403
+            ? "You do not have permission to save."
+            : messageFromJsonPayload(payload, "Could not save."),
+      );
     } catch {
       setFormError("Network error. Try again.");
     } finally {
@@ -238,7 +271,12 @@ export function AddHealthRecordModal({ open, onClose, initialResidentId, onCreat
   );
 
   return (
-    <ResidentRecordModal title="Add Health Record" open={open} onClose={onClose} narrow>
+    <ResidentRecordModal
+      title={isEdit ? "Update Health Record" : "Add Health Record"}
+      open={open}
+      onClose={onClose}
+      narrow
+    >
       <form className="p-4" onSubmit={handleSubmit} noValidate>
         {formError ? (
           <div className="alert alert-warning small" role="alert">
@@ -258,6 +296,7 @@ export function AddHealthRecordModal({ open, onClose, initialResidentId, onCreat
             className={`form-control form-control-sm${fieldErrors.resident_id ? " is-invalid" : ""}`}
             value={residentIdInput}
             onChange={(e) => setResidentIdInput(e.target.value)}
+            readOnly={isEdit}
           />
           {fieldErrors.resident_id ? (
             <div className="invalid-feedback d-block">{fieldErrors.resident_id}</div>
@@ -368,7 +407,7 @@ export function AddHealthRecordModal({ open, onClose, initialResidentId, onCreat
             Cancel
           </button>
           <button type="submit" className="btn btn-sm btn-primary" disabled={submitting}>
-            {submitting ? "Saving…" : "Save Record"}
+            {submitting ? "Saving…" : isEdit ? "Save changes" : "Save Record"}
           </button>
         </div>
       </form>
