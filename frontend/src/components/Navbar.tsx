@@ -29,24 +29,31 @@ function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
+  /** Same fixed + glass-at-top behavior as the landing hero on all overlay marketing routes */
+  const isFixedGlassNav = isLanding || isAuthOverlay;
+
   useEffect(() => {
-    if (!isLanding) {
+    if (!isFixedGlassNav) {
       setScrolled(false);
       return;
     }
     const onScroll = () => setScrolled(window.scrollY > 40);
+    onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, [isLanding]);
+  }, [isFixedGlassNav, location.pathname]);
+
+  const glassAtTop = isFixedGlassNav && !scrolled;
+  const solidAfterScroll = isFixedGlassNav && scrolled;
 
   const navClass = [
     "beacon-navbar",
-    isLanding || isAuthOverlay ? "beacon-navbar--fixed" : "beacon-navbar--static",
+    isFixedGlassNav ? "beacon-navbar--fixed" : "beacon-navbar--static",
     isAuthOverlay ? "beacon-navbar--auth-overlay" : "",
     globalSiteAnnouncement ? "beacon-navbar--below-global-announcement" : "",
-    (isLanding && !scrolled) || isAuthOverlay ? "beacon-navbar--glass" : "",
-    !isLanding && !isAuthOverlay ? "beacon-navbar--solid" : "",
-    scrolled && isLanding ? "beacon-navbar--scrolled" : "",
+    glassAtTop ? "beacon-navbar--glass" : "",
+    !isFixedGlassNav ? "beacon-navbar--solid" : "",
+    solidAfterScroll ? "beacon-navbar--scrolled" : "",
   ]
     .filter(Boolean)
     .join(" ");

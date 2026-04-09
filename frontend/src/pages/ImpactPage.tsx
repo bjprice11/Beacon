@@ -85,9 +85,9 @@ function ImpactPage() {
 
       <section className="impact-page__content">
         <div className="container">
-          <div className="row g-3 mb-4">
+          <div className="row g-3 mb-4 align-items-stretch impact-page__stats-row">
             {impactStatRows.map((stat) => (
-              <div className="col-6 col-lg-3" key={stat.label}>
+              <div className="col-6 col-lg-3 d-flex" key={stat.label}>
                 <div className="impact-page__stat">
                   <p className="impact-page__stat-value mb-1">{stat.value}</p>
                   <p className="impact-page__stat-label mb-0">{stat.label}</p>

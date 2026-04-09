@@ -336,6 +336,31 @@ a.admin-all-residents-card-link:focus-visible .admin-all-residents-card {
 .beacon-navbar--auth-overlay .beacon-navbar__right > a:hover {
   color: #fff;
 }
+
+/* Scrolled past hero: win over auth-overlay glass (same as landing .beacon-navbar--scrolled) */
+.beacon-navbar--auth-overlay.beacon-navbar--scrolled .beacon-navbar__center {
+  background: rgba(27, 38, 29, 0.04);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 1px solid var(--beacon-border);
+  box-shadow: none;
+  padding: 0.3rem 0.4rem;
+}
+.beacon-navbar--auth-overlay.beacon-navbar--scrolled .beacon-navbar__center a {
+  color: var(--beacon-text-muted);
+}
+.beacon-navbar--auth-overlay.beacon-navbar--scrolled .beacon-navbar__center a:hover,
+.beacon-navbar--auth-overlay.beacon-navbar--scrolled .beacon-navbar__center a.active {
+  color: var(--beacon-text);
+  background: rgba(27, 38, 29, 0.06);
+}
+.beacon-navbar--auth-overlay.beacon-navbar--scrolled .beacon-navbar__right > a {
+  color: var(--beacon-text-muted);
+}
+.beacon-navbar--auth-overlay.beacon-navbar--scrolled .beacon-navbar__right > a:hover {
+  color: var(--beacon-text);
+}
+
 .beacon-navbar--scrolled .beacon-navbar__cta,
 .beacon-navbar--solid .beacon-navbar__cta {
   background: var(--beacon-primary) !important;
@@ -424,6 +449,14 @@ a.admin-all-residents-card-link:focus-visible .admin-all-residents-card {
   .beacon-navbar--auth-overlay .beacon-navbar__mobile .beacon-navbar__cta {
     color: #1a231c !important;
     border-bottom: none !important;
+  }
+  .beacon-navbar--auth-overlay.beacon-navbar--scrolled .beacon-navbar__mobile {
+    background: var(--beacon-bg-card);
+    border-top: 1px solid var(--beacon-border);
+  }
+  .beacon-navbar--auth-overlay.beacon-navbar--scrolled .beacon-navbar__mobile a {
+    color: var(--beacon-text);
+    border-bottom-color: var(--beacon-border);
   }
 }
 
@@ -3818,17 +3851,32 @@ main.main-with-site-announcement .beacon-page--auth:not(.login-page):not(.regist
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   padding: 1rem 1rem 0.9rem;
-  height: 100%;
+  flex: 1;
+  width: 100%;
+  min-height: 6.5rem;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
 }
 .impact-page__stat-value {
   font-family: "Plus Jakarta Sans", sans-serif;
   color: var(--beacon-primary);
-  font-size: clamp(1.3rem, 2.6vw, 1.9rem);
+  font-size: clamp(1.05rem, 1.35vw + 0.85rem, 1.95rem);
   font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  min-height: 2.35em;
+  letter-spacing: -0.02em;
+  word-break: keep-all;
+  overflow-wrap: normal;
 }
 .impact-page__stat-label {
   color: var(--beacon-text-muted);
   font-size: 0.84rem;
+  line-height: 1.35;
+  margin-top: auto;
+  padding-top: 0.15rem;
 }
 .impact-page__story-card {
   border: 1px solid rgba(59, 82, 69, 0.13);
