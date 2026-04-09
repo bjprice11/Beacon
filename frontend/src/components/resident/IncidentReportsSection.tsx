@@ -2,9 +2,12 @@ import { useEffect, useState } from "react";
 import type { IncidentReportRow } from "../../types/residentRecords";
 import Pagination from "../Pagination";
 import { ResidentRecordModal } from "./ResidentRecordModal";
-import { dashIfEmpty, fmtBool, formatDate } from "./residentRecordFormat";
-
-const MODAL_PAGE_SIZE = 10;
+import {
+  dashIfEmpty,
+  fmtBool,
+  formatDate,
+  RESIDENT_RECORD_MODAL_PAGE_SIZE,
+} from "./residentRecordFormat";
 
 type Props = { records: IncidentReportRow[] };
 
@@ -12,15 +15,29 @@ export function IncidentReportsSection({ records }: Props) {
   const [open, setOpen] = useState(false);
   const [modalPage, setModalPage] = useState(1);
   const count = records.length;
+  const pageSize = RESIDENT_RECORD_MODAL_PAGE_SIZE;
 
   useEffect(() => {
     if (open) setModalPage(1);
   }, [open]);
 
-  const totalPages = Math.max(1, Math.ceil(count / MODAL_PAGE_SIZE));
-  const currentPage = Math.min(Math.max(modalPage, 1), totalPages);
-  const startIndex = (currentPage - 1) * MODAL_PAGE_SIZE;
-  const pagedRecords = records.slice(startIndex, startIndex + MODAL_PAGE_SIZE);
+  const currentPage = Math.min(
+    Math.max(modalPage, 1),
+    Math.max(1, Math.ceil(count / pageSize)),
+  );
+  const startIndex = (currentPage - 1) * pageSize;
+  const pagedRecords = records.slice(startIndex, startIndex + pageSize);
+  const showPagination = count > pageSize;
+
+  const belowCard = showPagination ? (
+    <Pagination
+      className="d-flex justify-content-center"
+      page={currentPage}
+      pageSize={pageSize}
+      totalCount={count}
+      onPageChange={setModalPage}
+    />
+  ) : undefined;
 
   return (
     <>
@@ -51,48 +68,40 @@ export function IncidentReportsSection({ records }: Props) {
         title="Incident Reports"
         open={open}
         onClose={() => setOpen(false)}
+        belowCard={belowCard}
       >
         <div className="table-responsive p-3">
           {count === 0 ? (
             <p className="text-muted small mb-0">No incident reports.</p>
           ) : (
-            <>
-              <table className="table table-sm table-striped table-hover mb-0 align-middle">
-                <thead className="table-light">
-                  <tr>
-                    <th>Date</th>
-                    <th>Safehouse</th>
-                    <th>Type</th>
-                    <th>Severity</th>
-                    <th>Resolved</th>
-                    <th>Resolution date</th>
-                    <th>Reported by</th>
-                    <th>Follow-up req.</th>
+            <table className="table table-sm table-striped table-hover mb-0 align-middle">
+              <thead className="table-light">
+                <tr>
+                  <th>Date</th>
+                  <th>Safehouse</th>
+                  <th>Type</th>
+                  <th>Severity</th>
+                  <th>Resolved</th>
+                  <th>Resolution date</th>
+                  <th>Reported by</th>
+                  <th>Follow-up req.</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pagedRecords.map((i) => (
+                  <tr key={i.incidentId}>
+                    <td>{formatDate(i.incidentDate)}</td>
+                    <td>{dashIfEmpty(i.safehouseCity)}</td>
+                    <td>{dashIfEmpty(i.incidentType)}</td>
+                    <td>{dashIfEmpty(i.severity)}</td>
+                    <td>{fmtBool(i.resolved)}</td>
+                    <td>{formatDate(i.resolutionDate)}</td>
+                    <td>{dashIfEmpty(i.reportedBy)}</td>
+                    <td>{fmtBool(i.followUpRequired)}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {pagedRecords.map((i) => (
-                    <tr key={i.incidentId}>
-                      <td>{formatDate(i.incidentDate)}</td>
-                      <td>{dashIfEmpty(i.safehouseCity)}</td>
-                      <td>{dashIfEmpty(i.incidentType)}</td>
-                      <td>{dashIfEmpty(i.severity)}</td>
-                      <td>{fmtBool(i.resolved)}</td>
-                      <td>{formatDate(i.resolutionDate)}</td>
-                      <td>{dashIfEmpty(i.reportedBy)}</td>
-                      <td>{fmtBool(i.followUpRequired)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <Pagination
-                className="mt-3 d-flex justify-content-center pb-2"
-                page={currentPage}
-                pageSize={MODAL_PAGE_SIZE}
-                totalCount={count}
-                onPageChange={setModalPage}
-              />
-            </>
+                ))}
+              </tbody>
+            </table>
           )}
         </div>
       </ResidentRecordModal>
