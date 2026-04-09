@@ -1350,6 +1350,29 @@ a.admin-all-residents-card-link:focus-visible .admin-all-residents-card {
   outline-offset: 2px;
 }
 
+.donor-dashboard .beacon-stat-value {
+  font-size: clamp(1.35rem, 2.1vw, 1.95rem);
+  line-height: 1.2;
+}
+.donor-dashboard .donor-pie--clean {
+  border: 1px solid var(--beacon-border);
+  box-shadow: inset 0 0 0 16px var(--beacon-bg-card);
+}
+.donor-dashboard .donor-pie__legend p {
+  color: var(--beacon-text);
+}
+.donor-dashboard .donor-mini-grid--clean .donor-mini-grid__item {
+  border: 1px solid var(--beacon-border);
+  border-radius: 12px;
+  background: #fff;
+}
+.donor-dashboard .donor-mini-grid--clean .donor-mini-grid__label {
+  color: var(--beacon-text-muted);
+}
+.donor-dashboard .donor-mini-grid--clean .donor-mini-grid__value {
+  color: var(--beacon-primary);
+}
+
 /* ═══════════════════════════════════════════════
    PILLAR CARDS (What We Do)
    ═══════════════════════════════════════════════ */
