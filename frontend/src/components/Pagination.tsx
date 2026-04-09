@@ -40,15 +40,11 @@ const Pagination: React.FC<PaginationProps> = ({
 
   return (
     <div className={className}>
-      <nav aria-label="Pagination navigation" className="mx-auto" style={{ maxWidth: "fit-content" }}>
-        <div
-          className="d-flex align-items-center gap-2 rounded-pill border shadow-sm px-3 py-2"
-          style={{ backgroundColor: "#f7f2e8", borderColor: "#d8c8a0" }}
-        >
+      <nav aria-label="Pagination navigation" className="beacon-pagination mx-auto">
+        <div className="beacon-pagination__pill">
           <button
             type="button"
-            className="btn btn-sm rounded-pill"
-            style={{ backgroundColor: "#c78c1f", borderColor: "#c78c1f", color: "white" }}
+            className="beacon-pagination__btn"
             onClick={() => handlePageChange(clampedPage - 1)}
             disabled={isPreviousDisabled}
             aria-label="Previous page"
@@ -61,15 +57,14 @@ const Pagination: React.FC<PaginationProps> = ({
             const isActive: boolean = pageNumber === clampedPage;
             return (
               <React.Fragment key={pageNumber}>
-                {showGap && <span className="px-1 text-muted">...</span>}
+                {showGap && (
+                  <span className="beacon-pagination__ellipsis" aria-hidden>
+                    …
+                  </span>
+                )}
                 <button
                   type="button"
-                  className="btn btn-sm rounded-pill"
-                  style={
-                    isActive
-                      ? { backgroundColor: "#b77b12", borderColor: "#b77b12", color: "white" }
-                      : { backgroundColor: "#c78c1f", borderColor: "#c78c1f", color: "white" }
-                  }
+                  className={`beacon-pagination__btn ${isActive ? "beacon-pagination__btn--active" : ""}`}
                   onClick={() => handlePageChange(pageNumber)}
                   disabled={isActive}
                   aria-current={isActive ? "page" : undefined}
@@ -81,16 +76,15 @@ const Pagination: React.FC<PaginationProps> = ({
           })}
           <button
             type="button"
-            className="btn btn-sm rounded-pill"
-            style={{ backgroundColor: "#c78c1f", borderColor: "#c78c1f", color: "white" }}
+            className="beacon-pagination__btn"
             onClick={() => handlePageChange(clampedPage + 1)}
             disabled={isNextDisabled}
             aria-label="Next page"
           >
             Next
           </button>
-          <span className="small ms-1" style={{ color: "#7a5600" }}>
-            {startItem}-{endItem} of {totalCount}
+          <span className="beacon-pagination__summary">
+            {startItem}–{endItem} of {totalCount}
           </span>
         </div>
       </nav>

@@ -1000,10 +1000,10 @@ a.admin-all-residents-card-link:focus-visible .admin-all-residents-card {
   background: var(--beacon-bg-card);
 }
 .landing-cta-video__container {
-  /* Wider than .container, still not edge-to-edge */
-  max-width: 1320px;
-  padding-left: clamp(1rem, 3vw, 2.25rem);
-  padding-right: clamp(1rem, 3vw, 2.25rem);
+  width: 100%;
+  max-width: none;
+  padding-left: clamp(1rem, 4vw, 3.25rem);
+  padding-right: clamp(1rem, 4vw, 3.25rem);
 }
 .landing-cta-video__card {
   position: relative;
@@ -1537,9 +1537,28 @@ button.admin-dashboard__nav-link {
   box-shadow: 0 12px 30px rgba(39, 58, 46, 0.08) !important;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+}
+.donor-dashboard .admin-dashboard__panel.donor-dashboard__glass-panel:hover,
+.donor-dashboard .admin-dashboard__nav-card.donor-dashboard__glass-panel:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 48px rgba(39, 58, 46, 0.14) !important;
+  border-color: rgba(255, 255, 255, 0.95) !important;
 }
 .donor-dashboard__glass-panel--nav .admin-dashboard__nav-link {
   background: rgba(255, 255, 255, 0.45);
+}
+.donor-dashboard .admin-dashboard__nav-link {
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.donor-dashboard .admin-dashboard__nav-link:hover {
+  transform: translateX(5px);
+  box-shadow: 0 4px 16px rgba(45, 79, 53, 0.1);
 }
 .donor-dashboard .beacon-stat-value {
   font-family: "Plus Jakarta Sans", sans-serif;
@@ -1548,29 +1567,67 @@ button.admin-dashboard__nav-link {
   line-height: 1.2;
   letter-spacing: -0.01em;
 }
+.donor-dashboard .donor-overview-profile-eyebrow {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--beacon-text-muted);
+  margin: 0;
+}
 .donor-dashboard .donor-overview-meta {
-  display: grid;
-  gap: 0.55rem;
+  display: flex;
+  flex-direction: column;
+  margin-top: 0.25rem;
+  border: 1px solid rgba(45, 79, 53, 0.12);
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.62);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.donor-dashboard .donor-overview-meta:hover {
+  border-color: rgba(45, 79, 53, 0.2);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 8px 24px rgba(45, 79, 53, 0.06);
 }
 .donor-dashboard .donor-overview-meta__row {
   display: grid;
-  grid-template-columns: 140px 1fr;
-  gap: 0.75rem;
-  border: 1px solid rgba(59, 82, 69, 0.15);
-  border-radius: 10px;
-  padding: 0.55rem 0.7rem;
-  background: rgba(255, 255, 255, 0.48);
+  grid-template-columns: minmax(7.5rem, 32%) 1fr;
+  align-items: baseline;
+  gap: 0.75rem 1.25rem;
+  padding: 0.85rem 1.1rem;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  border-bottom: 1px solid rgba(45, 79, 53, 0.08);
+  background: transparent;
+  transition: background 0.15s ease;
+}
+.donor-dashboard .donor-overview-meta__row:last-child {
+  border-bottom: none;
+}
+.donor-dashboard .donor-overview-meta__row:hover {
+  background: rgba(45, 79, 53, 0.035);
 }
 .donor-dashboard .donor-overview-meta__label {
-  font-size: 0.74rem;
+  margin: 0;
+  font-size: 0.7rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--beacon-text-muted);
+  line-height: 1.35;
 }
 .donor-dashboard .donor-overview-meta__value {
+  font-size: 0.98rem;
   font-weight: 600;
   color: var(--beacon-text);
+  line-height: 1.4;
+  word-break: break-word;
+  margin: 0;
 }
 .donor-dashboard .donor-mix-chart {
   position: relative;
@@ -1661,6 +1718,13 @@ button.admin-dashboard__nav-link {
   display: grid;
   place-items: center;
   border: 1px solid rgba(59, 82, 69, 0.16);
+  transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
+  cursor: default;
+}
+.donor-dashboard .donor-allocation-chart:hover .donor-allocation-chart__ring {
+  transform: scale(1.04);
+  box-shadow: 0 12px 36px rgba(45, 79, 53, 0.15);
+  border-color: rgba(45, 79, 53, 0.22);
 }
 .donor-dashboard .donor-allocation-chart__center {
   width: 62%;
@@ -1697,34 +1761,85 @@ button.admin-dashboard__nav-link {
   border-radius: 10px;
   padding: 0.45rem 0.65rem;
   background: rgba(255, 255, 255, 0.45);
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+.donor-dashboard .donor-allocation-chart__legend-row:hover {
+  transform: translateY(-2px);
+  border-color: rgba(45, 79, 53, 0.2);
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 6px 18px rgba(45, 79, 53, 0.08);
 }
 .donor-dashboard .donor-mini-grid--clean .donor-mini-grid__item {
   border: 1px solid var(--beacon-border);
   border-radius: 12px;
   background: #fff;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.donor-dashboard .donor-mini-grid--clean .donor-mini-grid__item:hover {
+  transform: translateY(-3px);
+  border-color: rgba(45, 79, 53, 0.18);
+  box-shadow: 0 10px 26px rgba(45, 79, 53, 0.09);
 }
 .donor-dashboard .donor-trend {
-  border: 1px solid rgba(59, 82, 69, 0.16);
-  border-radius: 14px;
-  padding: 0.85rem 0.8rem 0.65rem;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.85), rgba(245, 249, 245, 0.78));
+  border: 1px solid rgba(45, 79, 53, 0.1);
+  border-radius: 16px;
+  padding: 0.9rem 0.85rem 0.7rem;
+  background: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0.92) 0%,
+    rgba(248, 251, 248, 0.88) 100%
+  );
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+}
+.donor-dashboard .donor-trend:hover {
+  border-color: rgba(45, 79, 53, 0.2);
+  box-shadow: 0 14px 36px rgba(45, 79, 53, 0.1);
+  transform: translateY(-2px);
+}
+.donor-dashboard .donor-trend__chart {
+  width: 100%;
+  aspect-ratio: 2.35 / 1;
+  max-height: 168px;
+  border-radius: 12px;
+  background-color: rgba(255, 255, 255, 0.65);
+  background-image: linear-gradient(
+    to top,
+    rgba(45, 79, 53, 0.05) 1px,
+    transparent 1px
+  );
+  background-size: 100% 25%;
+  background-position: bottom;
+  border: 1px solid rgba(45, 79, 53, 0.06);
+  overflow: hidden;
+  transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.donor-dashboard .donor-trend:hover .donor-trend__chart {
+  transform: scale(1.015);
+  border-color: rgba(45, 79, 53, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(45, 79, 53, 0.04);
 }
 .donor-dashboard .donor-trend__svg {
   width: 100%;
-  height: 130px;
+  height: 100%;
   display: block;
-  background-image:
-    linear-gradient(to top, rgba(59, 82, 69, 0.08) 1px, transparent 1px),
-    linear-gradient(to right, rgba(59, 82, 69, 0.06) 1px, transparent 1px);
-  background-size: 100% 25%, 20% 100%;
-  border-radius: 10px;
 }
-.donor-dashboard .donor-trend__line {
+.donor-dashboard .donor-trend__area {
+  pointer-events: none;
+}
+.donor-dashboard .donor-trend__stroke {
   fill: none;
-  stroke: #2f5648;
-  stroke-width: 2.5;
+  stroke: var(--beacon-primary);
+  stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  filter: drop-shadow(0 1px 2px rgba(45, 79, 53, 0.12));
+}
+.donor-dashboard .donor-trend__dot {
+  fill: #fff;
+  stroke: var(--beacon-primary);
+  stroke-width: 1.75;
+  vector-effect: non-scaling-stroke;
 }
 .donor-dashboard .donor-trend__labels {
   margin-top: 0.55rem;
@@ -1735,6 +1850,16 @@ button.admin-dashboard__nav-link {
   color: var(--beacon-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
+}
+.donor-dashboard .donor-trend__labels span {
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+.donor-dashboard .donor-trend:hover .donor-trend__labels span {
+  color: var(--beacon-text);
+}
+.donor-dashboard .donor-trend__labels span:hover {
+  color: var(--beacon-primary);
+  transform: translateY(-2px);
 }
 .donor-dashboard .donor-trend__labels span:last-child {
   text-align: right;
@@ -1769,6 +1894,13 @@ button.admin-dashboard__nav-link {
   border-radius: 12px;
   border: 1px solid rgba(59, 82, 69, 0.16);
   background: rgba(255, 255, 255, 0.55);
+  transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease, background 0.22s ease;
+}
+.donor-dashboard .donor-events__item:hover {
+  transform: translateY(-3px);
+  border-color: rgba(45, 79, 53, 0.22);
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 10px 28px rgba(45, 79, 53, 0.1);
 }
 .donor-dashboard .donor-events__title {
   font-weight: 700;
@@ -1790,10 +1922,15 @@ button.admin-dashboard__nav-link {
   font-weight: 600;
   white-space: nowrap;
   color: var(--beacon-text);
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
 .donor-dashboard .donor-events__cta:hover {
-  border-color: rgba(59, 82, 69, 0.35);
-  background: rgba(255, 255, 255, 0.85);
+  border-color: var(--beacon-primary);
+  background: rgba(45, 79, 53, 0.06);
+  color: var(--beacon-primary-dark);
+  transform: scale(1.03);
+  box-shadow: 0 4px 14px rgba(45, 79, 53, 0.12);
 }
 .donor-dashboard .donor-community-actions {
   display: flex;
@@ -1815,13 +1952,59 @@ button.admin-dashboard__nav-link {
   box-shadow: 0 8px 20px rgba(39, 58, 46, 0.08);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  transition: transform 0.22s ease, border-color 0.22s ease, color 0.22s ease, box-shadow 0.22s ease;
 }
 .donor-dashboard .donor-community-actions__btn:hover {
   border-color: rgba(59, 82, 69, 0.34);
   color: var(--beacon-primary-dark);
+  transform: translateY(-3px);
+  box-shadow: 0 14px 32px rgba(39, 58, 46, 0.14);
 }
 .donor-dashboard .donor-community-actions__btn--accent {
   background: linear-gradient(145deg, rgba(106, 154, 140, 0.21), rgba(210, 139, 99, 0.24));
+}
+
+.donor-dashboard .beacon-stat-card {
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+}
+.donor-dashboard .beacon-stat-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 14px 36px rgba(45, 79, 53, 0.14);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .donor-dashboard .donor-dashboard__glass-panel,
+  .donor-dashboard .admin-dashboard__panel.donor-dashboard__glass-panel,
+  .donor-dashboard .admin-dashboard__nav-card.donor-dashboard__glass-panel,
+  .donor-dashboard .admin-dashboard__nav-link,
+  .donor-dashboard .donor-overview-meta,
+  .donor-dashboard .donor-allocation-chart__ring,
+  .donor-dashboard .donor-allocation-chart__legend-row,
+  .donor-dashboard .donor-mini-grid--clean .donor-mini-grid__item,
+  .donor-dashboard .donor-trend,
+  .donor-dashboard .donor-trend__chart,
+  .donor-dashboard .donor-trend__labels span,
+  .donor-dashboard .donor-events__item,
+  .donor-dashboard .donor-events__cta,
+  .donor-dashboard .donor-community-actions__btn,
+  .donor-dashboard .beacon-stat-card {
+    transition: none;
+  }
+  .donor-dashboard .admin-dashboard__panel.donor-dashboard__glass-panel:hover,
+  .donor-dashboard .admin-dashboard__nav-card.donor-dashboard__glass-panel:hover,
+  .donor-dashboard .admin-dashboard__nav-link:hover,
+  .donor-dashboard .donor-allocation-chart:hover .donor-allocation-chart__ring,
+  .donor-dashboard .donor-allocation-chart__legend-row:hover,
+  .donor-dashboard .donor-mini-grid--clean .donor-mini-grid__item:hover,
+  .donor-dashboard .donor-trend:hover,
+  .donor-dashboard .donor-trend:hover .donor-trend__chart,
+  .donor-dashboard .donor-trend__labels span:hover,
+  .donor-dashboard .donor-events__item:hover,
+  .donor-dashboard .donor-events__cta:hover,
+  .donor-dashboard .donor-community-actions__btn:hover,
+  .donor-dashboard .beacon-stat-card:hover {
+    transform: none;
+  }
 }
 
 @media (max-width: 992px) {
@@ -1842,7 +2025,11 @@ button.admin-dashboard__nav-link {
 @media (max-width: 768px) {
   .donor-dashboard .donor-overview-meta__row {
     grid-template-columns: 1fr;
-    gap: 0.35rem;
+    gap: 0.2rem;
+    padding: 0.75rem 1rem;
+  }
+  .donor-dashboard .donor-overview-meta__value {
+    font-size: 0.95rem;
   }
   .donor-dashboard .donor-events__item {
     flex-direction: column;
@@ -2665,13 +2852,23 @@ main#main-content.main-below-fixed-nav.main-below-fixed-nav--tight {
   padding-top: calc(80px + env(safe-area-inset-top, 0px));
 }
 
-.register-page .container {
-  min-height: calc(100vh - 100px);
+/* Login, register, logout, complete profile — center card in viewport below nav */
+.beacon-page--auth {
+  box-sizing: border-box;
+  min-height: calc(100vh - 5.25rem);
+  min-height: calc(100svh - 5.25rem);
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  padding-block: clamp(1rem, 3vh, 2rem);
 }
 
-.register-page .row {
+.beacon-page--auth .container {
+  flex-shrink: 0;
+  min-height: 0;
+}
+
+.beacon-page--auth .row {
   width: 100%;
 }
 
@@ -3090,7 +3287,7 @@ main#main-content.main-below-fixed-nav.main-below-fixed-nav--tight {
 }
 .impact-page__hero {
   position: relative;
-  background: url("/group_with_baby.jpeg") center/cover no-repeat;
+  background: url("/little_girl_and_baby.jpg") center 28% / cover no-repeat;
   min-height: clamp(220px, 34vh, 300px);
   display: flex;
   align-items: flex-end;
@@ -3566,6 +3763,107 @@ main#main-content.main-below-fixed-nav.main-below-fixed-nav--tight {
   font-size: 1.15rem;
   line-height: 1;
   margin-right: -0.02rem;
+}
+
+/* Pagination — glass pill (navbar / admin filter bar family) */
+.beacon-pagination {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  max-width: fit-content;
+}
+
+.beacon-pagination__pill {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.18rem;
+  padding: 0.26rem 0.5rem 0.26rem 0.42rem;
+  border-radius: 50px;
+  background: rgba(27, 38, 29, 0.04);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--beacon-border);
+  box-shadow: 0 1px 6px rgba(27, 38, 29, 0.05);
+}
+
+.beacon-pagination__btn {
+  border: none;
+  background: transparent;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--beacon-text-muted);
+  padding: 0.3rem 0.62rem;
+  border-radius: 50px;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.beacon-pagination__btn:hover:not(:disabled) {
+  color: var(--beacon-text);
+  background: rgba(27, 38, 29, 0.06);
+}
+
+.beacon-pagination__btn:focus-visible {
+  outline: 2px solid var(--beacon-primary);
+  outline-offset: 2px;
+}
+
+.beacon-pagination__btn:disabled {
+  cursor: default;
+}
+
+.beacon-pagination__btn:disabled:not(.beacon-pagination__btn--active) {
+  opacity: 0.42;
+}
+
+.beacon-pagination__btn--active {
+  background: var(--beacon-primary);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(45, 79, 53, 0.22);
+}
+
+.beacon-pagination__btn--active:hover:not(:disabled) {
+  background: var(--beacon-primary-dark);
+  color: #fff;
+}
+
+.beacon-pagination__ellipsis {
+  padding: 0 0.1rem;
+  font-size: 0.82rem;
+  color: var(--beacon-text-muted);
+  user-select: none;
+}
+
+.beacon-pagination__summary {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: var(--beacon-text-muted);
+  padding-left: 0.45rem;
+  margin-left: 0.2rem;
+  border-left: 1px solid rgba(27, 38, 29, 0.12);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+@media (max-width: 575.98px) {
+  .beacon-pagination__pill {
+    justify-content: center;
+    max-width: 100%;
+  }
+
+  .beacon-pagination__summary {
+    width: 100%;
+    text-align: center;
+    border-left: none;
+    margin-left: 0;
+    padding-left: 0;
+    padding-top: 0.25rem;
+  }
 }
 
 /* All Residents — glass pill filters (matches .beacon-navbar__center on solid nav) */

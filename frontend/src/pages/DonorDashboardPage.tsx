@@ -7,6 +7,35 @@ function formatCurrency(value: number): string {
   return `PHP ${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
 }
 
+type TrendPoint = { x: number; y: number };
+
+/** Catmull–Rom style smooth curve through points (SVG cubic segments). */
+function trendSmoothLinePath(points: TrendPoint[]): string {
+  if (points.length === 0) return "";
+  if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
+  const d = [`M ${points[0].x} ${points[0].y}`];
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[Math.max(0, i - 1)];
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const p3 = points[Math.min(points.length - 1, i + 2)];
+    const cp1x = p1.x + (p2.x - p0.x) / 6;
+    const cp1y = p1.y + (p2.y - p0.y) / 6;
+    const cp2x = p2.x - (p3.x - p1.x) / 6;
+    const cp2y = p2.y - (p3.y - p1.y) / 6;
+    d.push(`C ${cp1x} ${cp1y} ${cp2x} ${cp2y} ${p2.x} ${p2.y}`);
+  }
+  return d.join(" ");
+}
+
+function trendAreaPath(points: TrendPoint[], floorY: number): string {
+  if (points.length === 0) return "";
+  const line = trendSmoothLinePath(points);
+  const last = points[points.length - 1];
+  const first = points[0];
+  return `${line} L ${last.x} ${floorY} L ${first.x} ${floorY} Z`;
+}
+
 function DonorDashboardPage() {
   const { id } = useParams();
   const [data, setData] = useState<DonorDashboard | null>(null);
@@ -135,13 +164,22 @@ function DonorDashboardPage() {
   });
 
   const monthlyTrendMax = Math.max(...monthlyTrend.map((item) => item.value), 1);
-  const trendPoints = monthlyTrend
-    .map((item, index) => {
-      const x = monthlyTrend.length > 1 ? (index / (monthlyTrend.length - 1)) * 100 : 50;
-      const y = 100 - (item.value / monthlyTrendMax) * 100;
-      return `${x},${y}`;
-    })
-    .join(" ");
+  const trendFloorY = 93;
+  const trendYTop = 12;
+  const trendXPad = 5;
+  const trendXRange = 100 - 2 * trendXPad;
+  const trendCoords: TrendPoint[] = monthlyTrend.map((item, index) => {
+    const x =
+      monthlyTrend.length > 1
+        ? trendXPad + (index / (monthlyTrend.length - 1)) * trendXRange
+        : 50;
+    const y =
+      trendFloorY -
+      (item.value / monthlyTrendMax) * (trendFloorY - trendYTop);
+    return { x, y };
+  });
+  const trendAreaD = trendAreaPath(trendCoords, trendFloorY);
+  const trendLineD = trendSmoothLinePath(trendCoords);
 
   const latestTrend = monthlyTrend[monthlyTrend.length - 1];
 
@@ -190,14 +228,15 @@ function DonorDashboardPage() {
                   Track your monetary and non-monetary contributions, review your impact,
                   and continue supporting Beacon&apos;s mission.
                 </p>
-                <div className="donor-overview-meta mt-4">
+                <p className="donor-overview-profile-eyebrow mt-4 mb-2">Your profile</p>
+                <dl className="donor-overview-meta mb-0">
                   {profileRows.map((row) => (
                     <div key={row.label} className="donor-overview-meta__row">
-                      <p className="donor-overview-meta__label mb-0">{row.label}</p>
-                      <p className="donor-overview-meta__value mb-0">{row.value}</p>
+                      <dt className="donor-overview-meta__label">{row.label}</dt>
+                      <dd className="donor-overview-meta__value">{row.value}</dd>
                     </div>
                   ))}
-                </div>
+                </dl>
               </div>
             </div>
 
@@ -302,12 +341,51 @@ function DonorDashboardPage() {
               <div className="admin-dashboard__panel donor-dashboard__glass-panel h-100">
                 <h2 className="landing-section__heading h4 mb-3">Donation activity</h2>
                 <div className="donor-trend mb-3" role="img" aria-label="Donation trend over the last six months">
-                  <svg className="donor-trend__svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-                    <polyline
-                      className="donor-trend__line"
-                      points={trendPoints}
-                    />
-                  </svg>
+                  <div className="donor-trend__chart">
+                    <svg
+                      className="donor-trend__svg"
+                      viewBox="0 0 100 100"
+                      preserveAspectRatio="xMidYMid meet"
+                      aria-hidden="true"
+                    >
+                      <defs>
+                        <linearGradient
+                          id="donor-trend-area-fill"
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop offset="0%" stopColor="#2d4f35" stopOpacity="0.2" />
+                          <stop offset="45%" stopColor="#2d4f35" stopOpacity="0.07" />
+                          <stop offset="100%" stopColor="#2d4f35" stopOpacity="0" />
+                        </linearGradient>
+                      </defs>
+                      {trendAreaD ? (
+                        <path
+                          className="donor-trend__area"
+                          d={trendAreaD}
+                          fill="url(#donor-trend-area-fill)"
+                        />
+                      ) : null}
+                      {trendLineD ? (
+                        <path
+                          className="donor-trend__stroke"
+                          d={trendLineD}
+                          fill="none"
+                        />
+                      ) : null}
+                      {trendCoords.map((p, i) => (
+                        <circle
+                          key={monthlyTrend[i]?.key ?? i}
+                          className="donor-trend__dot"
+                          cx={p.x}
+                          cy={p.y}
+                          r={1.65}
+                        />
+                      ))}
+                    </svg>
+                  </div>
                   <div className="donor-trend__labels">
                     {monthlyTrend.map((item) => (
                       <span key={item.key}>{item.label}</span>
