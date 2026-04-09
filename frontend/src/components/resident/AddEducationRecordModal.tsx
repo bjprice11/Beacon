@@ -94,6 +94,7 @@ export function AddEducationRecordModal({
   );
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -242,6 +243,61 @@ export function AddEducationRecordModal({
       setFormError("Network error. Try again.");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!isEdit || !existingRecord) return;
+    if (
+      !window.confirm(
+        "Delete this record from the database? This cannot be undone. Click Cancel to keep the record.",
+      )
+    )
+      return;
+
+    const residentId = Math.trunc(Number(residentIdInput.trim()));
+    if (!Number.isInteger(residentId) || residentId <= 0) {
+      setFormError("Resident ID is invalid.");
+      return;
+    }
+
+    setDeleting(true);
+    setFormError(null);
+    try {
+      const res = await postBeaconJson(
+        `/EducationRecord/${existingRecord.educationRecordId}/Delete`,
+        { resident_id: residentId },
+      );
+      if (res.status === 204 || res.status === 200) {
+        onCreated();
+        onClose();
+        return;
+      }
+
+      const { payload } = await readResponseJson(res);
+
+      if (res.status === 400 && payload) {
+        const serverErr = parseServerErrors(payload);
+        setFieldErrors((prev) => ({ ...prev, ...serverErr }));
+        const msg =
+          typeof (payload as { message?: string }).message === "string"
+            ? (payload as { message: string }).message
+            : "Could not delete this record.";
+        setFormError(msg);
+        return;
+      }
+
+      setFormError(
+        res.status === 401
+          ? "You must be signed in."
+          : res.status === 403
+            ? "You do not have permission to delete."
+            : messageFromJsonPayload(payload, "Could not delete this record."),
+      );
+    } catch {
+      setFormError("Network error. Try again.");
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -451,18 +507,32 @@ export function AddEducationRecordModal({
           />
         </div>
 
-        <div className="d-flex gap-2 justify-content-end">
-          <button
-            type="button"
-            className="btn btn-sm btn-outline-secondary"
-            onClick={onClose}
-            disabled={submitting}
-          >
-            Cancel
-          </button>
-          <button type="submit" className="btn btn-sm btn-primary" disabled={submitting}>
-            {submitting ? "Saving…" : isEdit ? "Save changes" : "Save Record"}
-          </button>
+        <div className="d-flex flex-wrap gap-2 justify-content-between align-items-center">
+          <div>
+            {isEdit ? (
+              <button
+                type="button"
+                className="btn btn-sm btn-danger"
+                onClick={() => void handleDelete()}
+                disabled={submitting || deleting}
+              >
+                {deleting ? "Deleting…" : "Delete"}
+              </button>
+            ) : null}
+          </div>
+          <div className="d-flex gap-2">
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-secondary"
+              onClick={onClose}
+              disabled={submitting || deleting}
+            >
+              Cancel
+            </button>
+            <button type="submit" className="btn btn-sm btn-primary" disabled={submitting || deleting}>
+              {submitting ? "Saving…" : isEdit ? "Save changes" : "Save Record"}
+            </button>
+          </div>
         </div>
       </form>
     </ResidentRecordModal>
