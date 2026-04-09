@@ -173,8 +173,23 @@ public class BeaconController : ControllerBase
     [HttpGet("Resident/{id}")]
     public IActionResult GetResident(int id)
     {
-        // Do not inner-join Safehouses here: a bad/missing FK would yield 404 even though the resident exists.
-        var r = _beaconContext.Residents.AsNoTracking().FirstOrDefault(x => x.ResidentId == id);
+        // Project only columns needed for this endpoint. Loading the full Resident entity reads every DateOnly?
+        // column; legacy/imported rows can have values or DB types that fail materialization even when
+        // AllResidents (narrower projection) still works.
+        var r = _beaconContext.Residents.AsNoTracking()
+            .Where(x => x.ResidentId == id)
+            .Select(x => new
+            {
+                x.FirstName,
+                x.LastInitial,
+                x.DateOfBirth,
+                x.Sex,
+                x.CaseStatus,
+                x.SafehouseId,
+                x.LengthOfStay,
+                x.CurrentRiskLevel,
+            })
+            .FirstOrDefault();
         if (r == null) return NotFound();
 
         var safehouse = _beaconContext.Safehouses.AsNoTracking()
@@ -272,28 +287,48 @@ public class BeaconController : ControllerBase
             "home_visitations",
             id);
 
+        // Two-step load avoids GroupJoin/DefaultIfEmpty translation edge cases on some PostgreSQL/EF versions.
         var incidentReports = TryLoadResidentRelated(
-            () => _beaconContext.Set<IncidentReport>()
-                .Where(i => i.ResidentId == id)
-                .OrderByDescending(i => i.IncidentDate)
-                .Join(_beaconContext.Safehouses,
-                    i => i.SafehouseId,
-                    sh => sh.SafehouseId,
-                    (i, sh) => new ResidentIncidentReportRow
+            () =>
+            {
+                var incidents = _beaconContext.Set<IncidentReport>()
+                    .AsNoTracking()
+                    .Where(i => i.ResidentId == id)
+                    .OrderByDescending(i => i.IncidentDate)
+                    .Select(i => new
                     {
-                        IncidentId = i.IncidentId,
-                        IncidentDate = i.IncidentDate,
-                        IncidentType = i.IncidentType,
-                        Severity = i.Severity,
-                        Description = i.Description,
-                        ResponseTaken = i.ResponseTaken,
-                        Resolved = i.Resolved,
-                        ResolutionDate = i.ResolutionDate,
-                        ReportedBy = i.ReportedBy,
-                        FollowUpRequired = i.FollowUpRequired,
-                        SafehouseName = sh.Name,
+                        i.IncidentId,
+                        i.IncidentDate,
+                        i.IncidentType,
+                        i.Severity,
+                        i.Description,
+                        i.ResponseTaken,
+                        i.Resolved,
+                        i.ResolutionDate,
+                        i.ReportedBy,
+                        i.FollowUpRequired,
+                        i.SafehouseId,
                     })
-                .ToList(),
+                    .ToList();
+                var shIds = incidents.Select(i => i.SafehouseId).Distinct().ToList();
+                var safehouseNames = _beaconContext.Safehouses.AsNoTracking()
+                    .Where(sh => shIds.Contains(sh.SafehouseId))
+                    .ToDictionary(sh => sh.SafehouseId, sh => sh.Name);
+                return incidents.ConvertAll(i => new ResidentIncidentReportRow
+                {
+                    IncidentId = i.IncidentId,
+                    IncidentDate = i.IncidentDate,
+                    IncidentType = i.IncidentType,
+                    Severity = i.Severity,
+                    Description = i.Description,
+                    ResponseTaken = i.ResponseTaken,
+                    Resolved = i.Resolved,
+                    ResolutionDate = i.ResolutionDate,
+                    ReportedBy = i.ReportedBy,
+                    FollowUpRequired = i.FollowUpRequired,
+                    SafehouseName = safehouseNames.TryGetValue(i.SafehouseId, out var n) ? n : null,
+                });
+            },
             "incident_reports",
             id);
 
