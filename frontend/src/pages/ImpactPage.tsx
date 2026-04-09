@@ -5,7 +5,7 @@ const impactPosts = [
   {
     title: "Highs and Lows of Lighthouse",
     date: "May 11, 2025",
-    image: "/little_girl_and_baby.jpg",
+    image: "/highsandlows.jpg",
     summary:
       "A candid reflection on the emotional highs and lows in one day at the shelter, and why continued donor support keeps hope alive for every child.",
   },
