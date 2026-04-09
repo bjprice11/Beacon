@@ -49,22 +49,62 @@
 }
 
 /* ═══════════════════════════════════════════════
+   ADMIN — ALL RESIDENTS (hover swell)
+   ═══════════════════════════════════════════════ */
+.admin-all-residents-card {
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+  transform-origin: center center;
+}
+
+a.admin-all-residents-card-link:hover .admin-all-residents-card,
+a.admin-all-residents-card-link:focus-visible .admin-all-residents-card {
+  transform: scale(1.03);
+  box-shadow: 0 0.5rem 1.25rem rgba(27, 38, 29, 0.14);
+}
+
+.admin-all-residents-name-cell .admin-all-residents-name {
+  display: inline-block;
+  transform-origin: left center;
+  transition: transform 0.22s ease;
+}
+
+.admin-all-residents-name-cell:hover .admin-all-residents-name {
+  transform: scale(1.06);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-all-residents-card,
+  .admin-all-residents-name-cell .admin-all-residents-name {
+    transition: none;
+  }
+  a.admin-all-residents-card-link:hover .admin-all-residents-card,
+  a.admin-all-residents-card-link:focus-visible .admin-all-residents-card,
+  .admin-all-residents-name-cell:hover .admin-all-residents-name {
+    transform: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════
    NAVBAR
    ═══════════════════════════════════════════════ */
 .beacon-navbar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
   z-index: 1030;
   padding: 1rem 0;
   transition: background 0.4s ease, backdrop-filter 0.4s ease,
     box-shadow 0.4s ease, padding 0.4s ease;
 }
 
-/* Only the landing page renders the announcement bar; offset nav so it sits underneath */
-.beacon-navbar.beacon-navbar--below-announcement {
+/* Landing only: overlay hero and stay visible while scrolling */
+.beacon-navbar--fixed {
+  position: fixed;
   top: 40px;
+  left: 0;
+  right: 0;
+}
+
+/* App routes: in document flow at top; scrolls away with the page */
+.beacon-navbar--static {
+  position: static;
 }
 
 .beacon-navbar--glass {
@@ -1149,6 +1189,139 @@
 }
 
 /* ═══════════════════════════════════════════════
+   ADMIN DASHBOARD (matches landing branding)
+   ═══════════════════════════════════════════════ */
+.admin-dashboard {
+  background: var(--beacon-bg);
+  min-height: 100%;
+}
+
+.admin-dashboard__hero {
+  position: relative;
+  left: 50%;
+  right: 50%;
+  width: 100vw;
+  margin-left: -50vw;
+  margin-right: -50vw;
+  height: clamp(200px, 32vh, 300px);
+  overflow: hidden;
+}
+
+.admin-dashboard__hero-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.admin-dashboard__hero-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    0deg,
+    rgba(27, 38, 29, 0.62) 0%,
+    rgba(27, 38, 29, 0.28) 45%,
+    rgba(27, 38, 29, 0.12) 100%
+  );
+}
+
+.admin-dashboard__hero-content {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding-bottom: clamp(1.75rem, 4vw, 2.75rem);
+  padding-top: 1.5rem;
+}
+
+.admin-dashboard__hero-eyebrow {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--beacon-oat);
+  margin-bottom: 0.35rem;
+}
+
+.admin-dashboard__hero-title {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-weight: 600;
+  font-size: clamp(1.85rem, 3.5vw, 2.6rem);
+  line-height: 1.15;
+  color: #fff;
+  margin: 0;
+  text-shadow: 0 2px 24px rgba(27, 38, 29, 0.4);
+}
+
+.admin-dashboard__main {
+  padding: 3rem 0 4.5rem;
+}
+
+.admin-dashboard__search-wrap {
+  max-width: 760px;
+  margin: 0 auto 2.5rem;
+}
+
+.admin-dashboard__panel {
+  background: var(--beacon-bg-card);
+  border: 1px solid var(--beacon-border);
+  border-radius: var(--beacon-radius);
+  padding: 2rem 1.5rem;
+  min-height: 280px;
+  box-shadow: 0 1px 4px rgba(27, 38, 29, 0.05), 0 1px 2px rgba(27, 38, 29, 0.03);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.admin-dashboard__panel:hover {
+  box-shadow: 0 8px 24px rgba(27, 38, 29, 0.08);
+}
+
+.admin-dashboard__nav-card {
+  background: var(--beacon-bg-card);
+  border: 1px solid var(--beacon-border);
+  border-radius: var(--beacon-radius);
+  padding: 1.75rem 1.35rem;
+  height: 100%;
+  box-shadow: 0 1px 4px rgba(27, 38, 29, 0.05), 0 1px 2px rgba(27, 38, 29, 0.03);
+}
+
+.admin-dashboard__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.admin-dashboard__nav-link {
+  display: block;
+  padding: 0.7rem 1rem;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--beacon-text);
+  text-decoration: none;
+  border-radius: calc(var(--beacon-radius) - 2px);
+  border: 1px solid transparent;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.admin-dashboard__nav-link:hover {
+  background: var(--beacon-sage-light);
+  color: var(--beacon-primary);
+  border-color: var(--beacon-border);
+}
+
+.admin-dashboard__nav-link:focus-visible {
+  outline: 2px solid var(--beacon-primary);
+  outline-offset: 2px;
+}
+
+/* ═══════════════════════════════════════════════
    PILLAR CARDS (What We Do)
    ═══════════════════════════════════════════════ */
 .pillar-card {
@@ -1612,6 +1785,7 @@ header a.active {
 .beacon-footer a:hover { color: var(--beacon-oat-light); }
 
 /* ═══════════════════════════════════════════════
+<<<<<<< HEAD
    THIRD-PARTY DONATE (PayPal-style shell)
    ═══════════════════════════════════════════════ */
 /* Non-landing routes: keep page content below fixed navbar (see App.tsx main class) */
@@ -1843,4 +2017,214 @@ main#main-content.main-below-fixed-nav {
 }
 .donate-external__back a {
   color: #64748b;
+=======
+   SITE-WIDE SHELL (landing-aligned, non-marketing routes)
+   ═══════════════════════════════════════════════ */
+.beacon-site-main {
+  flex: 1 0 auto;
+  width: 100%;
+  background-color: var(--beacon-bg);
+  padding-bottom: 3rem;
+}
+
+.beacon-page {
+  padding-top: 1.5rem;
+}
+
+.beacon-page--auth {
+  padding-top: 2.5rem;
+  padding-bottom: 2rem;
+  min-height: min(72vh, 820px);
+}
+
+.beacon-page--loading {
+  padding-top: 4rem;
+  padding-bottom: 4rem;
+}
+
+.beacon-site-main h1:not(.hero__title):not(.admin-dashboard__hero-title) {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: clamp(1.75rem, 3.2vw, 2.5rem);
+  font-weight: 600;
+  color: var(--beacon-text);
+  letter-spacing: -0.02em;
+}
+
+.beacon-site-main h2,
+.beacon-site-main h3,
+.beacon-site-main .h1,
+.beacon-site-main .h2,
+.beacon-site-main .h3,
+.beacon-site-main .h4,
+.beacon-site-main .h5 {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  color: var(--beacon-text);
+}
+
+.beacon-site-main .card-title {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-weight: 600;
+}
+
+.beacon-site-main .table {
+  --bs-table-striped-bg: rgba(214, 226, 216, 0.28);
+  --bs-table-hover-bg: rgba(214, 226, 216, 0.42);
+}
+
+.beacon-site-main .btn-group .btn {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-weight: 600;
+}
+
+.beacon-modal-backdrop.modal,
+.beacon-modal-backdrop.modal.show {
+  background-color: rgba(27, 38, 29, 0.5) !important;
+}
+
+/* Post planner (admin marketing tool) */
+.post-planner {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: 1fr;
+  align-items: start;
+}
+
+@media (min-width: 992px) {
+  .post-planner {
+    grid-template-columns: 1fr 320px;
+  }
+}
+
+.post-planner__lead {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  color: var(--beacon-text-muted);
+  font-size: 1.05rem;
+  line-height: 1.65;
+  max-width: 42rem;
+  margin-bottom: 1.5rem;
+}
+
+.post-planner__form-grid {
+  display: grid;
+  gap: 0.75rem;
+  max-width: 600px;
+}
+
+.post-planner__form-grid label > div:first-child {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--beacon-text-muted);
+  margin-bottom: 0.3rem;
+}
+
+.post-planner__form-grid .form-check {
+  margin-bottom: 0;
+  padding-top: 0.15rem;
+}
+
+.post-planner__aside {
+  position: sticky;
+  top: 1rem;
+  padding: 1.25rem;
+  background: var(--beacon-bg-card);
+  border: 1px solid var(--beacon-border);
+  border-radius: var(--beacon-radius);
+  box-shadow: 0 1px 4px rgba(27, 38, 29, 0.06);
+}
+
+.post-planner__aside h3,
+.post-planner__aside h4 {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.post-planner__aside h4 {
+  font-size: 0.95rem;
+  margin-top: 1rem;
+}
+
+.post-planner__score {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: clamp(2.25rem, 4vw, 3rem);
+  font-weight: 700;
+  line-height: 1.1;
+  margin-bottom: 0.5rem;
+}
+
+.post-planner__gauge--high {
+  color: var(--beacon-primary);
+}
+
+.post-planner__gauge--medium {
+  color: #a16207;
+}
+
+.post-planner__gauge--low {
+  color: #991b1b;
+}
+
+.post-planner__badge {
+  display: inline-block;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.post-planner__badge--high {
+  background: var(--beacon-primary);
+}
+
+.post-planner__badge--medium {
+  background: #a16207;
+}
+
+.post-planner__badge--low {
+  background: #991b1b;
+}
+
+.post-planner__aside ul {
+  font-size: 0.88rem;
+  color: var(--beacon-text-muted);
+  padding-left: 1.15rem;
+  margin-bottom: 0;
+}
+
+.post-planner__aside p {
+  font-size: 0.92rem;
+  color: var(--beacon-text-muted);
+  line-height: 1.55;
+}
+
+/* Resident detail — record accordions */
+.resident-record-accordion {
+  background: var(--beacon-bg-card);
+  border-color: var(--beacon-border) !important;
+}
+
+.resident-record-accordion .accordion-button {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 0.95rem;
+  box-shadow: none !important;
+  background-color: var(--beacon-bg-card);
+  color: var(--beacon-text);
+}
+
+.resident-record-accordion .accordion-button:not(.collapsed) {
+  background-color: var(--beacon-sage-light);
+  color: var(--beacon-text);
+}
+
+.resident-record-accordion .accordion-button:focus {
+  box-shadow: 0 0 0 0.2rem rgba(45, 79, 53, 0.2);
+  border-color: var(--beacon-border);
+}
+
+.resident-records-accordion .accordion-item:last-of-type {
+  margin-bottom: 0 !important;
+>>>>>>> origin/main
 }

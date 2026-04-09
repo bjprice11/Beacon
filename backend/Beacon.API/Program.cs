@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.AspNetCore.Identity;
 using Beacon.Api.Services.PostPlanner;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -23,7 +22,10 @@ builder.Services.AddControllers();
 // Respect X-Forwarded-Proto so OAuth redirect_uri becomes https://... instead of http://...
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
-    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    // Include Host so OAuth redirect_uri and Set-Cookie use the public Railway hostname, not the internal bind address.
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor
+        | ForwardedHeaders.XForwardedProto
+        | ForwardedHeaders.XForwardedHost;
     // Trust proxy headers (common in container/PaaS environments).
     options.KnownNetworks.Clear();
     options.KnownProxies.Clear();
@@ -156,18 +158,25 @@ builder.Services.AddScoped<UserManager<ApplicationUser>, BeaconUserManager>();
 
 if (!string.IsNullOrEmpty(googleClientId) && !string.IsNullOrEmpty(googleClientSecret))
 {
-    builder.Services.AddAuthentication(GoogleDefaults.AuthenticationScheme)
-    .AddGoogle(options =>
+    // Do not use AddAuthentication(GoogleDefaults.AuthenticationScheme): that sets DefaultScheme to Google and can break Identity + OAuth.
+    builder.Services.AddAuthentication().AddGoogle(options =>
     {
         options.ClientId = googleClientId;
         options.ClientSecret = googleClientSecret;
         options.SignInScheme = IdentityConstants.ExternalScheme;
         options.CallbackPath = "/signin-google";
-        options.CorrelationCookie.SameSite = SameSiteMode.None;
-        options.CorrelationCookie.SecurePolicy = builder.Environment.IsDevelopment()
-            ? CookieSecurePolicy.SameAsRequest
-            : CookieSecurePolicy.Always;
+        // Google -> your API is a top-level GET; Lax is sent on that navigation and avoids brittle SameSite=None + CHIPS rules in Chrome.
+        options.CorrelationCookie.SameSite = SameSiteMode.Lax;
+        options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.CorrelationCookie.HttpOnly = true;
         options.CorrelationCookie.IsEssential = true;
+        // Avoid edge caches holding a 302 challenge response without the correlation cookie being honored on return.
+        options.Events.OnRedirectToAuthorizationEndpoint = context =>
+        {
+            context.Response.Headers.CacheControl = "no-cache, no-store, must-revalidate";
+            context.Response.Headers.Pragma = "no-cache";
+            return Task.CompletedTask;
+        };
     });
 }
 
@@ -207,6 +216,9 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+// Must run before HSTS / HTTPS redirect / auth so OAuth redirect_uri and cookies use the public Railway host and https.
+app.UseForwardedHeaders();
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -221,8 +233,6 @@ if (!app.Environment.IsDevelopment())
 {
     app.UseHsts();
 }
-
-app.UseForwardedHeaders();
 
 app.UseRouting();
 // CORS must run after routing and before auth/endpoints so preflight + error paths get headers.
