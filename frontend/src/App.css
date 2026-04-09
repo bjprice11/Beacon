@@ -2017,44 +2017,8 @@ main#main-content.main-below-fixed-nav {
 }
 .donate-external__back a {
   color: #64748b;
-=======
-   SITE-WIDE SHELL (landing-aligned, non-marketing routes)
-   ═══════════════════════════════════════════════ */
-.beacon-site-main {
-  flex: 1 0 auto;
-  width: 100%;
-  background-color: var(--beacon-bg);
-  padding-bottom: 3rem;
 }
 
-.beacon-page {
-  padding-top: 1.5rem;
-}
-
-.beacon-page--auth {
-  padding-top: 2.5rem;
-  padding-bottom: 2rem;
-  min-height: min(72vh, 820px);
-}
-
-.beacon-page--loading {
-  padding-top: 4rem;
-  padding-bottom: 4rem;
-}
-
-.beacon-site-main h1:not(.hero__title):not(.admin-dashboard__hero-title) {
-  font-family: "Plus Jakarta Sans", sans-serif;
-  font-size: clamp(1.75rem, 3.2vw, 2.5rem);
-  font-weight: 600;
-  color: var(--beacon-text);
-  letter-spacing: -0.02em;
-}
-
-.beacon-site-main h2,
-.beacon-site-main h3,
-.beacon-site-main .h1,
-.beacon-site-main .h2,
-.beacon-site-main .h3,
 .beacon-site-main .h4,
 .beacon-site-main .h5 {
   font-family: "Plus Jakarta Sans", sans-serif;
@@ -2226,5 +2190,4 @@ main#main-content.main-below-fixed-nav {
 
 .resident-records-accordion .accordion-item:last-of-type {
   margin-bottom: 0 !important;
->>>>>>> origin/main
 }
