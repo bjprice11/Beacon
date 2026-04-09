@@ -1077,6 +1077,166 @@ public class BeaconController : ControllerBase
     public Task<IActionResult> PostUpdateIncidentReport(int incidentId, [FromBody] CreateIncidentReportRequest? body)
         => UpdateIncidentReport(incidentId, body);
 
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
+    [HttpPost("EducationRecord/{educationRecordId:int}/Delete")]
+    public async Task<IActionResult> PostDeleteEducationRecord(
+        int educationRecordId,
+        [FromBody] DeleteResidentRecordRequest? body)
+    {
+        if (body == null || body.ResidentId <= 0)
+            return BadRequest(new
+            {
+                message = "resident_id is required.",
+                errors = new Dictionary<string, string> { ["resident_id"] = "Required" },
+            });
+
+        var entity = await _beaconContext.Set<EducationRecord>()
+            .FirstOrDefaultAsync(e => e.EducationRecordId == educationRecordId);
+        if (entity == null)
+            return NotFound(new { message = "Education record not found." });
+        if (entity.ResidentId != body.ResidentId)
+        {
+            return BadRequest(new
+            {
+                message = "This record belongs to another resident.",
+                errors = new Dictionary<string, string> { ["resident_id"] = "Does not match this record." },
+            });
+        }
+
+        _beaconContext.Set<EducationRecord>().Remove(entity);
+        var save = await TrySaveResidentRecordUpdateAsync(nameof(PostDeleteEducationRecord));
+        if (save != null) return save;
+        return NoContent();
+    }
+
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
+    [HttpPost("HealthWellbeingRecord/{healthRecordId:int}/Delete")]
+    public async Task<IActionResult> PostDeleteHealthWellbeingRecord(
+        int healthRecordId,
+        [FromBody] DeleteResidentRecordRequest? body)
+    {
+        if (body == null || body.ResidentId <= 0)
+            return BadRequest(new
+            {
+                message = "resident_id is required.",
+                errors = new Dictionary<string, string> { ["resident_id"] = "Required" },
+            });
+
+        var entity = await _beaconContext.Set<HealthWellbeingRecord>()
+            .FirstOrDefaultAsync(h => h.HealthRecordId == healthRecordId);
+        if (entity == null)
+            return NotFound(new { message = "Health record not found." });
+        if (entity.ResidentId != body.ResidentId)
+        {
+            return BadRequest(new
+            {
+                message = "This record belongs to another resident.",
+                errors = new Dictionary<string, string> { ["resident_id"] = "Does not match this record." },
+            });
+        }
+
+        _beaconContext.Set<HealthWellbeingRecord>().Remove(entity);
+        var save = await TrySaveResidentRecordUpdateAsync(nameof(PostDeleteHealthWellbeingRecord));
+        if (save != null) return save;
+        return NoContent();
+    }
+
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
+    [HttpPost("ProcessRecording/{recordingId:int}/Delete")]
+    public async Task<IActionResult> PostDeleteProcessRecording(
+        int recordingId,
+        [FromBody] DeleteResidentRecordRequest? body)
+    {
+        if (body == null || body.ResidentId <= 0)
+            return BadRequest(new
+            {
+                message = "resident_id is required.",
+                errors = new Dictionary<string, string> { ["resident_id"] = "Required" },
+            });
+
+        var entity = await _beaconContext.Set<ProcessRecording>()
+            .FirstOrDefaultAsync(p => p.RecordingId == recordingId);
+        if (entity == null)
+            return NotFound(new { message = "Process recording not found." });
+        if (entity.ResidentId != body.ResidentId)
+        {
+            return BadRequest(new
+            {
+                message = "This record belongs to another resident.",
+                errors = new Dictionary<string, string> { ["resident_id"] = "Does not match this record." },
+            });
+        }
+
+        _beaconContext.Set<ProcessRecording>().Remove(entity);
+        var save = await TrySaveResidentRecordUpdateAsync(nameof(PostDeleteProcessRecording));
+        if (save != null) return save;
+        return NoContent();
+    }
+
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
+    [HttpPost("HomeVisitation/{visitationId:int}/Delete")]
+    public async Task<IActionResult> PostDeleteHomeVisitation(
+        int visitationId,
+        [FromBody] DeleteResidentRecordRequest? body)
+    {
+        if (body == null || body.ResidentId <= 0)
+            return BadRequest(new
+            {
+                message = "resident_id is required.",
+                errors = new Dictionary<string, string> { ["resident_id"] = "Required" },
+            });
+
+        var entity = await _beaconContext.Set<HomeVisitation>()
+            .FirstOrDefaultAsync(v => v.VisitationId == visitationId);
+        if (entity == null)
+            return NotFound(new { message = "Home visit not found." });
+        if (entity.ResidentId != body.ResidentId)
+        {
+            return BadRequest(new
+            {
+                message = "This record belongs to another resident.",
+                errors = new Dictionary<string, string> { ["resident_id"] = "Does not match this record." },
+            });
+        }
+
+        _beaconContext.Set<HomeVisitation>().Remove(entity);
+        var save = await TrySaveResidentRecordUpdateAsync(nameof(PostDeleteHomeVisitation));
+        if (save != null) return save;
+        return NoContent();
+    }
+
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
+    [HttpPost("IncidentReport/{incidentId:int}/Delete")]
+    public async Task<IActionResult> PostDeleteIncidentReport(
+        int incidentId,
+        [FromBody] DeleteResidentRecordRequest? body)
+    {
+        if (body == null || body.ResidentId <= 0)
+            return BadRequest(new
+            {
+                message = "resident_id is required.",
+                errors = new Dictionary<string, string> { ["resident_id"] = "Required" },
+            });
+
+        var entity = await _beaconContext.Set<IncidentReport>()
+            .FirstOrDefaultAsync(i => i.IncidentId == incidentId);
+        if (entity == null)
+            return NotFound(new { message = "Incident report not found." });
+        if (entity.ResidentId != body.ResidentId)
+        {
+            return BadRequest(new
+            {
+                message = "This record belongs to another resident.",
+                errors = new Dictionary<string, string> { ["resident_id"] = "Does not match this record." },
+            });
+        }
+
+        _beaconContext.Set<IncidentReport>().Remove(entity);
+        var save = await TrySaveResidentRecordUpdateAsync(nameof(PostDeleteIncidentReport));
+        if (save != null) return save;
+        return NoContent();
+    }
+
     private async Task<IActionResult?> TrySaveResidentRecordUpdateAsync(string operationLabel)
     {
         try

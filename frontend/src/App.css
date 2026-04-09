@@ -1499,6 +1499,15 @@ a.admin-all-residents-card-link:focus-visible .admin-all-residents-card {
   outline-offset: 2px;
 }
 
+button.admin-dashboard__nav-link {
+  width: 100%;
+  margin: 0;
+  font: inherit;
+  text-align: left;
+  background: none;
+  cursor: pointer;
+}
+
 .donor-dashboard {
   background:
     radial-gradient(circle at 12% 22%, rgba(114, 159, 147, 0.12), transparent 40%),
@@ -3414,6 +3423,36 @@ main#main-content.main-below-fixed-nav.main-below-fixed-nav--tight {
   border-radius: var(--beacon-radius);
   box-shadow: 0 1px 4px rgba(27, 38, 29, 0.06);
 }
+
+.post-planner__reminders summary {
+  cursor: pointer;
+  font-weight: 600;
+  list-style: none;
+}
+
+.post-planner__reminders summary::-webkit-details-marker {
+  display: none;
+}
+
+.post-planner__reminders summary::after {
+  content: "▸";
+  float: right;
+  transition: transform 0.2s ease;
+}
+
+.post-planner__reminders[open] summary::after {
+  transform: rotate(90deg);
+}
+
+.post-planner__reminders[open] ul {
+  animation: reminders-slide 0.25s ease-out;
+}
+
+@keyframes reminders-slide {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 
 .post-planner__aside {
   padding: 1.25rem;
