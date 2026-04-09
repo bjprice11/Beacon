@@ -1479,7 +1479,7 @@ a.admin-all-residents-card-link:focus-visible .admin-all-residents-card {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  /* Vertical center = middle third of a tall portrait when cropped to wide hero */
+  /* Admin default: vertical 50% = centroid of the middle third on a tall portrait */
   object-position: center 50%;
 }
 

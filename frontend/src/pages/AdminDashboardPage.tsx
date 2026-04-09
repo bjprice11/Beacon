@@ -45,7 +45,7 @@ function AdminDashboardPage() {
       <header className="admin-dashboard__hero" aria-label="Admin dashboard header">
         <img
           className="admin-dashboard__hero-img"
-          src={adminHeroFallback ? heroForestImage : "/admin_dashboard.jpg"}
+          src={adminHeroFallback ? heroForestImage : "/admin_dashboard.png"}
           alt=""
           decoding="async"
           onError={() => setAdminHeroFallback(true)}
