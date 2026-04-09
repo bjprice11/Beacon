@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { Link, useParams } from "react-router-dom";
 import { getDonorDashboard } from "../api/Donors";
 import type { DonorDashboard } from "../types/DonorDashboard";
 import DonorInfo from "../components/DonorInfo";
 import MonetaryDonationHistory from "../components/MonetaryDonationHistory";
 import NonMonetaryDonationHistory from "../components/NonMonetaryDonationHistory";
+import heroForestImage from "../assets/forrest.jpg";
 
 function formatCurrency(value: number): string {
   return `PHP ${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
@@ -15,8 +16,6 @@ function DonorDashboardPage() {
   const [data, setData] = useState<DonorDashboard | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showWelcome, setShowWelcome] = useState(true);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -25,28 +24,6 @@ function DonorDashboardPage() {
       .catch((err) => setError((err as Error).message))
       .finally(() => setLoading(false));
   }, [id]);
-
-  useEffect(() => {
-    const videoEl = videoRef.current;
-    if (!videoEl) return;
-
-    const pauseVideo = () => {
-      if (!videoEl.paused) videoEl.pause();
-    };
-
-    const timeoutId = window.setTimeout(pauseVideo, 3800);
-    videoEl.addEventListener("ended", pauseVideo);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-      videoEl.removeEventListener("ended", pauseVideo);
-    };
-  }, []);
-
-  useEffect(() => {
-    const hideTimer = window.setTimeout(() => setShowWelcome(false), 2600);
-    return () => window.clearTimeout(hideTimer);
-  }, []);
 
   if (loading) {
     return (
@@ -103,127 +80,145 @@ function DonorDashboardPage() {
   const chartStyle = {
     "--donor-monetary-share": `${monetaryShare.toFixed(2)}%`,
   } as CSSProperties;
-  const welcomeStyle = {
-    "--welcome-chars": Math.max(fullName.length, 8),
-  } as CSSProperties;
 
   return (
-    <div className="beacon-page donor-dashboard-glass">
-      <div className="donor-dashboard-glass__media" aria-hidden="true">
-        <video
-          ref={videoRef}
-          className="donor-dashboard-glass__video"
-          autoPlay
-          muted
-          playsInline
-          preload="metadata"
-        >
-          <source src="/donor_dash_background.mp4" type="video/mp4" />
-        </video>
-        <div className="donor-dashboard-glass__overlay" />
-      </div>
-
-      <div className="container py-4 donor-dashboard-glass__content">
-        <div
-          className={`donor-dashboard-glass__welcome ${showWelcome ? "is-visible" : "is-hidden"}`}
-          style={welcomeStyle}
-          role="status"
-          aria-live="polite"
-        >
-          <p className="donor-dashboard-glass__welcome-kicker mb-1">Welcome</p>
-          <p className="donor-dashboard-glass__welcome-name mb-0">
-            <span className="donor-dashboard-glass__welcome-name-text">{fullName}</span>
-          </p>
+    <div className="admin-dashboard beacon-page donor-dashboard">
+      <header className="admin-dashboard__hero" aria-label="Donor dashboard header">
+        <img
+          className="admin-dashboard__hero-img"
+          src={heroForestImage}
+          alt=""
+          decoding="async"
+        />
+        <div className="admin-dashboard__hero-overlay" aria-hidden="true" />
+        <div className="container admin-dashboard__hero-content">
+          <p className="admin-dashboard__hero-eyebrow">Supporter dashboard</p>
+          <h1 className="admin-dashboard__hero-title">Welcome, {fullName}</h1>
         </div>
-        <p className="landing-section__eyebrow mb-2">Supporter</p>
-        <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
-          <h1 className="mb-0">Donor Dashboard</h1>
-          <Link to="/donate" className="donor-dashboard-glass__donate-btn">
-            Donate Now
-          </Link>
-        </div>
+      </header>
 
-        <div className="row g-3 mb-4">
-          <div className="col-12 col-md-6 col-xl-3">
-            <div className="donor-analytics-card">
-              <p className="donor-analytics-card__label mb-1">Monetary total</p>
-              <p className="donor-analytics-card__value mb-0">{formatCurrency(monetaryTotal)}</p>
-            </div>
-          </div>
-          <div className="col-12 col-md-6 col-xl-3">
-            <div className="donor-analytics-card">
-              <p className="donor-analytics-card__label mb-1">Non-monetary estimate</p>
-              <p className="donor-analytics-card__value mb-0">{formatCurrency(nonMonetaryTotal)}</p>
-            </div>
-          </div>
-          <div className="col-12 col-md-6 col-xl-3">
-            <div className="donor-analytics-card">
-              <p className="donor-analytics-card__label mb-1">Most supported area</p>
-              <p className="donor-analytics-card__value mb-0">
-                {topProgramArea ? topProgramArea[0] : "N/A"}
-              </p>
-            </div>
-          </div>
-          <div className="col-12 col-md-6 col-xl-3">
-            <div className="donor-analytics-card">
-              <p className="donor-analytics-card__label mb-1">Latest donation</p>
-              <p className="donor-analytics-card__value mb-0">{latestDonationLabel}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="row g-4 mb-4">
-          <div className="col-xl-5">
-            <div className="donor-analytics-card donor-analytics-card--chart h-100">
-              <h2 className="h5 mb-3">Donation mix</h2>
-              <div className="donor-pie" style={chartStyle} role="img" aria-label="Donation mix chart" />
-              <div className="donor-pie__legend mt-3">
-                <p className="mb-1">
-                  <span className="donor-dot donor-dot--monetary" /> Monetary:{" "}
-                  {monetaryShare.toFixed(1)}%
-                </p>
-                <p className="mb-0">
-                  <span className="donor-dot donor-dot--nonmonetary" /> Non-monetary:{" "}
-                  {nonMonetaryShare.toFixed(1)}%
+      <section className="admin-dashboard__main">
+        <div className="container">
+          <div className="row g-4 align-items-stretch mb-4">
+            <div className="col-lg-8">
+              <div className="admin-dashboard__panel h-100">
+                <p className="landing-section__eyebrow mb-2">Overview</p>
+                <h2 className="landing-section__heading mb-3">Your giving at a glance</h2>
+                <p className="landing-section__body mb-0">
+                  Track your monetary and non-monetary contributions, review your impact,
+                  and continue supporting Beacon&apos;s mission.
                 </p>
               </div>
             </div>
+
+            <div className="col-lg-4">
+              <div className="admin-dashboard__nav-card">
+                <p className="landing-section__eyebrow mb-3">Quick actions</p>
+                <nav className="admin-dashboard__nav" aria-label="Donor quick actions">
+                  <Link to="/donate" className="admin-dashboard__nav-link">
+                    Donate now
+                  </Link>
+                  <a href="#donor-history" className="admin-dashboard__nav-link">
+                    View donation history
+                  </a>
+                  <a href="#donor-analytics" className="admin-dashboard__nav-link">
+                    View analytics
+                  </a>
+                </nav>
+              </div>
+            </div>
           </div>
-          <div className="col-xl-7">
-            <div className="donor-analytics-card h-100">
-              <h2 className="h5 mb-3">Donation activity</h2>
-              <div className="donor-mini-grid">
-                <div className="donor-mini-grid__item">
-                  <p className="donor-mini-grid__label mb-1">Total donations</p>
-                  <p className="donor-mini-grid__value mb-0">{data.donationHistory.length}</p>
+
+          <div className="row g-3 mb-4">
+            <div className="col-12 col-md-6 col-xl-3">
+              <div className="card beacon-stat-card h-100">
+                <div className="card-body">
+                  <p className="beacon-section-subtitle mb-2">Monetary total</p>
+                  <p className="beacon-stat-value h3 mb-0">{formatCurrency(monetaryTotal)}</p>
                 </div>
-                <div className="donor-mini-grid__item">
-                  <p className="donor-mini-grid__label mb-1">Monetary donations</p>
-                  <p className="donor-mini-grid__value mb-0">{monetaryDonations.length}</p>
+              </div>
+            </div>
+            <div className="col-12 col-md-6 col-xl-3">
+              <div className="card beacon-stat-card h-100">
+                <div className="card-body">
+                  <p className="beacon-section-subtitle mb-2">Non-monetary estimate</p>
+                  <p className="beacon-stat-value h3 mb-0">{formatCurrency(nonMonetaryTotal)}</p>
                 </div>
-                <div className="donor-mini-grid__item">
-                  <p className="donor-mini-grid__label mb-1">Non-monetary donations</p>
-                  <p className="donor-mini-grid__value mb-0">{nonMonetaryDonations.length}</p>
+              </div>
+            </div>
+            <div className="col-12 col-md-6 col-xl-3">
+              <div className="card beacon-stat-card h-100">
+                <div className="card-body">
+                  <p className="beacon-section-subtitle mb-2">Most supported area</p>
+                  <p className="beacon-stat-value h4 mb-0">
+                    {topProgramArea ? topProgramArea[0] : "N/A"}
+                  </p>
                 </div>
-                <div className="donor-mini-grid__item">
-                  <p className="donor-mini-grid__label mb-1">Combined impact</p>
-                  <p className="donor-mini-grid__value mb-0">{formatCurrency(grandTotal)}</p>
+              </div>
+            </div>
+            <div className="col-12 col-md-6 col-xl-3">
+              <div className="card beacon-stat-card h-100">
+                <div className="card-body">
+                  <p className="beacon-section-subtitle mb-2">Latest donation</p>
+                  <p className="beacon-stat-value h4 mb-0">{latestDonationLabel}</p>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div className="row g-4 donor-dashboard-glass__layout">
-          <div className="col-lg-5">
-            <DonorInfo supporter={data.supporter} />
+          <div id="donor-analytics" className="row g-4 mb-4">
+            <div className="col-xl-5">
+              <div className="admin-dashboard__nav-card h-100">
+                <h2 className="landing-section__heading h4 mb-3">Donation mix</h2>
+                <div className="donor-pie donor-pie--clean" style={chartStyle} role="img" aria-label="Donation mix chart" />
+                <div className="donor-pie__legend mt-3">
+                  <p className="mb-1">
+                    <span className="donor-dot donor-dot--monetary" /> Monetary:{" "}
+                    {monetaryShare.toFixed(1)}%
+                  </p>
+                  <p className="mb-0">
+                    <span className="donor-dot donor-dot--nonmonetary" /> Non-monetary:{" "}
+                    {nonMonetaryShare.toFixed(1)}%
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="col-xl-7">
+              <div className="admin-dashboard__panel h-100">
+                <h2 className="landing-section__heading h4 mb-3">Donation activity</h2>
+                <div className="donor-mini-grid donor-mini-grid--clean">
+                  <div className="donor-mini-grid__item">
+                    <p className="donor-mini-grid__label mb-1">Total donations</p>
+                    <p className="donor-mini-grid__value mb-0">{data.donationHistory.length}</p>
+                  </div>
+                  <div className="donor-mini-grid__item">
+                    <p className="donor-mini-grid__label mb-1">Monetary donations</p>
+                    <p className="donor-mini-grid__value mb-0">{monetaryDonations.length}</p>
+                  </div>
+                  <div className="donor-mini-grid__item">
+                    <p className="donor-mini-grid__label mb-1">Non-monetary donations</p>
+                    <p className="donor-mini-grid__value mb-0">{nonMonetaryDonations.length}</p>
+                  </div>
+                  <div className="donor-mini-grid__item">
+                    <p className="donor-mini-grid__label mb-1">Combined impact</p>
+                    <p className="donor-mini-grid__value mb-0">{formatCurrency(grandTotal)}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="col-lg-7 d-flex flex-column gap-4">
-            <MonetaryDonationHistory history={data.donationHistory} />
-            <NonMonetaryDonationHistory history={data.donationHistory} />
+
+          <div id="donor-history" className="row g-4">
+            <div className="col-lg-5">
+              <DonorInfo supporter={data.supporter} />
+            </div>
+            <div className="col-lg-7 d-flex flex-column gap-4">
+              <MonetaryDonationHistory history={data.donationHistory} />
+              <NonMonetaryDonationHistory history={data.donationHistory} />
+            </div>
           </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 }
