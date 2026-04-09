@@ -1,28 +1,11 @@
 import { useEffect, useState } from "react";
 import type { ProcessRecordingRow } from "../../types/residentRecords";
 import Pagination from "../Pagination";
+import { InlineDetailsCell } from "./InlineDetailsCell";
 import { ResidentRecordModal } from "./ResidentRecordModal";
 import { clip, dashIfEmpty, fmtBool, formatDate } from "./residentRecordFormat";
 
 const MODAL_PAGE_SIZE = 10;
-
-function NarrativeDetailsCell({ text }: { text: string | null | undefined }) {
-  const body = text?.trim() ?? "";
-  if (!body) {
-    return <span className="text-muted">{"\u2014"}</span>;
-  }
-  return (
-    <details className="mental-wellbeing-narrative-details">
-      <summary
-        className="mental-wellbeing-narrative-summary"
-        aria-label="Show or hide full session narrative"
-      >
-        Details
-      </summary>
-      <div className="mental-wellbeing-narrative-body">{body}</div>
-    </details>
-  );
-}
 
 type Props = { records: ProcessRecordingRow[] };
 
@@ -108,9 +91,12 @@ export function MentalWellbeingRecordsSection({ records }: Props) {
                         {clip(p.interventionsApplied)}
                       </td>
                       <td title={p.followUpActions ?? ""}>{clip(p.followUpActions)}</td>
-                      <td className="align-top">
-                        <NarrativeDetailsCell text={p.sessionNarrative} />
-                      </td>
+                    <td className="align-top">
+                      <InlineDetailsCell
+                        text={p.sessionNarrative}
+                        ariaLabel="Show or hide full session narrative"
+                      />
+                    </td>
                     </tr>
                   ))}
                 </tbody>

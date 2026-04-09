@@ -1651,12 +1651,12 @@ main#main-content.main-below-fixed-nav {
   }
 }
 
-/* Mental wellbeing table — inline narrative disclosure (no extra modal) */
-.mental-wellbeing-narrative-details {
+/* Resident record modals — inline <details> for long text (narrative, observations, etc.) */
+.resident-inline-disclosure {
   max-width: min(28rem, 72vw);
 }
 
-.mental-wellbeing-narrative-summary {
+.resident-inline-disclosure__summary {
   cursor: pointer;
   font-family: "Plus Jakarta Sans", sans-serif;
   font-size: 0.8125rem;
@@ -1665,26 +1665,26 @@ main#main-content.main-below-fixed-nav {
   list-style: none;
 }
 
-.mental-wellbeing-narrative-summary::-webkit-details-marker {
+.resident-inline-disclosure__summary::-webkit-details-marker {
   display: none;
 }
 
-.mental-wellbeing-narrative-summary::marker {
+.resident-inline-disclosure__summary::marker {
   content: "";
 }
 
-.mental-wellbeing-narrative-summary:hover {
+.resident-inline-disclosure__summary:hover {
   color: var(--beacon-primary-dark);
   text-decoration: underline;
 }
 
-.mental-wellbeing-narrative-summary:focus-visible {
+.resident-inline-disclosure__summary:focus-visible {
   outline: 2px solid var(--beacon-primary);
   outline-offset: 2px;
   border-radius: 4px;
 }
 
-.mental-wellbeing-narrative-body {
+.resident-inline-disclosure__body {
   margin-top: 0.5rem;
   padding: 0.65rem 0.75rem;
   font-size: 0.8125rem;

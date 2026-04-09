@@ -1,13 +1,27 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { HomeVisitationRow } from "../../types/residentRecords";
+import Pagination from "../Pagination";
+import { InlineDetailsCell } from "./InlineDetailsCell";
 import { ResidentRecordModal } from "./ResidentRecordModal";
 import { clip, dashIfEmpty, fmtBool, formatDate } from "./residentRecordFormat";
+
+const MODAL_PAGE_SIZE = 10;
 
 type Props = { records: HomeVisitationRow[] };
 
 export function HomeVisitsRecordsSection({ records }: Props) {
   const [open, setOpen] = useState(false);
+  const [modalPage, setModalPage] = useState(1);
   const count = records.length;
+
+  useEffect(() => {
+    if (open) setModalPage(1);
+  }, [open]);
+
+  const totalPages = Math.max(1, Math.ceil(count / MODAL_PAGE_SIZE));
+  const currentPage = Math.min(Math.max(modalPage, 1), totalPages);
+  const startIndex = (currentPage - 1) * MODAL_PAGE_SIZE;
+  const pagedRecords = records.slice(startIndex, startIndex + MODAL_PAGE_SIZE);
 
   return (
     <>
@@ -43,40 +57,52 @@ export function HomeVisitsRecordsSection({ records }: Props) {
           {count === 0 ? (
             <p className="text-muted small mb-0">No home visits.</p>
           ) : (
-            <table className="table table-sm table-striped table-hover mb-0 align-middle">
-              <thead className="table-light">
-                <tr>
-                  <th>Visit date</th>
-                  <th>Social worker</th>
-                  <th>Type</th>
-                  <th>Location</th>
-                  <th>Purpose</th>
-                  <th>Observations</th>
-                  <th>Family cooperation</th>
-                  <th>Safety concern</th>
-                  <th>Follow-up</th>
-                  <th>Outcome</th>
-                  <th>Follow-up notes</th>
-                </tr>
-              </thead>
-              <tbody>
-                {records.map((v) => (
-                  <tr key={v.visitationId}>
-                    <td>{formatDate(v.visitDate)}</td>
-                    <td>{dashIfEmpty(v.socialWorker)}</td>
-                    <td>{dashIfEmpty(v.visitType)}</td>
-                    <td>{clip(v.locationVisited, 60)}</td>
-                    <td title={v.purpose ?? ""}>{clip(v.purpose)}</td>
-                    <td title={v.observations ?? ""}>{clip(v.observations)}</td>
-                    <td>{dashIfEmpty(v.familyCooperationLevel)}</td>
-                    <td>{fmtBool(v.safetyConcernsNoted)}</td>
-                    <td>{fmtBool(v.followUpNeeded)}</td>
-                    <td>{clip(v.visitOutcome)}</td>
-                    <td title={v.followUpNotes ?? ""}>{clip(v.followUpNotes)}</td>
+            <>
+              <table className="table table-sm table-striped table-hover mb-0 align-middle">
+                <thead className="table-light">
+                  <tr>
+                    <th>Visit date</th>
+                    <th>Social worker</th>
+                    <th>Type</th>
+                    <th>Location</th>
+                    <th>Family cooperation</th>
+                    <th>Safety concern</th>
+                    <th>Follow-up</th>
+                    <th>Outcome</th>
+                    <th>Follow-up notes</th>
+                    <th>Observations</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {pagedRecords.map((v) => (
+                    <tr key={v.visitationId}>
+                      <td>{formatDate(v.visitDate)}</td>
+                      <td>{dashIfEmpty(v.socialWorker)}</td>
+                      <td>{dashIfEmpty(v.visitType)}</td>
+                      <td>{clip(v.locationVisited, 60)}</td>
+                      <td>{dashIfEmpty(v.familyCooperationLevel)}</td>
+                      <td>{fmtBool(v.safetyConcernsNoted)}</td>
+                      <td>{fmtBool(v.followUpNeeded)}</td>
+                      <td>{clip(v.visitOutcome)}</td>
+                      <td title={v.followUpNotes ?? ""}>{clip(v.followUpNotes)}</td>
+                      <td className="align-top">
+                        <InlineDetailsCell
+                          text={v.observations}
+                          ariaLabel="Show or hide full visit observations"
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <Pagination
+                className="mt-3 d-flex justify-content-center pb-2"
+                page={currentPage}
+                pageSize={MODAL_PAGE_SIZE}
+                totalCount={count}
+                onPageChange={setModalPage}
+              />
+            </>
           )}
         </div>
       </ResidentRecordModal>
