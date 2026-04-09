@@ -1,6 +1,12 @@
+import { useState } from "react";
 import SearchBar from "../components/SearchBar";
 import { Link } from "react-router-dom";
 import heroForestImage from "../assets/forrest.jpg";
+import { AddEducationRecordModal } from "../components/resident/AddEducationRecordModal";
+import { AddHealthRecordModal } from "../components/resident/AddHealthRecordModal";
+import { AddProcessRecordingModal } from "../components/resident/AddProcessRecordingModal";
+import { AddHomeVisitationModal } from "../components/resident/AddHomeVisitationModal";
+import { AddIncidentReportModal } from "../components/resident/AddIncidentReportModal";
 
 const navLinks = [
   { to: "/admin/all-residents", label: "Residents" },
@@ -11,7 +17,26 @@ const navLinks = [
   { to: "/admin/risk", label: "Risk Center" },
 ] as const;
 
+type ResidentRecordModalKey =
+  | "education"
+  | "health"
+  | "process"
+  | "homeVisit"
+  | "incident";
+
+const addResidentRecordLinks: { key: ResidentRecordModalKey; label: string }[] = [
+  { key: "education", label: "Add education record" },
+  { key: "health", label: "Add health record" },
+  { key: "process", label: "Add mental wellbeing record" },
+  { key: "homeVisit", label: "Add home visit" },
+  { key: "incident", label: "Add incident report" },
+];
+
 function AdminDashboardPage() {
+  const [residentRecordModal, setResidentRecordModal] = useState<ResidentRecordModalKey | null>(
+    null,
+  );
+
   return (
     <div className="admin-dashboard beacon-page">
       <header className="admin-dashboard__hero" aria-label="Admin dashboard header">
@@ -59,8 +84,58 @@ function AdminDashboardPage() {
               </div>
             </div>
           </div>
+
+          <div className="row g-4 align-items-stretch mt-lg-2 mt-4">
+            <div className="col-12">
+              <div className="admin-dashboard__nav-card">
+                <p className="landing-section__eyebrow mb-3">Resident records</p>
+                <p className="landing-section__body small text-muted mb-3">
+                  Open a form to enter a new record. You will be prompted for the resident ID (and
+                  other required fields) on each form.
+                </p>
+                <nav className="admin-dashboard__nav" aria-label="Add resident record">
+                  {addResidentRecordLinks.map(({ key, label }) => (
+                    <button
+                      key={key}
+                      type="button"
+                      className="admin-dashboard__nav-link"
+                      onClick={() => setResidentRecordModal(key)}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </nav>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
+
+      <AddEducationRecordModal
+        open={residentRecordModal === "education"}
+        onClose={() => setResidentRecordModal(null)}
+        onCreated={() => setResidentRecordModal(null)}
+      />
+      <AddHealthRecordModal
+        open={residentRecordModal === "health"}
+        onClose={() => setResidentRecordModal(null)}
+        onCreated={() => setResidentRecordModal(null)}
+      />
+      <AddProcessRecordingModal
+        open={residentRecordModal === "process"}
+        onClose={() => setResidentRecordModal(null)}
+        onCreated={() => setResidentRecordModal(null)}
+      />
+      <AddHomeVisitationModal
+        open={residentRecordModal === "homeVisit"}
+        onClose={() => setResidentRecordModal(null)}
+        onCreated={() => setResidentRecordModal(null)}
+      />
+      <AddIncidentReportModal
+        open={residentRecordModal === "incident"}
+        onClose={() => setResidentRecordModal(null)}
+        onCreated={() => setResidentRecordModal(null)}
+      />
     </div>
   );
 }
