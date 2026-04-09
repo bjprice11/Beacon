@@ -1145,6 +1145,240 @@ header a.active {
 .beacon-footer a:hover { color: var(--beacon-oat-light); }
 
 /* ═══════════════════════════════════════════════
+   THIRD-PARTY DONATE (PayPal-style shell)
+   ═══════════════════════════════════════════════ */
+/* Non-landing routes: keep page content below fixed navbar (see App.tsx main class) */
+main#main-content.main-below-fixed-nav {
+  padding-top: calc(80px + 2rem + env(safe-area-inset-top, 0px));
+}
+
+.donate-external {
+  min-height: calc(100vh - 8rem);
+  padding: 1.25rem 1rem 3rem;
+  background: #eef0f3;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+.donate-external h1 {
+  font-family: inherit;
+}
+.donate-external__wrap {
+  max-width: 440px;
+  margin: 0 auto;
+}
+.donate-external__card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.06);
+  padding: 2rem 1.75rem 1.75rem;
+  text-align: center;
+}
+.donate-external__brand {
+  margin-bottom: 0.5rem;
+}
+.donate-external__logo {
+  height: 48px;
+  width: auto;
+  object-fit: contain;
+}
+.donate-external__preline {
+  margin: 0 0 0.15rem;
+  font-size: 0.95rem;
+  color: #64748b;
+}
+.donate-external__org {
+  margin: 0 0 1.5rem;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+.donate-external__verified {
+  color: #2563eb;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+.donate-external__amount-block {
+  margin-bottom: 1.5rem;
+}
+.donate-external__amount-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.15rem;
+}
+.donate-external__currency {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+.donate-external__amount-input {
+  border: none;
+  background: transparent;
+  font-size: 3rem;
+  font-weight: 700;
+  color: #0f172a;
+  width: 10ch;
+  max-width: 100%;
+  text-align: left;
+  padding: 0;
+  line-height: 1;
+}
+.donate-external__amount-input:focus {
+  outline: none;
+  box-shadow: none;
+}
+.donate-external__amount-input::placeholder {
+  color: #cbd5e1;
+}
+.donate-external__currency-code {
+  margin: 0.25rem 0 0.75rem;
+  font-size: 0.9rem;
+  color: #94a3b8;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.donate-external__presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+.donate-external__preset {
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  border-radius: 999px;
+  padding: 0.35rem 0.85rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.donate-external__preset:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+.donate-external__frequency {
+  text-align: left;
+  margin-bottom: 1.25rem;
+}
+.donate-external__frequency-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748b;
+  margin-bottom: 0.5rem;
+}
+.donate-external__toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+.donate-external__toggle-btn {
+  border: none;
+  background: #fff;
+  padding: 0.75rem 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1e3a5f;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.donate-external__toggle-btn--active {
+  background: #1e3a5f;
+  color: #fff;
+}
+.donate-external__toggle-btn:not(.donate-external__toggle-btn--active):hover {
+  background: #f8fafc;
+}
+.donate-external__setup-note {
+  text-align: left;
+  font-size: 0.875rem;
+  color: #475569;
+  background: #f1f5f9;
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+.donate-external__setup-note code {
+  font-size: 0.8em;
+  word-break: break-all;
+}
+.donate-external__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+.donate-external__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  border-radius: 999px;
+  padding: 0.85rem 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none !important;
+  border: none;
+  cursor: pointer;
+  transition: filter 0.15s, transform 0.1s;
+}
+.donate-external__btn:hover {
+  filter: brightness(0.97);
+  color: inherit;
+}
+.donate-external__btn--paypal {
+  background: #ffc439;
+  color: #003087 !important;
+  border: 1px solid #ffb800;
+}
+.donate-external__btn--venmo {
+  background: #008cff;
+  color: #fff !important;
+}
+.donate-external__btn--card {
+  background: #fff;
+  color: #1e3a5f !important;
+  border: 2px solid #1e3a5f;
+}
+.donate-external__pp-logo {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+.donate-external__venmo-mark {
+  font-weight: 800;
+  font-style: italic;
+  font-size: 1.15rem;
+  line-height: 1;
+}
+.donate-external__fineprint {
+  margin: 1.25rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: #94a3b8;
+  text-align: left;
+}
+.donate-external__back {
+  margin: 1.25rem 0 0;
+  font-size: 0.9rem;
+}
+.donate-external__back a {
+  color: #64748b;
+}
+
+/* ═══════════════════════════════════════════════
    SITE-WIDE SHELL (landing-aligned, non-marketing routes)
    ═══════════════════════════════════════════════ */
 .beacon-site-main {
