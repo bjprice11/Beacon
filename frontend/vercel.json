@@ -12,6 +12,20 @@
       "source": "/Risk/:path*",
       "destination": "https://beacon-production-a89b.up.railway.app/Risk/:path*"
     },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { 
+      "source": "/(.*)", 
+      "destination": "/index.html" 
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://beacon-production-a89b.up.railway.app;"
+        }
+      ]
+    }
   ]
 }
