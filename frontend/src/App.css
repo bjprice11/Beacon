@@ -2266,6 +2266,11 @@ main#main-content.main-below-fixed-nav {
   pointer-events: auto;
 }
 
+.resident-record-modal-shell--narrow {
+  width: min(28rem, 100%);
+  max-width: 100%;
+}
+
 .resident-record-modal-dialog {
   width: 100%;
   flex: 1 1 auto;

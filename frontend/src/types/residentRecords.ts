@@ -75,6 +75,8 @@ export interface ResidentDetail {
   dateOfBirth?: string;
   sex?: string;
   caseStatus?: string;
+  /** Resident's assigned safehouse (for incident create prefill). */
+  safehouseId?: number;
   safehouseCity?: string;
   lengthOfStay?: string;
   currentRiskLevel?: string;
