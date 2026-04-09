@@ -11,11 +11,12 @@ namespace Beacon.API.Controllers;
 
 public class BeaconController : ControllerBase
 {
-    private PostgresContext _beaconContext;
+    private AuthIdentityDbContext _beaconContext;
 
-    public BeaconController(PostgresContext temp) => _beaconContext = temp;
+    public BeaconController(AuthIdentityDbContext temp) => _beaconContext = temp;
 
     //GET LIST OF ALL RESIDENTS
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
     [HttpGet("Residents")]
     public IActionResult GetResidentList()
     {
@@ -38,15 +39,17 @@ public class BeaconController : ControllerBase
     }
 
     //GET LIST OF ALL SAFEHOUSES
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
     [HttpGet("Safehouses")]
     public IEnumerable<Safehouse> GetSafehouses() => _beaconContext.Safehouses.ToList();
 
     //GET LIST OF ALL PARTNERS
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
     [HttpGet("Partners")]
     public IEnumerable<Partner> GetPartner() => _beaconContext.Partners.ToList();
 
     [HttpGet("admin/residents")]
-    [Authorize(Policy = AuthPolicies.ManageResidents)]
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
     public async Task<IActionResult> GetResidentsForAdmin()
     {
         var residents = await _beaconContext.Residents.ToListAsync();
@@ -54,11 +57,10 @@ public class BeaconController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Policy = AuthPolicies.ManageResidents)]
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
     public async Task<IActionResult> CreateResident([FromBody] Resident resident)
     {
-        var nextResidentId = _beaconContext.Residents.Max(r => (int?)r.ResidentId ?? 0) + 1;
-        resident.ResidentId = nextResidentId;
+        resident.ResidentId = await _beaconContext.AllocateNextResidentIdAsync();
         _beaconContext.Residents.Add(resident);
         await _beaconContext.SaveChangesAsync();
         return Created($"/residents/{resident.ResidentId}", resident);
@@ -141,6 +143,7 @@ public class BeaconController : ControllerBase
     }
 
     //GET SINGLE RESIDENT WITH SAFEHOUSE CITY
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
     [HttpGet("Resident/{id}")]
     public IActionResult GetResident(int id)
     {
@@ -167,6 +170,7 @@ public class BeaconController : ControllerBase
     }
 
     //GET SINGLE DONOR WITH FULL DONATION HISTORY
+    [Authorize(Policy = AuthPolicies.DonorOnly)]
     [HttpGet("Donor/{id}")]
     public IActionResult GetDonor(int id)
     {
@@ -195,6 +199,7 @@ public class BeaconController : ControllerBase
     }
 
     //GET SINGLE PARTNER WITH SAFEHOUSE ASSIGNMENTS
+    [Authorize(Policy = AuthPolicies.PartnerOnly)]
     [HttpGet("Partner/{id}")]
     public IActionResult GetPartner(int id)
     {
@@ -219,6 +224,7 @@ public class BeaconController : ControllerBase
     }
 
     //GET SINGLE SAFEHOUSE WITH ASSIGNED PARTNER NAMES
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
     [HttpGet("Safehouse/{id}")]
     public IActionResult GetSafehouse(int id)
     {
@@ -238,6 +244,7 @@ public class BeaconController : ControllerBase
     }
 
     //ADMIN: ALL RESIDENTS WITH SAFEHOUSE CITY
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
     [HttpGet("AllResidents")]
     public IActionResult GetAllResidents()
     {
@@ -264,6 +271,7 @@ public class BeaconController : ControllerBase
     }
 
     //ADMIN: ALL PARTNERS WITH ASSIGNED SAFEHOUSE
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
     [HttpGet("AllPartners")]
     public IActionResult GetAllPartners()
     {
@@ -297,6 +305,7 @@ public class BeaconController : ControllerBase
     }
 
     //ADMIN: ALL DONORS
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
     [HttpGet("AllDonors")]
     public IActionResult GetAllDonors()
     {
@@ -319,6 +328,7 @@ public class BeaconController : ControllerBase
     }
 
     //ADMIN: ALL DONATIONS WITH SUPPORTER NAME AND ALLOCATIONS
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
     [HttpGet("AllDonations")]
     public IActionResult GetAllDonations()
     {
@@ -349,6 +359,7 @@ public class BeaconController : ControllerBase
     }
 
     //GET DONOR DASHBOARD: personal info + donation history with program areas
+    [Authorize(Policy = AuthPolicies.DonorOnly)]
     [HttpGet("DonorDashboard/{id}")]
     public IActionResult GetDonorDashboard(int id)
     {

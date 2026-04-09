@@ -1,14 +1,13 @@
+import SearchBar from "../components/SearchBar";
 import { Link } from "react-router-dom";
-import AdminSearchInput from "../components/AdminSearchInput";
+import beaconImage from "../assets/beaconimage.avif";
 
 function AdminDashboardPage() {
   return (
     <>
       <div className="container py-4">
         <div className="d-flex justify-content-center mb-4">
-          <div style={{ width: "100%", maxWidth: 760 }}>
-            <AdminSearchInput placeholder="Search will carry into admin list pages..." />
-          </div>
+          <SearchBar maxWidth={760} inputClassName="rounded-pill px-4 py-2" />
         </div>
       </div>
 
@@ -21,10 +20,21 @@ function AdminDashboardPage() {
           marginLeft: "-50vw",
           marginRight: "-50vw",
           width: "100vw",
-          height: "230px",
-          background: "linear-gradient(135deg, var(--beacon-navy) 0%, #1E3A5F 100%)",
         }}
-      />
+      >
+        <img
+          src={beaconImage}
+          alt="The Beacon Project"
+          style={{
+            display: "block",
+            width: "100vw",
+            height: "230px",
+            objectFit: "cover",
+            // Keeps the lighthouse near the visual center (tweak % if the asset changes)
+            objectPosition: "52% 38%",
+          }}
+        />
+      </div>
 
       <div className="container pb-4">
         <div className="d-flex gap-3 align-items-stretch flex-column flex-md-row w-100">

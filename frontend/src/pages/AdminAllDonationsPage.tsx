@@ -53,7 +53,7 @@ function AdminAllDonationsPage() {
   const { query } = useAdminSearch();
 
   useEffect(() => {
-    fetch(`${BASE_URL}/AllDonations`)
+    fetch(`${BASE_URL}/AllDonations`, { credentials: "include" })
       .then((res) => res.json())
       .then(setDonations)
       .catch((err) => setError((err as Error).message))

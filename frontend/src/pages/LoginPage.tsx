@@ -1,19 +1,60 @@
-import { type FormEvent, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import Header from '../components/Header';
+import { type FormEvent, useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
+  buildExternalLoginUrl,
+  getExternalAuthProviders,
   loginUser,
 } from '../lib/authAPI';
+import { getPostLoginPath } from '../lib/postLoginRedirect';
+import { getSafeNextFromSearch } from '../lib/safeInternalPath';
 import { useAuth } from '../context/AuthContext.tsx';
 
 function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { refreshAuthSession } = useAuth();
+  const [isGoogleAvailable, setIsGoogleAvailable] = useState(false);
+  const [externalAuthLoadError, setExternalAuthLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const externalError = searchParams.get('externalError');
+    if (externalError) {
+      setErrorMessage(externalError);
+    }
+  }, [location.search]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const providers = await getExternalAuthProviders();
+        const hasGoogle = providers.some(
+          (p) => p?.name?.toLowerCase() === 'google'
+        );
+        if (!cancelled) {
+          setIsGoogleAvailable(hasGoogle);
+          setExternalAuthLoadError(null);
+        }
+      } catch {
+        if (!cancelled) {
+          setIsGoogleAvailable(true);
+          setExternalAuthLoadError(
+            'Google sign-in may be available, but the app could not verify provider availability right now.'
+          );
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -23,9 +64,23 @@ function LoginPage() {
 
     try {
       await loginUser(email, password, rememberMe);
-      await refreshAuthSession();
-      navigate('/');
-
+      let session = await refreshAuthSession();
+      if (!session.isAuthenticated) {
+        await new Promise((r) => setTimeout(r, 250));
+        session = await refreshAuthSession();
+      }
+      if (!session.isAuthenticated) {
+        setErrorMessage(
+          'Sign-in succeeded but your session was not saved. Try Chrome, or allow cross-site cookies for this app (Vercel + API on another domain).'
+        );
+        return;
+      }
+      const intended = getSafeNextFromSearch(location.search);
+      if (intended) {
+        navigate(intended, { replace: true });
+      } else {
+        navigate(getPostLoginPath(session), { replace: true });
+      }
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : 'Unable to log in.'
@@ -37,7 +92,6 @@ function LoginPage() {
 
   return (
     <div className="container mt-4">
-      <Header />
       <div className="row justify-content-center">
         <div className="col-md-6 col-lg-5">
           <div className="card shadow-sm">
@@ -99,6 +153,37 @@ function LoginPage() {
                   {isSubmitting ? 'Signing in...' : 'Sign in'}
                 </button>
               </form>
+
+              {isGoogleAvailable ? (
+                <>
+                  <div className="text-center my-3 text-muted">or</div>
+                  {externalAuthLoadError ? (
+                    <div className="alert alert-warning" role="alert">
+                      {externalAuthLoadError}
+                    </div>
+                  ) : null}
+                  <button
+                    type="button"
+                    className="btn btn-outline-dark w-100"
+                    disabled={isSubmitting}
+                    onClick={() => {
+                      try {
+                        const next =
+                          getSafeNextFromSearch(location.search) ?? '/';
+                        window.location.assign(
+                          buildExternalLoginUrl('Google', next)
+                        );
+                      } catch (e) {
+                        setErrorMessage(
+                          e instanceof Error ? e.message : 'Unable to start Google sign-in.'
+                        );
+                      }
+                    }}
+                  >
+                    Continue with Google
+                  </button>
+                </>
+              ) : null}
 
               <p className="mt-3 mb-0">
                 Need an account? <Link to="/register">Register here</Link>.
