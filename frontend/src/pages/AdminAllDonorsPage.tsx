@@ -2,6 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { BASE_URL } from "../config/api";
 import Pagination from "../components/Pagination";
 import AdminSearchInput from "../components/AdminSearchInput";
+import AdminDashboardBackLink from "../components/AdminDashboardBackLink";
+import AdminGlassFilterBar, {
+  type AdminGlassFilterSection,
+} from "../components/AdminGlassFilterBar";
 import { useAdminSearch } from "../context/AdminSearchContext";
 
 function formatDate(dateStr: string): string {
@@ -10,6 +14,18 @@ function formatDate(dateStr: string): string {
   const dd = String(d.getDate()).padStart(2, "0");
   const yyyy = d.getFullYear();
   return `${mm}-${dd}-${yyyy}`;
+}
+
+function uniqueField<T>(
+  items: T[],
+  pick: (p: T) => string | undefined,
+): string[] {
+  const set = new Set<string>();
+  for (const x of items) {
+    const v = pick(x)?.trim();
+    if (v) set.add(v);
+  }
+  return Array.from(set).sort((a, b) => a.localeCompare(b));
 }
 
 interface AdminDonor {
@@ -33,6 +49,13 @@ function AdminAllDonorsPage() {
   const [view, setView] = useState<"table" | "card">("table");
   const pageSize = 15;
   const { query } = useAdminSearch();
+  const [openFilterMenu, setOpenFilterMenu] = useState<string | null>(null);
+  const [listFilters, setListFilters] = useState({
+    status: "",
+    region: "",
+    country: "",
+    relationship: "",
+  });
 
   useEffect(() => {
     fetch(`${BASE_URL}/AllDonors`, { credentials: "include" })
@@ -43,30 +66,128 @@ function AdminAllDonorsPage() {
   }, []);
 
   const normalizedQuery = query.trim().toLowerCase();
+
+  const statusOptions = useMemo(
+    () => uniqueField(donors, (d) => d.status),
+    [donors],
+  );
+  const regionOptions = useMemo(
+    () => uniqueField(donors, (d) => d.region),
+    [donors],
+  );
+  const countryOptions = useMemo(
+    () => uniqueField(donors, (d) => d.country),
+    [donors],
+  );
+  const relationshipOptions = useMemo(
+    () => uniqueField(donors, (d) => d.relationship),
+    [donors],
+  );
+
+  const donorGlassSections = useMemo<AdminGlassFilterSection[]>(
+    () => [
+      {
+        id: "status",
+        tabLabel: "Status",
+        allOption: { title: "All statuses", meta: "Any donor status" },
+        choices: statusOptions.map((v) => ({
+          value: v,
+          title: v,
+          meta: "Filter by status",
+        })),
+      },
+      {
+        id: "region",
+        tabLabel: "Region",
+        allOption: { title: "All regions", meta: "Any region" },
+        choices: regionOptions.map((v) => ({
+          value: v,
+          title: v,
+          meta: "Filter by region",
+        })),
+      },
+      {
+        id: "country",
+        tabLabel: "Country",
+        allOption: { title: "All countries", meta: "Any country" },
+        choices: countryOptions.map((v) => ({
+          value: v,
+          title: v,
+          meta: "Filter by country",
+        })),
+      },
+      {
+        id: "relationship",
+        tabLabel: "Relationship",
+        allOption: {
+          title: "All relationships",
+          meta: "Any relationship type",
+        },
+        choices: relationshipOptions.map((v) => ({
+          value: v,
+          title: v,
+          meta: "Filter by relationship to Beacon",
+        })),
+      },
+    ],
+    [statusOptions, regionOptions, countryOptions, relationshipOptions],
+  );
+
   const filteredDonors = useMemo(
     () =>
       donors.filter((donor) => {
-        if (!normalizedQuery) return true;
-        return [
-          donor.displayName,
-          donor.relationship,
-          donor.region,
-          donor.country,
-          donor.email,
-          donor.phone,
-          donor.status,
-          donor.acquisitionChannel,
-          String(donor.donorId),
-        ]
-          .filter(Boolean)
-          .some((value) => String(value).toLowerCase().includes(normalizedQuery));
+        if (normalizedQuery) {
+          const matchesSearch = [
+            donor.displayName,
+            donor.relationship,
+            donor.region,
+            donor.country,
+            donor.email,
+            donor.phone,
+            donor.status,
+            donor.acquisitionChannel,
+            String(donor.donorId),
+          ]
+            .filter(Boolean)
+            .some((value) =>
+              String(value).toLowerCase().includes(normalizedQuery),
+            );
+          if (!matchesSearch) return false;
+        }
+
+        if (
+          listFilters.status &&
+          (donor.status?.trim() ?? "") !== listFilters.status
+        ) {
+          return false;
+        }
+        if (
+          listFilters.region &&
+          (donor.region?.trim() ?? "") !== listFilters.region
+        ) {
+          return false;
+        }
+        if (
+          listFilters.country &&
+          (donor.country?.trim() ?? "") !== listFilters.country
+        ) {
+          return false;
+        }
+        if (
+          listFilters.relationship &&
+          (donor.relationship?.trim() ?? "") !== listFilters.relationship
+        ) {
+          return false;
+        }
+
+        return true;
       }),
-    [donors, normalizedQuery],
+    [donors, normalizedQuery, listFilters],
   );
 
   useEffect(() => {
     setPage(1);
-  }, [normalizedQuery, view]);
+  }, [normalizedQuery, view, listFilters]);
 
   const totalCount = filteredDonors.length;
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
@@ -94,7 +215,20 @@ function AdminAllDonorsPage() {
 
   return (
     <div className="beacon-page container py-4">
+      <AdminDashboardBackLink />
       <AdminSearchInput placeholder="Search donors by name, contact, location, or status..." />
+
+      <AdminGlassFilterBar
+        ariaLabel="Filter donors"
+        openMenu={openFilterMenu}
+        setOpenMenu={setOpenFilterMenu}
+        values={listFilters}
+        onValueChange={(sectionId, value) =>
+          setListFilters((prev) => ({ ...prev, [sectionId]: value }))
+        }
+        sections={donorGlassSections}
+      />
+
       <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
         <div>
           <p className="landing-section__eyebrow mb-1">Admin</p>
@@ -102,12 +236,14 @@ function AdminAllDonorsPage() {
         </div>
         <div className="btn-group">
           <button
+            type="button"
             className={`btn ${view === "table" ? "btn-primary" : "btn-outline-primary"}`}
             onClick={() => setView("table")}
           >
             Table
           </button>
           <button
+            type="button"
             className={`btn ${view === "card" ? "btn-primary" : "btn-outline-primary"}`}
             onClick={() => setView("card")}
           >
@@ -157,61 +293,25 @@ function AdminAllDonorsPage() {
         <div className="row g-4">
           {visibleDonors.map((d) => (
             <div key={d.donorId} className="col-sm-6 col-lg-4">
-              <div className="card h-100">
-                <div className="card-body">
+              <div className="admin-all-residents-card card h-100 shadow-sm">
+                <div className="card-body d-flex flex-column">
                   <h5 className="card-title mb-3">{d.displayName ?? "Unknown"}</h5>
-                  <table className="table table-sm mb-0">
-                    <tbody>
-                      {d.email && (
-                        <tr>
-                          <th>Email</th>
-                          <td>{d.email}</td>
-                        </tr>
-                      )}
-                      {d.phone && (
-                        <tr>
-                          <th>Phone</th>
-                          <td>{d.phone}</td>
-                        </tr>
-                      )}
-                      {d.status && (
-                        <tr>
-                          <th>Status</th>
-                          <td>{d.status}</td>
-                        </tr>
-                      )}
-                      {d.relationship && (
-                        <tr>
-                          <th>Relationship</th>
-                          <td>{d.relationship}</td>
-                        </tr>
-                      )}
-                      {d.region && (
-                        <tr>
-                          <th>Region</th>
-                          <td>{d.region}</td>
-                        </tr>
-                      )}
-                      {d.country && (
-                        <tr>
-                          <th>Country</th>
-                          <td>{d.country}</td>
-                        </tr>
-                      )}
-                      {d.firstDonation && (
-                        <tr>
-                          <th>First Donation</th>
-                          <td>{formatDate(d.firstDonation)}</td>
-                        </tr>
-                      )}
-                      {d.acquisitionChannel && (
-                        <tr>
-                          <th>Acquisition</th>
-                          <td>{d.acquisitionChannel}</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
+                  <dl className="row small mb-0 flex-grow-1">
+                    <dt className="col-5 text-muted fw-normal">Status</dt>
+                    <dd className="col-7 mb-2">{d.status ?? "\u2014"}</dd>
+                    <dt className="col-5 text-muted fw-normal">Relationship</dt>
+                    <dd className="col-7 mb-2">{d.relationship ?? "\u2014"}</dd>
+                    <dt className="col-5 text-muted fw-normal">Region</dt>
+                    <dd className="col-7 mb-2">{d.region ?? "\u2014"}</dd>
+                    <dt className="col-5 text-muted fw-normal">Country</dt>
+                    <dd className="col-7 mb-2">{d.country ?? "\u2014"}</dd>
+                    <dt className="col-5 text-muted fw-normal">Email</dt>
+                    <dd className="col-7 mb-2">{d.email ?? "\u2014"}</dd>
+                    <dt className="col-5 text-muted fw-normal">First gift</dt>
+                    <dd className="col-7 mb-0">
+                      {d.firstDonation ? formatDate(d.firstDonation) : "\u2014"}
+                    </dd>
+                  </dl>
                 </div>
               </div>
             </div>

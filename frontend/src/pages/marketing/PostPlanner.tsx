@@ -6,6 +6,7 @@ import {
   type PostPredictionResponse,
 } from "../../api/postPlanner";
 import { Link } from "react-router-dom";
+import AdminDashboardBackLink from "../../components/AdminDashboardBackLink";
 
 const PLATFORMS = ["Facebook", "Instagram", "Twitter", "TikTok", "YouTube"];
 const POST_TYPES = ["Organic", "Paid", "Story", "Reel"];
@@ -76,17 +77,16 @@ export default function PostPlanner() {
 
       return (
     <div className="beacon-page container py-4">
-    {/* Centered header */}
-    <div className="row justify-content-center text-center mb-4">
-      <div className="col-lg-8">
-        <p className="landing-section__eyebrow mb-2">Marketing</p>
-        <h1>Post Planner</h1>
-        <p className="post-planner__lead">
-          Draft a post and see its predicted success rate in real time.
-        </p>
-        <Link to="/admin/risk" className="btn btn-primary btn-sm mt-2">
-          Back to Risk Center
-        </Link>
+      <AdminDashboardBackLink />
+      {/* Centered header */}
+      <div className="row justify-content-center text-center mb-4">
+        <div className="col-lg-8">
+          <p className="landing-section__eyebrow mb-2">Marketing</p>
+          <h1>Post Planner</h1>
+          <p className="post-planner__lead mb-0">
+            Draft a post and see its predicted success rate in real time.
+          </p>
+        </div>
       </div>
     </div>
 

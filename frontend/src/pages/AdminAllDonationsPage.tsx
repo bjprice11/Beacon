@@ -2,6 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { BASE_URL } from "../config/api";
 import Pagination from "../components/Pagination";
 import AdminSearchInput from "../components/AdminSearchInput";
+import AdminDashboardBackLink from "../components/AdminDashboardBackLink";
+import AdminGlassFilterBar, {
+  type AdminGlassFilterChoice,
+  type AdminGlassFilterSection,
+} from "../components/AdminGlassFilterBar";
 import { useAdminSearch } from "../context/AdminSearchContext";
 
 function formatDate(dateStr: string): string {
@@ -11,6 +16,44 @@ function formatDate(dateStr: string): string {
   const yyyy = d.getFullYear();
   return `${mm}-${dd}-${yyyy}`;
 }
+
+function uniqueField<T>(
+  items: T[],
+  pick: (p: T) => string | undefined,
+): string[] {
+  const set = new Set<string>();
+  for (const x of items) {
+    const v = pick(x)?.trim();
+    if (v) set.add(v);
+  }
+  return Array.from(set).sort((a, b) => a.localeCompare(b));
+}
+
+/** Buckets by how long ago the donation date was */
+function donationRecencyBucket(dateStr: string): string {
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return "unknown";
+  const days = Math.floor((Date.now() - d.getTime()) / 86400000);
+  if (days < 0) return "future";
+  if (days <= 30) return "30d";
+  if (days <= 90) return "90d";
+  if (days <= 365) return "365d";
+  return "older";
+}
+
+const DONATION_WHEN_CHOICES: AdminGlassFilterChoice[] = [
+  { value: "30d", title: "Last 30 days", meta: "Gift date on record" },
+  { value: "90d", title: "Last 90 days", meta: "Gift date on record" },
+  { value: "365d", title: "Last 12 months", meta: "Gift date on record" },
+  { value: "older", title: "Older than 1 year", meta: "Gift date on record" },
+  { value: "future", title: "Future-dated", meta: "Unusual date only" },
+  { value: "unknown", title: "Invalid date", meta: "Missing or bad date" },
+];
+
+const DONATION_RECURRING_CHOICES: AdminGlassFilterChoice[] = [
+  { value: "yes", title: "Recurring", meta: "Marked as repeating" },
+  { value: "no", title: "One-time", meta: "Single gift" },
+];
 
 interface AdminDonation {
   donationId: number;
@@ -51,6 +94,13 @@ function AdminAllDonationsPage() {
   const [page, setPage] = useState(1);
   const pageSize = 15;
   const { query } = useAdminSearch();
+  const [openFilterMenu, setOpenFilterMenu] = useState<string | null>(null);
+  const [listFilters, setListFilters] = useState({
+    type: "",
+    program: "",
+    recurring: "",
+    when: "",
+  });
 
   useEffect(() => {
     fetch(`${BASE_URL}/AllDonations`, { credentials: "include" })
@@ -61,33 +111,119 @@ function AdminAllDonationsPage() {
   }, []);
 
   const normalizedQuery = query.trim().toLowerCase();
+
+  const typeOptions = useMemo(
+    () => uniqueField(donations, (d) => d.donationType),
+    [donations],
+  );
+  const programOptions = useMemo(
+    () => uniqueField(donations, (d) => d.programArea),
+    [donations],
+  );
+
+  const donationsGlassSections = useMemo<AdminGlassFilterSection[]>(
+    () => [
+      {
+        id: "type",
+        tabLabel: "Type",
+        allOption: { title: "All types", meta: "Monetary, in-kind, etc." },
+        choices: typeOptions.map((v) => ({
+          value: v,
+          title: v,
+          meta: "Filter by gift type",
+        })),
+      },
+      {
+        id: "program",
+        tabLabel: "Program",
+        allOption: { title: "All program areas", meta: "Any program bucket" },
+        choices: programOptions.map((v) => ({
+          value: v,
+          title: v,
+          meta: "Filter by program area",
+        })),
+      },
+      {
+        id: "recurring",
+        tabLabel: "Recurring",
+        allOption: {
+          title: "All gifts",
+          meta: "Both one-time and recurring",
+        },
+        choices: DONATION_RECURRING_CHOICES,
+      },
+      {
+        id: "when",
+        tabLabel: "When",
+        allOption: { title: "Any time", meta: "All gift dates" },
+        choices: DONATION_WHEN_CHOICES,
+      },
+    ],
+    [typeOptions, programOptions],
+  );
+
   const filteredDonations = useMemo(
     () =>
       donations.filter((donation) => {
-        if (!normalizedQuery) return true;
-        return [
-          donation.supporterName,
-          donation.donationType,
-          donation.programArea,
-          donation.notes,
-          String(donation.donationId),
-          donation.isRecurring ? "yes" : "no",
-        ]
-          .filter(Boolean)
-          .some((value) => String(value).toLowerCase().includes(normalizedQuery));
+        if (normalizedQuery) {
+          const matchesSearch = [
+            donation.supporterName,
+            donation.donationType,
+            donation.programArea,
+            donation.notes,
+            String(donation.donationId),
+            donation.isRecurring ? "recurring yes" : "one-time",
+          ]
+            .filter(Boolean)
+            .some((value) =>
+              String(value).toLowerCase().includes(normalizedQuery),
+            );
+          if (!matchesSearch) return false;
+        }
+
+        if (
+          listFilters.type &&
+          (donation.donationType?.trim() ?? "") !== listFilters.type
+        ) {
+          return false;
+        }
+        if (
+          listFilters.program &&
+          (donation.programArea?.trim() ?? "") !== listFilters.program
+        ) {
+          return false;
+        }
+        if (listFilters.recurring === "yes" && !donation.isRecurring) {
+          return false;
+        }
+        if (listFilters.recurring === "no" && donation.isRecurring) {
+          return false;
+        }
+        if (listFilters.when) {
+          if (
+            donationRecencyBucket(donation.donationDate) !== listFilters.when
+          ) {
+            return false;
+          }
+        }
+
+        return true;
       }),
-    [donations, normalizedQuery],
+    [donations, normalizedQuery, listFilters],
   );
 
   useEffect(() => {
     setPage(1);
-  }, [normalizedQuery]);
+  }, [normalizedQuery, listFilters]);
 
   const totalCount = filteredDonations.length;
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
   const currentPage = Math.min(Math.max(page, 1), totalPages);
   const startIndex = (currentPage - 1) * pageSize;
-  const visibleDonations = filteredDonations.slice(startIndex, startIndex + pageSize);
+  const visibleDonations = filteredDonations.slice(
+    startIndex,
+    startIndex + pageSize,
+  );
 
   if (loading) {
     return (
@@ -109,7 +245,20 @@ function AdminAllDonationsPage() {
 
   return (
     <div className="beacon-page container py-4">
+      <AdminDashboardBackLink />
       <AdminSearchInput placeholder="Search donations by supporter, type, area, or notes..." />
+
+      <AdminGlassFilterBar
+        ariaLabel="Filter donations"
+        openMenu={openFilterMenu}
+        setOpenMenu={setOpenFilterMenu}
+        values={listFilters}
+        onValueChange={(sectionId, value) =>
+          setListFilters((prev) => ({ ...prev, [sectionId]: value }))
+        }
+        sections={donationsGlassSections}
+      />
+
       <p className="landing-section__eyebrow mb-1">Admin</p>
       <h1 className="mb-4">All Donations</h1>
       <div className="card beacon-detail-card">

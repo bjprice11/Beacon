@@ -8,6 +8,7 @@ import {
   type SupporterRisk,
   type RiskSummary,
 } from "../api/Risk";
+import AdminDashboardBackLink from "../components/AdminDashboardBackLink";
 
 type Tab = "residents-incident" | "residents-reintegration" | "supporters";
 
@@ -108,20 +109,23 @@ export default function RiskManagementCenter() {
 
   return (
     <div className="beacon-page container py-4">
-        {/* Centered header */}
-        <div className="row justify-content-center text-center mb-4">
-            <div className="col-lg-8">
-            <p className="landing-section__eyebrow mb-2">Admin</p>
-            <h1>Risk Management Center</h1>
-            <p className="post-planner__lead">
-                Predictive risk scores for residents and supporters, powered by
-                the Beacon ML pipelines.
-            </p>
-            <Link to="/admin/post-planner" className="btn btn-primary btn-sm mt-2">
-                Open Post Planner
-            </Link>
-            </div>
+      <AdminDashboardBackLink />
+      {/* Centered header */}
+      <div className="row justify-content-center text-center mb-4">
+        <div className="col-lg-8">
+          <p className="landing-section__eyebrow mb-2">Admin</p>
+          <h1>Risk Management Center</h1>
+          <p className="post-planner__lead mb-0">
+            Predictive risk scores for residents and supporters, powered by
+            the Beacon ML pipelines.
+          </p>
         </div>
+      </div>
+      <div className="text-center mb-4">
+        <Link to="/admin/post-planner" className="btn btn-primary btn-sm">
+          Open Post Planner
+        </Link>
+      </div>
 
       {/* Summary cards */}
       <div className="row g-3 mb-4">
