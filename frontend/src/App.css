@@ -1,6 +1,11 @@
 /* ═══════════════════════════════════════════════
    ANNOUNCEMENT BAR
    ═══════════════════════════════════════════════ */
+:root {
+  /* Fixed strip height; keep in sync with .beacon-navbar offsets below */
+  --beacon-site-announcement-h: 40px;
+}
+
 .announcement-bar {
   position: fixed;
   top: 0;
@@ -137,6 +142,15 @@ a.admin-all-residents-card-link:focus-visible .admin-all-residents-card {
 /* Glass overlay nav routes (no home announcement) — flush to top */
 .beacon-navbar--fixed.beacon-navbar--auth-overlay {
   top: 0;
+}
+
+/* Global announcement rendered in App (non-home, non-admin): sit below fixed strip */
+.beacon-navbar--fixed.beacon-navbar--auth-overlay.beacon-navbar--below-global-announcement {
+  top: var(--beacon-site-announcement-h);
+}
+
+.beacon-navbar--static.beacon-navbar--below-global-announcement {
+  margin-top: var(--beacon-site-announcement-h);
 }
 
 /* App routes: in document flow at top; scrolls away with the page */
@@ -3138,6 +3152,35 @@ main#main-content.main-below-fixed-nav.main-below-fixed-nav--tight {
   padding-top: calc(80px + env(safe-area-inset-top, 0px));
 }
 
+/* Fixed top donate strip from App (non-home, non-admin): clear nav + announcement */
+main.main-with-site-announcement .impact-page__hero {
+  padding-top: calc(5.75rem + var(--beacon-site-announcement-h));
+}
+main.main-with-site-announcement .about-page__hero {
+  padding-top: calc(5.75rem + var(--beacon-site-announcement-h));
+}
+main.main-with-site-announcement .contact-page__hero {
+  padding-top: calc(5.75rem + var(--beacon-site-announcement-h));
+}
+main.main-with-site-announcement .admin-dashboard__hero {
+  padding-top: calc(5.75rem + var(--beacon-site-announcement-h));
+}
+main.main-with-site-announcement .donate-external {
+  padding: calc(5.75rem + var(--beacon-site-announcement-h)) 1rem 1.5rem;
+}
+main.main-with-site-announcement .glass-nav-offset {
+  padding-top: calc(5.75rem + var(--beacon-site-announcement-h));
+}
+main.main-with-site-announcement .login-page.beacon-page--auth,
+main.main-with-site-announcement .register-page.beacon-page--auth,
+main.main-with-site-announcement .logout-page.beacon-page--auth {
+  padding-top: calc(5.75rem + var(--beacon-site-announcement-h));
+}
+main.main-with-site-announcement .beacon-page--auth:not(.login-page):not(.register-page):not(.logout-page) {
+  padding-top: calc(5.75rem + var(--beacon-site-announcement-h));
+  padding-bottom: clamp(1rem, 3vh, 2rem);
+}
+
 /* Login, register, logout, complete profile — center card in viewport below nav */
 .beacon-page--auth {
   box-sizing: border-box;
@@ -3510,6 +3553,9 @@ main#main-content.main-below-fixed-nav.main-below-fixed-nav--tight {
     padding-top: 5.75rem;
     padding-bottom: 2rem;
   }
+  main.main-with-site-announcement .donate-external {
+    padding-top: calc(5.75rem + var(--beacon-site-announcement-h));
+  }
   .donate-external__bg-video {
     object-position: 70% center;
     transform: scale(1.1);
@@ -3643,7 +3689,7 @@ main#main-content.main-below-fixed-nav.main-below-fixed-nav--tight {
   -webkit-backdrop-filter: blur(9px);
 }
 
-/* Donate strip — Impact, Contact, dashboards */
+/* Donate strip (legacy layout; global bar uses .announcement-bar) */
 .donate-inline-banner {
   background: #ffffff;
   border-top: 1px solid rgba(27, 38, 29, 0.08);
@@ -3807,29 +3853,6 @@ main#main-content.main-below-fixed-nav.main-below-fixed-nav--tight {
   text-transform: uppercase;
   color: var(--beacon-text-muted);
   font-weight: 700;
-}
-.impact-page__cta {
-  border-radius: 16px;
-  border: 1px solid rgba(59, 82, 69, 0.14);
-  background: rgba(255, 255, 255, 0.8);
-  padding: 1.2rem;
-}
-.impact-page__cta-actions {
-  display: flex;
-  gap: 0.65rem;
-  flex-wrap: wrap;
-}
-.impact-page__cta-btn {
-  border: 1px solid rgba(59, 82, 69, 0.22);
-  border-radius: 999px;
-  padding: 0.5rem 0.9rem;
-  text-decoration: none;
-  background: #fff;
-  color: var(--beacon-primary);
-  font-weight: 700;
-}
-.impact-page__cta-btn--ghost {
-  background: linear-gradient(145deg, rgba(106, 154, 140, 0.2), rgba(210, 139, 99, 0.22));
 }
 
 /* About page */
