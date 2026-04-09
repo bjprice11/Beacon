@@ -53,13 +53,18 @@
    ═══════════════════════════════════════════════ */
 .beacon-navbar {
   position: fixed;
-  top: 40px;
+  top: 0;
   left: 0;
   right: 0;
   z-index: 1030;
   padding: 1rem 0;
   transition: background 0.4s ease, backdrop-filter 0.4s ease,
     box-shadow 0.4s ease, padding 0.4s ease;
+}
+
+/* Only the landing page renders the announcement bar; offset nav so it sits underneath */
+.beacon-navbar.beacon-navbar--below-announcement {
+  top: 40px;
 }
 
 .beacon-navbar--glass {
@@ -71,7 +76,7 @@
   box-shadow: 0 1px 8px rgba(27, 38, 29, 0.06);
 }
 .beacon-navbar--scrolled {
-  background: rgba(242, 244, 240, 0.88);
+  background: rgba(242, 244, 240, 0.74);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   box-shadow: 0 2px 16px rgba(27, 38, 29, 0.08);
@@ -300,6 +305,7 @@
   align-items: flex-end;
   overflow: hidden;
 }
+
 .hero__video-wrap {
   position: absolute;
   inset: 0;
@@ -329,6 +335,7 @@
   padding-bottom: clamp(3rem, 6vh, 6rem);
   max-width: 1100px;
 }
+
 .hero__title {
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-weight: 300;
@@ -338,6 +345,256 @@
   letter-spacing: -0.02em;
   margin: 0 0 1.5rem 0;
   text-shadow: 0 2px 24px rgba(27, 38, 29, 0.4);
+}
+
+/* Full-width donate section (Philippines video) — placed after mission on landing */
+.landing-donate-video {
+  position: relative;
+  min-height: min(92vh, 980px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(4rem, 10vh, 6rem) clamp(1rem, 3vw, 2rem);
+  overflow: hidden;
+}
+/* Extra separation so this block reads as a distinct “give” moment */
+.landing-donate-video--featured {
+  margin-top: clamp(1.5rem, 4vw, 3rem);
+  padding-top: clamp(5rem, 12vh, 8rem);
+  padding-bottom: clamp(5rem, 12vh, 8rem);
+  border-top: 1px solid rgba(45, 79, 53, 0.08);
+}
+.landing-donate-video__impact-kicker {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: rgba(255, 255, 255, 0.92);
+  margin: 0 0 0.65rem;
+  text-shadow: 0 1px 12px rgba(15, 23, 42, 0.35);
+}
+.landing-donate-video__impact-copy {
+  font-size: clamp(0.95rem, 2.2vw, 1.05rem);
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.88);
+  max-width: 36ch;
+  margin: 0 0 clamp(1.35rem, 3.5vh, 2rem);
+  text-shadow: 0 1px 14px rgba(15, 23, 42, 0.4);
+}
+.landing-donate-video__bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+.landing-donate-video__video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 35%;
+}
+.landing-donate-video__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    165deg,
+    rgba(15, 23, 42, 0.5) 0%,
+    rgba(27, 38, 29, 0.35) 45%,
+    rgba(27, 38, 29, 0.65) 100%
+  );
+}
+.landing-donate-video__inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 520px;
+  width: 100%;
+}
+.landing-donate-video__title {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 600;
+  font-size: clamp(1.75rem, 4.2vw, 2.35rem);
+  line-height: 1.2;
+  color: #fff;
+  margin: 0 0 clamp(1rem, 2.5vh, 1.35rem);
+  max-width: 22ch;
+  text-shadow: 0 2px 24px rgba(27, 38, 29, 0.45);
+}
+.landing-donate-video__title-line {
+  display: block;
+  font-weight: 700;
+  margin-top: 0.15em;
+}
+
+/* ─── Hero donate card (white widget) ─── */
+.hero-donate-card {
+  width: 100%;
+  max-width: 400px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.2), 0 2px 8px rgba(15, 23, 42, 0.08);
+  padding: clamp(1.25rem, 3vw, 1.75rem);
+  text-align: left;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+.hero-donate-card__lead {
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: #475569;
+  margin: 0 0 1.1rem;
+}
+.hero-donate-card__section-head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #0f172a;
+  margin-bottom: 0.75rem;
+}
+.hero-donate-card__check {
+  color: var(--beacon-primary);
+  font-size: 1.1rem;
+}
+.hero-donate-card__frequency {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.hero-donate-card__freq {
+  border: 2px solid #e2e8f0;
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 0.65rem 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+.hero-donate-card__freq:hover {
+  border-color: #cbd5e1;
+  background: #f1f5f9;
+}
+.hero-donate-card__freq--active {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.08);
+  color: #1e40af;
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.25);
+}
+.hero-donate-card__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.45rem;
+  margin-bottom: 0.75rem;
+}
+.hero-donate-card__amt {
+  border: 1px solid #e2e8f0;
+  background: #f1f5f9;
+  border-radius: 8px;
+  padding: 0.55rem 0.35rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.hero-donate-card__amt:hover {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+}
+.hero-donate-card__amt--active {
+  background: rgba(45, 79, 53, 0.12);
+  border-color: var(--beacon-primary);
+  color: var(--beacon-primary-dark);
+}
+.hero-donate-card__other {
+  display: flex;
+  align-items: center;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.5rem 0.65rem;
+  margin-bottom: 0.75rem;
+  cursor: text;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.hero-donate-card__other:focus-within {
+  border-color: var(--beacon-primary);
+  box-shadow: 0 0 0 3px rgba(45, 79, 53, 0.12);
+}
+.hero-donate-card__other-prefix {
+  font-weight: 700;
+  color: #64748b;
+  margin-right: 0.25rem;
+}
+.hero-donate-card__other-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #0f172a;
+  min-width: 0;
+  padding: 0.15rem 0;
+}
+.hero-donate-card__other-input:focus {
+  outline: none;
+}
+.hero-donate-card__other-input::placeholder {
+  color: #94a3b8;
+  font-weight: 500;
+}
+.hero-donate-card__other-suffix {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+}
+.hero-donate-card__note-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+  color: #475569;
+  cursor: pointer;
+  margin-bottom: 0.5rem;
+  user-select: none;
+}
+.hero-donate-card__note-toggle input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--beacon-primary);
+}
+.hero-donate-card__note-area {
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  resize: vertical;
+  min-height: 4.5rem;
+}
+.hero-donate-card__cta {
+  display: block;
+  width: 100%;
+  text-align: center;
+  background: var(--beacon-primary);
+  color: #fff !important;
+  font-weight: 700;
+  font-size: 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 999px;
+  text-decoration: none !important;
+  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+  border: none;
+  cursor: pointer;
+}
+.hero-donate-card__cta:hover {
+  background: var(--beacon-primary-dark);
+  color: #fff !important;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(45, 79, 53, 0.35);
 }
 
 /* Buttons slide up on scroll */
@@ -397,6 +654,23 @@
   .hero__content { padding-bottom: 2rem; }
   .hero__actions { flex-direction: column; gap: 0.75rem; }
   .hero__btn { width: 100%; text-align: center; }
+  .hero-donate-card__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .landing-donate-video {
+    min-height: min(68vh, 600px);
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  .landing-donate-video--featured {
+    padding-top: clamp(2.75rem, 8vh, 4rem);
+    padding-bottom: clamp(2.75rem, 8vh, 4rem);
+  }
+  .landing-donate-video__inner {
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+  }
 }
 
 /* ═══════════════════════════════════════════════
@@ -408,12 +682,46 @@
 .landing-section--light {
   background: var(--beacon-bg);
 }
+.landing-section--neutral-alt {
+  background: var(--beacon-bg-card);
+}
+.landing-section--mission-tail {
+  padding-bottom: clamp(5.5rem, 11vw, 7rem);
+}
+.landing-section--after-give {
+  padding-top: clamp(5.5rem, 11vw, 7rem);
+}
 .landing-section--dark {
   background: var(--beacon-primary);
   color: #F2F4F0;
 }
 .landing-section--accent {
   background: var(--beacon-oat-light);
+}
+
+/* Dotted map background (Impact only) */
+#impact.landing-section--dark {
+  position: relative;
+  overflow: hidden;
+}
+#impact.landing-section--dark::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("/philippines_dotted.png");
+  background-repeat: no-repeat;
+  /* Make the shape read clearly within the section */
+  background-position: center;
+  background-size: contain;
+  opacity: 0.28;
+  /* Boost perceived contrast on dark background */
+  filter: contrast(1.2) brightness(1.7);
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+#impact.landing-section--dark > .container {
+  position: relative;
+  z-index: 1;
 }
 
 .landing-section__eyebrow {
@@ -492,69 +800,137 @@
 }
 
 /* ═══════════════════════════════════════════════
-   ALLOCATION CARDS
+   GET INVOLVED — split header + photo cards (glass bar CTA)
    ═══════════════════════════════════════════════ */
-.allocation-card {
-  background: var(--beacon-bg-card);
-  border: 1px solid var(--beacon-border);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+.landing-involve-rh {
+  padding-top: clamp(4rem, 8vw, 6rem);
+  padding-bottom: clamp(4rem, 8vw, 6rem);
+  /* Lighter neutral band */
+  background: var(--beacon-bg);
 }
-.allocation-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(27, 38, 29, 0.08);
-}
-.allocation-card__value {
+.landing-involve-rh__eyebrow {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-weight: 700;
-  font-size: 2.5rem;
-  color: var(--beacon-primary);
-  line-height: 1;
-  margin-bottom: 0.5rem;
-}
-.allocation-card__label {
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 0.72rem;
   font-weight: 600;
+  color: var(--beacon-text-muted);
+  margin-bottom: 1rem;
+}
+.landing-involve-rh__header {
+  margin-bottom: clamp(2rem, 4vw, 3rem);
+  align-items: flex-start;
+}
+.landing-involve-rh__title {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  font-weight: 700;
+  line-height: 1.15;
   color: var(--beacon-text);
-  margin-bottom: 0;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+.landing-involve-rh__lead {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: var(--beacon-text);
+  margin-bottom: 1rem;
+}
+.landing-involve-rh__lead--muted {
+  color: var(--beacon-text-muted);
+  font-size: 1rem;
 }
 
-/* ═══════════════════════════════════════════════
-   GET INVOLVED CARDS
-   ═══════════════════════════════════════════════ */
-.involve-card {
-  background: var(--beacon-bg-card);
-  border: 1px solid var(--beacon-border);
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+.involve-photo-card {
+  position: relative;
+  display: block;
+  min-height: 360px;
+  border-radius: 14px;
+  overflow: hidden;
+  text-decoration: none !important;
+  color: inherit;
+  box-shadow: 0 8px 32px rgba(27, 38, 29, 0.12), 0 2px 8px rgba(27, 38, 29, 0.06);
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
 }
-.involve-card:hover {
+.involve-photo-card:hover {
   transform: translateY(-6px);
-  box-shadow: 0 12px 32px rgba(27, 38, 29, 0.1);
+  box-shadow: 0 20px 48px rgba(27, 38, 29, 0.18), 0 4px 16px rgba(27, 38, 29, 0.08);
 }
-.involve-card__icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: var(--beacon-sage-light);
+.involve-photo-card:focus-visible {
+  outline: 3px solid var(--beacon-primary);
+  outline-offset: 3px;
+}
+.involve-photo-card__bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  transition: transform 0.55s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.involve-photo-card:hover .involve-photo-card__bg {
+  transform: scale(1.06);
+}
+.involve-photo-card__scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(27, 38, 29, 0.35) 0%,
+    transparent 45%,
+    rgba(27, 38, 29, 0.5) 100%
+  );
+  pointer-events: none;
+}
+.involve-photo-card__title {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: clamp(1.15rem, 2.5vw, 1.35rem);
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+  padding: 1.25rem;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.35);
+  line-height: 1.25;
+}
+.involve-photo-card__glass {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
   display: flex;
   align-items: center;
-  justify-content: center;
-  margin: 0 auto 1rem;
-}
-.involve-card__icon i {
-  font-size: 1.4rem;
-  color: var(--beacon-primary);
-}
-.involve-card__title {
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  border-top: 1px solid rgba(255, 255, 255, 0.38);
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-weight: 600;
-  color: var(--beacon-text);
-  margin-bottom: 0.75rem;
+  font-size: 0.94rem;
+  color: #fff;
+  letter-spacing: 0.03em;
 }
-.involve-card__desc {
-  font-size: 0.92rem;
-  color: var(--beacon-text-muted);
-  line-height: 1.6;
-  flex-grow: 1;
+.involve-photo-card__arrow {
+  font-size: 1.15rem;
+  flex-shrink: 0;
+  transition: transform 0.25s ease;
+}
+.involve-photo-card:hover .involve-photo-card__arrow {
+  transform: translateX(4px);
+}
+
+@media (max-width: 767px) {
+  .involve-photo-card {
+    min-height: 300px;
+  }
 }
 
 /* ═══════════════════════════════════════════════
@@ -575,6 +951,107 @@
   font-size: 1.05rem;
   max-width: 560px;
   margin: 0 auto 2rem;
+}
+
+/* Video CTA (rounded banner with background video) */
+.landing-cta-video {
+  padding: 4.5rem 0 5rem;
+  /* Slightly darker neutral band (matches neutral-alt sections) */
+  background: var(--beacon-bg-card);
+}
+.landing-cta-video__container {
+  /* Wider than .container, still not edge-to-edge */
+  max-width: 1320px;
+  padding-left: clamp(1rem, 3vw, 2.25rem);
+  padding-right: clamp(1rem, 3vw, 2.25rem);
+}
+.landing-cta-video__card {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  min-height: 240px;
+  display: grid;
+  align-items: stretch;
+  box-shadow: 0 18px 55px rgba(27, 38, 29, 0.14);
+  border: 1px solid rgba(45, 79, 53, 0.08);
+}
+.landing-cta-video__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 25%;
+}
+.landing-cta-video__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(15, 23, 42, 0.55) 0%,
+    rgba(15, 23, 42, 0.35) 40%,
+    rgba(15, 23, 42, 0.05) 100%
+  );
+}
+.landing-cta-video__content {
+  position: relative;
+  z-index: 1;
+  padding: 2.25rem clamp(1.25rem, 3vw, 2.5rem);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  justify-content: center;
+  max-width: 54rem;
+}
+.landing-cta-video__kicker {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.9);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+.landing-cta-video__actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.landing-cta-video__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0.7rem 1.25rem;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  text-decoration: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.92);
+  color: #0f172a !important;
+  transition: transform 0.15s ease, filter 0.15s ease, background 0.15s ease;
+}
+.landing-cta-video__btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(0.98);
+}
+.landing-cta-video__btn--ghost {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff !important;
+  border-color: rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.landing-cta-video__btn--ghost:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+@media (max-width: 576px) {
+  .landing-cta-video__content {
+    padding: 1.5rem 1.25rem;
+  }
+  .landing-cta-video__card {
+    min-height: 200px;
+  }
 }
 
 /* ═══════════════════════════════════════════════
@@ -727,16 +1204,20 @@
    QUOTE / TESTIMONIAL
    ═══════════════════════════════════════════════ */
 .quote-section {
-  background: var(--beacon-primary);
+  /* Slightly darker neutral to separate from other light sections */
+  background: var(--beacon-bg-card);
   padding: 5rem 0;
   text-align: center;
+}
+.quote-section--airy {
+  padding: clamp(5.5rem, 10vw, 6.5rem) 0;
 }
 .quote-section__quote {
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: clamp(1.5rem, 3vw, 2.2rem);
   font-weight: 300;
   font-style: italic;
-  color: #F2F4F0;
+  color: var(--beacon-text);
   max-width: 750px;
   margin: 0 auto 1rem;
   line-height: 1.4;
@@ -745,87 +1226,239 @@
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--beacon-oat);
+  color: var(--beacon-sage);
   text-transform: uppercase;
   letter-spacing: 0.12em;
   margin-bottom: 1.5rem;
 }
 .quote-section__sub {
   font-size: 1rem;
-  color: rgba(242, 244, 240, 0.65);
+  color: var(--beacon-text-muted);
   max-width: 600px;
   margin: 0 auto;
   line-height: 1.7;
 }
 
 /* ═══════════════════════════════════════════════
-   CAMPAIGN PLACEHOLDER
+   FEATURED CAMPAIGN HEADING (match reference)
    ═══════════════════════════════════════════════ */
-.campaign-placeholder {
-  background: linear-gradient(135deg, var(--beacon-sage-light) 0%, var(--beacon-oat-light) 100%);
-  border-radius: var(--beacon-radius);
-  height: 360px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  color: var(--beacon-primary);
-  border: 1px solid var(--beacon-border);
-}
-.campaign-placeholder i { font-size: 3.5rem; }
-.campaign-placeholder span {
+.campaign-heading {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-style: italic;
-  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  font-size: clamp(2.4rem, 5.2vw, 3.7rem);
+  margin-bottom: 1.25rem;
+}
+.campaign-body-tight {
+  margin-bottom: 1.5rem;
+  max-width: 34rem;
 }
 
 /* ═══════════════════════════════════════════════
-   PROGRAM CARDS
+   FEATURED CAMPAIGN — real imagery
    ═══════════════════════════════════════════════ */
+.campaign-media {
+  margin: 0;
+  border-radius: var(--beacon-radius);
+  overflow: hidden;
+  border: 1px solid var(--beacon-border);
+  box-shadow:
+    0 4px 6px rgba(27, 38, 29, 0.04),
+    0 16px 40px rgba(27, 38, 29, 0.1);
+  background: var(--beacon-sage-light);
+}
+.campaign-media__img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  object-position: center 40%;
+}
+.campaign-media__caption {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--beacon-text-muted);
+  padding: 0.85rem 1rem 1rem;
+  margin: 0;
+  background: var(--beacon-bg-card);
+  border-top: 1px solid var(--beacon-border);
+}
+
+/* ═══════════════════════════════════════════════
+   PROGRAMS SECTION + CARDS (editorial grid)
+   ═══════════════════════════════════════════════ */
+.landing-programs {
+  /* Move the “green moment” here for stronger section contrast */
+  background:
+    radial-gradient(900px 500px at 50% 0%, rgba(242, 244, 240, 0.14) 0%, rgba(242, 244, 240, 0) 62%),
+    var(--beacon-primary);
+  padding-top: clamp(4.5rem, 9vw, 6.5rem);
+  padding-bottom: clamp(4.5rem, 9vw, 6.5rem);
+}
+.landing-programs__intro {
+  max-width: 44rem;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: clamp(2.5rem, 5vw, 3.5rem);
+}
+.landing-programs__heading {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: clamp(1.85rem, 4vw, 2.65rem);
+  font-weight: 750;
+  line-height: 1.2;
+  color: #F2F4F0;
+  letter-spacing: -0.02em;
+  margin: 0.35rem 0 1rem;
+}
+.landing-programs__sub {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 1.02rem;
+  line-height: 1.65;
+  color: rgba(242, 244, 240, 0.75);
+  margin: 0;
+  max-width: 36rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Ensure shared eyebrow reads on dark programs background */
+.landing-programs .landing-section__eyebrow {
+  color: rgba(242, 244, 240, 0.72);
+}
+
 .program-card {
   background: var(--beacon-bg-card);
-  border-radius: var(--beacon-radius);
-  padding: 2rem 1.5rem;
+  border-radius: 14px;
+  padding: 0;
   height: 100%;
   text-align: center;
-  border: 1px solid var(--beacon-border);
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  border: 1px solid rgba(45, 79, 53, 0.09);
+  overflow: hidden;
+  box-shadow:
+    0 1px 2px rgba(27, 38, 29, 0.04),
+    0 4px 12px rgba(27, 38, 29, 0.06);
+  transition:
+    transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    box-shadow 0.35s ease,
+    border-color 0.25s ease;
 }
 .program-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(27, 38, 29, 0.08);
+  transform: translateY(-6px);
+  border-color: rgba(45, 79, 53, 0.14);
+  box-shadow:
+    0 4px 6px rgba(27, 38, 29, 0.04),
+    0 18px 40px rgba(27, 38, 29, 0.1);
 }
-.program-card__icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: var(--beacon-sage-light);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 1rem;
+.program-card__media {
+  position: relative;
+  aspect-ratio: 5 / 4;
+  overflow: hidden;
+  background: linear-gradient(165deg, var(--beacon-sage-light) 0%, #e8efe9 100%);
 }
-.program-card__icon i {
-  font-size: 1.4rem;
-  color: var(--beacon-primary);
+.program-card__media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    transparent 45%,
+    rgba(27, 38, 29, 0.12) 100%
+  );
+  opacity: 0.85;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+.program-card:hover .program-card__media::after {
+  opacity: 0.65;
+}
+.program-card__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  transition: transform 0.55s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.program-card:hover .program-card__img {
+  transform: scale(1.045);
+}
+.program-card__text {
+  padding: 1.35rem 1.35rem 1.65rem;
 }
 .program-card__title {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-weight: 600;
+  font-size: 1.05rem;
+  font-weight: 750;
   color: var(--beacon-text);
-  margin-bottom: 0.5rem;
+  margin: 0 0 0.5rem;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
 }
-.program-card__desc {
-  font-size: 0.9rem;
-  color: var(--beacon-text-muted);
-  line-height: 1.6;
-  margin: 0;
+.program-card__list {
+  margin: 0.9rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.35rem;
+}
+.program-card__list li {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.84rem;
+  color: var(--beacon-text);
+  line-height: 1.45;
+  position: relative;
+  padding-left: 1rem;
+  text-align: left;
+}
+.program-card__list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.5em;
+  width: 0.38rem;
+  height: 0.38rem;
+  border-radius: 999px;
+  background: var(--beacon-primary);
+  transform: translateY(-50%);
+}
+
+@media (max-width: 575px) {
+  .program-card__text {
+    padding: 1.15rem 1.1rem 1.45rem;
+  }
 }
 
 /* ═══════════════════════════════════════════════
    STORY CARDS
    ═══════════════════════════════════════════════ */
+.landing-stories__head {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: clamp(1.25rem, 4vw, 3rem);
+  align-items: start;
+  margin-bottom: clamp(2rem, 4vw, 3rem);
+}
+.landing-stories__title {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: clamp(2rem, 4vw, 2.85rem);
+  font-weight: 750;
+  line-height: 1.12;
+  color: var(--beacon-text);
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+.landing-stories__blurb {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: var(--beacon-text);
+  margin: 0.35rem 0 0;
+  max-width: 34rem;
+}
+
 .story-card {
   background: var(--beacon-bg-card);
   border-radius: var(--beacon-radius);
@@ -841,13 +1474,14 @@
 .story-card__image {
   background: linear-gradient(135deg, var(--beacon-sage-light) 0%, var(--beacon-oat-light) 100%);
   height: 180px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  overflow: hidden;
 }
-.story-card__image i {
-  font-size: 2.5rem;
-  color: var(--beacon-primary);
+.story-card__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
 }
 .story-card__body { padding: 1.5rem; }
 .story-card__date {
@@ -876,6 +1510,17 @@
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--beacon-primary);
+}
+
+@media (max-width: 991px) {
+  .landing-stories__head {
+    grid-template-columns: 1fr;
+  }
+  .landing-stories__blurb {
+    color: var(--beacon-text-muted);
+    max-width: none;
+    margin-top: 0.15rem;
+  }
 }
 
 /* ═══════════════════════════════════════════════
@@ -965,3 +1610,237 @@ header a.active {
 }
 .beacon-footer a { color: var(--beacon-oat); }
 .beacon-footer a:hover { color: var(--beacon-oat-light); }
+
+/* ═══════════════════════════════════════════════
+   THIRD-PARTY DONATE (PayPal-style shell)
+   ═══════════════════════════════════════════════ */
+/* Non-landing routes: keep page content below fixed navbar (see App.tsx main class) */
+main#main-content.main-below-fixed-nav {
+  padding-top: calc(80px + 2rem + env(safe-area-inset-top, 0px));
+}
+
+.donate-external {
+  min-height: calc(100vh - 8rem);
+  padding: 1.25rem 1rem 3rem;
+  background: #eef0f3;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+.donate-external h1 {
+  font-family: inherit;
+}
+.donate-external__wrap {
+  max-width: 440px;
+  margin: 0 auto;
+}
+.donate-external__card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.06);
+  padding: 2rem 1.75rem 1.75rem;
+  text-align: center;
+}
+.donate-external__brand {
+  margin-bottom: 0.5rem;
+}
+.donate-external__logo {
+  height: 48px;
+  width: auto;
+  object-fit: contain;
+}
+.donate-external__preline {
+  margin: 0 0 0.15rem;
+  font-size: 0.95rem;
+  color: #64748b;
+}
+.donate-external__org {
+  margin: 0 0 1.5rem;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+.donate-external__verified {
+  color: #2563eb;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+.donate-external__amount-block {
+  margin-bottom: 1.5rem;
+}
+.donate-external__amount-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.15rem;
+}
+.donate-external__currency {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+.donate-external__amount-input {
+  border: none;
+  background: transparent;
+  font-size: 3rem;
+  font-weight: 700;
+  color: #0f172a;
+  width: 10ch;
+  max-width: 100%;
+  text-align: left;
+  padding: 0;
+  line-height: 1;
+}
+.donate-external__amount-input:focus {
+  outline: none;
+  box-shadow: none;
+}
+.donate-external__amount-input::placeholder {
+  color: #cbd5e1;
+}
+.donate-external__currency-code {
+  margin: 0.25rem 0 0.75rem;
+  font-size: 0.9rem;
+  color: #94a3b8;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.donate-external__presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+.donate-external__preset {
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  border-radius: 999px;
+  padding: 0.35rem 0.85rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.donate-external__preset:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+.donate-external__frequency {
+  text-align: left;
+  margin-bottom: 1.25rem;
+}
+.donate-external__frequency-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748b;
+  margin-bottom: 0.5rem;
+}
+.donate-external__toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+.donate-external__toggle-btn {
+  border: none;
+  background: #fff;
+  padding: 0.75rem 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1e3a5f;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.donate-external__toggle-btn--active {
+  background: #1e3a5f;
+  color: #fff;
+}
+.donate-external__toggle-btn:not(.donate-external__toggle-btn--active):hover {
+  background: #f8fafc;
+}
+.donate-external__setup-note {
+  text-align: left;
+  font-size: 0.875rem;
+  color: #475569;
+  background: #f1f5f9;
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+.donate-external__setup-note code {
+  font-size: 0.8em;
+  word-break: break-all;
+}
+.donate-external__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+.donate-external__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  border-radius: 999px;
+  padding: 0.85rem 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none !important;
+  border: none;
+  cursor: pointer;
+  transition: filter 0.15s, transform 0.1s;
+}
+.donate-external__btn:hover {
+  filter: brightness(0.97);
+  color: inherit;
+}
+.donate-external__btn--paypal {
+  background: #ffc439;
+  color: #003087 !important;
+  border: 1px solid #ffb800;
+}
+.donate-external__btn--venmo {
+  background: #008cff;
+  color: #fff !important;
+}
+.donate-external__btn--card {
+  background: #fff;
+  color: #1e3a5f !important;
+  border: 2px solid #1e3a5f;
+}
+.donate-external__pp-logo {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+.donate-external__venmo-mark {
+  font-weight: 800;
+  font-style: italic;
+  font-size: 1.15rem;
+  line-height: 1;
+}
+.donate-external__fineprint {
+  margin: 1.25rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: #94a3b8;
+  text-align: left;
+}
+.donate-external__back {
+  margin: 1.25rem 0 0;
+  font-size: 0.9rem;
+}
+.donate-external__back a {
+  color: #64748b;
+}
