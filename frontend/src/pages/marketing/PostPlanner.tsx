@@ -125,10 +125,25 @@ export default function PostPlanner() {
                 <li>Impact stories (3.1×)</li>
                 <li>YouTube platform (2.8×)</li>
               </ul>
+
+              <hr className="border-opacity-25 my-3" />
+              <details className="post-planner__reminders">
+                <summary>Helpful reminders</summary>
+                <ul className="mt-2">
+                  <li><strong>Peak hours</strong> are roughly 11am–1pm and 6pm–9pm — check "Peak hour" if your post time falls in these windows.</li>
+                  <li><strong>Emotional tone + impact stories</strong> consistently outperform informational content for donation referrals.</li>
+                  <li><strong>3–5 hashtags</strong> tends to be the sweet spot — too few hurts reach, too many looks spammy.</li>
+                  <li><strong>Call to action</strong> (e.g. "Donate today") significantly boosts conversion — leave it checked when relevant.</li>
+                  <li><strong>Avoid</strong> thank-you posts and pure event promotions as standalone fundraising tools — their odds are very low (~0.04–0.06×).</li>
+                  <li><strong>Resident stories</strong> should be told with dignity and consent — high impact, but handle with care.</li>
+                  <li>Boosting a post amplifies whatever signal it has — boost your <em>best</em> drafts, not your average ones.</li>
+                </ul>
+              </details>
             </>
           )}
         </aside>
       </div>
+
     </div>
   );
 }
