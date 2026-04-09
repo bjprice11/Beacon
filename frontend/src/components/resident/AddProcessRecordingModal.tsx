@@ -68,6 +68,7 @@ export function AddProcessRecordingModal({
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<FieldKey, string>>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -226,6 +227,59 @@ export function AddProcessRecordingModal({
     }
   }
 
+  async function handleDelete() {
+    if (!isEdit || !existingRecord) return;
+    if (
+      !window.confirm(
+        "Delete this record from the database? This cannot be undone. Click Cancel to keep the record.",
+      )
+    )
+      return;
+
+    const residentId = Math.trunc(Number(residentIdInput.trim()));
+    if (!Number.isInteger(residentId) || residentId <= 0) {
+      setFormError("Resident ID is invalid.");
+      return;
+    }
+
+    setDeleting(true);
+    setFormError(null);
+    try {
+      const res = await postBeaconJson(`/ProcessRecording/${existingRecord.recordingId}/Delete`, {
+        resident_id: residentId,
+      });
+      if (res.status === 204 || res.status === 200) {
+        onCreated();
+        onClose();
+        return;
+      }
+
+      const { payload } = await readResponseJson(res);
+
+      if (res.status === 400 && payload) {
+        setFieldErrors((prev) => ({ ...prev, ...parseServerErrors(FIELD_KEYS, payload) }));
+        const msg =
+          typeof (payload as { message?: string }).message === "string"
+            ? (payload as { message: string }).message
+            : "Could not delete this record.";
+        setFormError(msg);
+        return;
+      }
+
+      setFormError(
+        res.status === 401
+          ? "You must be signed in."
+          : res.status === 403
+            ? "You do not have permission to delete."
+            : messageFromJsonPayload(payload, "Could not delete this record."),
+      );
+    } catch {
+      setFormError("Network error. Try again.");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   return (
     <ResidentRecordModal
       title={isEdit ? "Update Mental Wellbeing Record" : "Add Mental Wellbeing Record"}
@@ -249,6 +303,7 @@ export function AddProcessRecordingModal({
             id="p-resident-id"
             type="text"
             inputMode="numeric"
+            placeholder="Example: 101"
             className={`form-control form-control-sm${fieldErrors.resident_id ? " is-invalid" : ""}`}
             value={residentIdInput}
             onChange={(e) => setResidentIdInput(e.target.value)}
@@ -284,6 +339,7 @@ export function AddProcessRecordingModal({
             id="p-sw"
             type="text"
             className="form-control form-control-sm"
+            placeholder="Example: J. Smith"
             value={socialWorker}
             onChange={(e) => setSocialWorker(e.target.value)}
           />
@@ -317,6 +373,7 @@ export function AddProcessRecordingModal({
             id="p-dur"
             type="text"
             inputMode="numeric"
+            placeholder="Example: 45"
             className={`form-control form-control-sm${fieldErrors.session_duration_minutes ? " is-invalid" : ""}`}
             value={sessionDurationMinutes}
             onChange={(e) => setSessionDurationMinutes(e.target.value)}
@@ -374,6 +431,7 @@ export function AddProcessRecordingModal({
             rows={2}
             value={interventionsApplied}
             onChange={(e) => setInterventionsApplied(e.target.value)}
+            placeholder="Example: CBT techniques, safety planning…"
           />
         </div>
 
@@ -387,6 +445,7 @@ export function AddProcessRecordingModal({
             rows={2}
             value={followUpActions}
             onChange={(e) => setFollowUpActions(e.target.value)}
+            placeholder="Example: Schedule follow-up next week…"
           />
         </div>
 
@@ -437,6 +496,7 @@ export function AddProcessRecordingModal({
             rows={3}
             value={sessionNarrative}
             onChange={(e) => setSessionNarrative(e.target.value)}
+            placeholder="Example: Session summary and resident engagement…"
           />
         </div>
 
@@ -450,21 +510,36 @@ export function AddProcessRecordingModal({
             rows={2}
             value={notesRestricted}
             onChange={(e) => setNotesRestricted(e.target.value)}
+            placeholder="Example: Restricted note (optional)"
           />
         </div>
 
-        <div className="d-flex gap-2 justify-content-end">
-          <button
-            type="button"
-            className="btn btn-sm btn-outline-secondary"
-            onClick={onClose}
-            disabled={submitting}
-          >
-            Cancel
-          </button>
-          <button type="submit" className="btn btn-sm btn-primary" disabled={submitting}>
-            {submitting ? "Saving…" : isEdit ? "Save changes" : "Save Record"}
-          </button>
+        <div className="d-flex flex-wrap gap-2 justify-content-between align-items-center">
+          <div>
+            {isEdit ? (
+              <button
+                type="button"
+                className="btn btn-sm btn-danger"
+                onClick={() => void handleDelete()}
+                disabled={submitting || deleting}
+              >
+                {deleting ? "Deleting…" : "Delete"}
+              </button>
+            ) : null}
+          </div>
+          <div className="d-flex gap-2">
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-secondary"
+              onClick={onClose}
+              disabled={submitting || deleting}
+            >
+              Cancel
+            </button>
+            <button type="submit" className="btn btn-sm btn-primary" disabled={submitting || deleting}>
+              {submitting ? "Saving…" : isEdit ? "Save changes" : "Save Record"}
+            </button>
+          </div>
         </div>
       </form>
     </ResidentRecordModal>

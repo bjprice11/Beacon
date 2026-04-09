@@ -69,6 +69,7 @@ export function AddHealthRecordModal({
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<FieldKey, string>>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -216,6 +217,60 @@ export function AddHealthRecordModal({
     }
   }
 
+  async function handleDelete() {
+    if (!isEdit || !existingRecord) return;
+    if (
+      !window.confirm(
+        "Delete this record from the database? This cannot be undone. Click Cancel to keep the record.",
+      )
+    )
+      return;
+
+    const residentId = Math.trunc(Number(residentIdInput.trim()));
+    if (!Number.isInteger(residentId) || residentId <= 0) {
+      setFormError("Resident ID is invalid.");
+      return;
+    }
+
+    setDeleting(true);
+    setFormError(null);
+    try {
+      const res = await postBeaconJson(
+        `/HealthWellbeingRecord/${existingRecord.healthRecordId}/Delete`,
+        { resident_id: residentId },
+      );
+      if (res.status === 204 || res.status === 200) {
+        onCreated();
+        onClose();
+        return;
+      }
+
+      const { payload } = await readResponseJson(res);
+
+      if (res.status === 400 && payload) {
+        setFieldErrors((prev) => ({ ...prev, ...parseServerErrors(FIELD_KEYS, payload) }));
+        const msg =
+          typeof (payload as { message?: string }).message === "string"
+            ? (payload as { message: string }).message
+            : "Could not delete this record.";
+        setFormError(msg);
+        return;
+      }
+
+      setFormError(
+        res.status === 401
+          ? "You must be signed in."
+          : res.status === 403
+            ? "You do not have permission to delete."
+            : messageFromJsonPayload(payload, "Could not delete this record."),
+      );
+    } catch {
+      setFormError("Network error. Try again.");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   const scoreInput = (
     id: string,
     label: string,
@@ -232,13 +287,11 @@ export function AddHealthRecordModal({
         id={id}
         type="text"
         inputMode="decimal"
+        placeholder="Example: 3.5"
         className={`form-control form-control-sm${fieldErrors[key] ? " is-invalid" : ""}`}
         value={value}
         onChange={(e) => set(e.target.value)}
       />
-      <p className="form-text small mb-0">
-        Optional. Number From 0 Through 5 (Decimals Allowed If Needed).
-      </p>
       {fieldErrors[key] ? (
         <div className="invalid-feedback d-block">{fieldErrors[key]}</div>
       ) : null}
@@ -251,6 +304,7 @@ export function AddHealthRecordModal({
     value: string,
     set: (v: string) => void,
     key: FieldKey,
+    placeholder: string,
   ) => (
     <div className="mb-3">
       <label className="form-label small fw-semibold" htmlFor={id}>
@@ -260,6 +314,7 @@ export function AddHealthRecordModal({
         id={id}
         type="text"
         inputMode="decimal"
+        placeholder={placeholder}
         className={`form-control form-control-sm${fieldErrors[key] ? " is-invalid" : ""}`}
         value={value}
         onChange={(e) => set(e.target.value)}
@@ -293,6 +348,7 @@ export function AddHealthRecordModal({
             id="h-resident-id"
             type="text"
             inputMode="numeric"
+            placeholder="Example: 101"
             className={`form-control form-control-sm${fieldErrors.resident_id ? " is-invalid" : ""}`}
             value={residentIdInput}
             onChange={(e) => setResidentIdInput(e.target.value)}
@@ -342,9 +398,9 @@ export function AddHealthRecordModal({
           setEnergyLevelScore,
           "energy_level_score",
         )}
-        {decInput("h-ht", "Height (cm)", heightCm, setHeightCm, "height_cm")}
-        {decInput("h-wt", "Weight (kg)", weightKg, setWeightKg, "weight_kg")}
-        {decInput("h-bmi", "BMI", bmi, setBmi, "bmi")}
+        {decInput("h-ht", "Height (cm)", heightCm, setHeightCm, "height_cm", "Example: 172")}
+        {decInput("h-wt", "Weight (kg)", weightKg, setWeightKg, "weight_kg", "Example: 64.2")}
+        {decInput("h-bmi", "BMI", bmi, setBmi, "bmi", "Example: 21.7")}
 
         <div className="form-check mb-2">
           <input
@@ -393,22 +449,36 @@ export function AddHealthRecordModal({
             rows={3}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="Optional"
+            placeholder="Example: Brief note (optional)"
           />
         </div>
 
-        <div className="d-flex gap-2 justify-content-end">
-          <button
-            type="button"
-            className="btn btn-sm btn-outline-secondary"
-            onClick={onClose}
-            disabled={submitting}
-          >
-            Cancel
-          </button>
-          <button type="submit" className="btn btn-sm btn-primary" disabled={submitting}>
-            {submitting ? "Saving…" : isEdit ? "Save changes" : "Save Record"}
-          </button>
+        <div className="d-flex flex-wrap gap-2 justify-content-between align-items-center">
+          <div>
+            {isEdit ? (
+              <button
+                type="button"
+                className="btn btn-sm btn-danger"
+                onClick={() => void handleDelete()}
+                disabled={submitting || deleting}
+              >
+                {deleting ? "Deleting…" : "Delete"}
+              </button>
+            ) : null}
+          </div>
+          <div className="d-flex gap-2">
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-secondary"
+              onClick={onClose}
+              disabled={submitting || deleting}
+            >
+              Cancel
+            </button>
+            <button type="submit" className="btn btn-sm btn-primary" disabled={submitting || deleting}>
+              {submitting ? "Saving…" : isEdit ? "Save changes" : "Save Record"}
+            </button>
+          </div>
         </div>
       </form>
     </ResidentRecordModal>
