@@ -41,10 +41,13 @@ builder.Services.ConfigureApplicationCookie(options =>
 {
     options.Cookie.HttpOnly = true;
     options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-    // Cross-site cookie needed for Vercel (frontend) -> Railway (backend) requests with credentials.
-    options.Cookie.SameSite = builder.Environment.IsDevelopment()
-        ? SameSiteMode.Lax
-        : SameSiteMode.None;
+    // Cross-site cookie needed for Vercel (frontend) -> API (different host) with fetch(..., credentials).
+    // SameSite=Lax is NOT sent on those requests, so login "works" but /api/auth/me looks anonymous.
+    // Use None for Production/Staging or any Railway deploy; keep Lax only for local Development.
+    var useCrossSiteCookies = builder.Configuration.GetValue<bool?>("Auth:UseCrossSiteCookies")
+        ?? (!builder.Environment.IsDevelopment()
+            || !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("RAILWAY_ENVIRONMENT")));
+    options.Cookie.SameSite = useCrossSiteCookies ? SameSiteMode.None : SameSiteMode.Lax;
     options.ExpireTimeSpan = TimeSpan.FromDays(7);
     options.SlidingExpiration = true;
 });
