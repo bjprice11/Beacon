@@ -111,7 +111,8 @@ function RegisterPage() {
   return (
     <>
     <div className="beacon-page beacon-page--auth register-page">
-      <div className="container">
+      <div className="register-page__bg" aria-hidden="true" />
+      <div className="container register-page__content">
       <div className="row justify-content-center">
         <div className="col-md-6 col-lg-5">
           <div className="card shadow-sm">
