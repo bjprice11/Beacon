@@ -1,24 +1,7 @@
-import { useEffect, useState, useRef, useCallback } from "react";
-import { Link } from "react-router-dom";
-import { getAllocations } from "../api/Allocations";
-import type { AllocationRow, ProgramBreakdown } from "../types/ProgramAllocation";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import { Link, useLocation } from "react-router-dom";
 
 /* ── helpers ── */
-
-function computePercentages(allocations: AllocationRow[]): ProgramBreakdown[] {
-  const totals = new Map<string, number>();
-  for (const a of allocations) {
-    const current = totals.get(a.programArea) ?? 0;
-    totals.set(a.programArea, current + (a.amountAllocated ?? 0));
-  }
-  const grandTotal = [...totals.values()].reduce((sum, v) => sum + v, 0);
-  return [...totals.entries()]
-    .map(([programArea, total]) => ({
-      programArea,
-      percentage: grandTotal > 0 ? Math.round((total / grandTotal) * 100) : 0,
-    }))
-    .sort((a, b) => b.percentage - a.percentage);
-}
 
 function useCountUp(target: number, duration = 2000, start = false) {
   const [count, setCount] = useState(0);
@@ -99,60 +82,193 @@ const impactStats = [
   { value: "30+", label: "Community Partners" },
 ];
 
-const programs = [
-  { icon: "bi-house-heart", title: "Physiological Needs", desc: "Safe shelter, nutrition, clothing, and daily essentials for every child." },
-  { icon: "bi-clipboard2-pulse", title: "Biological Needs", desc: "Medical care, health screenings, and ongoing wellness support." },
-  { icon: "bi-brightness-high", title: "Spiritual Needs", desc: "Nurturing faith, hope, and purpose through community and reflection." },
-  { icon: "bi-brain", title: "Psychological Needs", desc: "Trauma-informed counseling, therapy, and mental health support." },
-  { icon: "bi-people", title: "Social Needs", desc: "Building healthy relationships, social skills, and community connections." },
-  { icon: "bi-emoji-smile", title: "Love & Belonging", desc: "Creating a family environment where every child is seen, heard, and loved." },
+const programs: { title: string; desc: string; image: string; points: string[] }[] = [
+  {
+    title: "Daily Essentials",
+    desc: "Safe shelter and practical care that restores stability from day one.",
+    image: "/moms.jpg",
+    points: ["Safe housing", "Nutritious meals", "Clothing and daily supplies"],
+  },
+  {
+    title: "Health & Healing",
+    desc: "Whole-child healing through physical care and emotional recovery support.",
+    image: "/doctor.jpg",
+    points: ["Medical checkups", "Trauma-informed counseling", "Healthy routines and play"],
+  },
+  {
+    title: "Family & Belonging",
+    desc: "A loving community where girls rebuild trust, confidence, and hope.",
+    image: "/FingerStar.jpg",
+    points: ["Mentorship and guidance", "Relationship-building", "Faith, purpose, and belonging"],
+  },
 ];
 
 const waysToHelp = [
   {
-    icon: "bi-heart-fill",
     title: "Donate",
     description: "Your financial gift directly funds safe housing, counseling, and education for survivors.",
     cta: "Give Now",
-    link: "/login",
+    link: "/donate",
+    image: "/moms.jpg",
   },
   {
-    icon: "bi-people-fill",
     title: "Partner With Us",
     description: "Organizations and churches can partner with Beacon to expand our reach and impact.",
     cta: "Become a Partner",
     link: "/register",
+    image: "/Hands_Circle.jpg",
   },
   {
-    icon: "bi-hand-thumbs-up-fill",
     title: "Volunteer",
     description: "Share your time and skills to mentor, teach, and support girls on their journey to healing.",
     cta: "Get Involved",
     link: "/register",
+    image: "/yoga.jpg",
   },
   {
-    icon: "bi-megaphone-fill",
     title: "Spread the Word",
     description: "Raise awareness in your community. Every voice matters in the fight against trafficking.",
     cta: "Learn More",
-    link: "/login",
+    link: "/register",
+    image: "/PinkShirtPinkFlower.jpg",
   },
 ];
+
+/** Hero donate card preset amounts (PHP), Radiating Hope–style grid */
+const HERO_DONATE_PRESETS = [500, 250, 150, 50, 25, 10] as const;
+
+function HeroDonateCard() {
+  const [monthly, setMonthly] = useState(false);
+  const [activePreset, setActivePreset] = useState<number | null>(null);
+  const [otherAmount, setOtherAmount] = useState("");
+  const [addNote, setAddNote] = useState(false);
+  const [note, setNote] = useState("");
+
+  const donateContinueHref = useMemo(() => {
+    const params = new URLSearchParams();
+    const fromOther = otherAmount.replace(/[^0-9.]/g, "");
+    const amount =
+      activePreset != null
+        ? String(activePreset)
+        : fromOther.trim() !== ""
+          ? fromOther
+          : "";
+    if (amount) params.set("amount", amount);
+    if (monthly) params.set("monthly", "1");
+    if (addNote && note.trim()) params.set("note", note.trim());
+    const q = params.toString();
+    return q ? `/donate?${q}` : "/donate";
+  }, [activePreset, otherAmount, monthly, addNote, note]);
+
+  const selectPreset = (n: number) => {
+    setActivePreset(n);
+    setOtherAmount("");
+  };
+
+  const onOtherChange = (v: string) => {
+    setOtherAmount(v.replace(/[^0-9.]/g, ""));
+    setActivePreset(null);
+  };
+
+  return (
+    <div className="hero-donate-card">
+      <p className="hero-donate-card__lead">
+        Choose an amount in Philippine pesos—your gift goes directly to safe homes,
+        counseling, and education for survivors.
+      </p>
+
+      <div className="hero-donate-card__section-head">
+        <i className="bi bi-check-circle-fill hero-donate-card__check" aria-hidden="true" />
+        <span>Choose amount</span>
+      </div>
+
+      <div className="hero-donate-card__frequency" role="group" aria-label="Donation frequency">
+        <button
+          type="button"
+          className={`hero-donate-card__freq ${!monthly ? "hero-donate-card__freq--active" : ""}`}
+          onClick={() => setMonthly(false)}
+        >
+          One-time
+        </button>
+        <button
+          type="button"
+          className={`hero-donate-card__freq ${monthly ? "hero-donate-card__freq--active" : ""}`}
+          onClick={() => setMonthly(true)}
+        >
+          Monthly
+        </button>
+      </div>
+
+      <div className="hero-donate-card__grid" role="group" aria-label="Suggested amounts in Philippine pesos">
+        {HERO_DONATE_PRESETS.map((n) => (
+          <button
+            key={n}
+            type="button"
+            className={`hero-donate-card__amt ${activePreset === n ? "hero-donate-card__amt--active" : ""}`}
+            onClick={() => selectPreset(n)}
+          >
+            ₱{n.toLocaleString()}
+          </button>
+        ))}
+      </div>
+
+      <label className="hero-donate-card__other" htmlFor="hero-donate-other">
+        <span className="hero-donate-card__other-prefix" aria-hidden="true">₱</span>
+        <input
+          id="hero-donate-other"
+          type="text"
+          inputMode="decimal"
+          className="hero-donate-card__other-input"
+          placeholder="Other"
+          autoComplete="off"
+          value={otherAmount}
+          onChange={(e) => onOtherChange(e.target.value)}
+        />
+        <span className="hero-donate-card__other-suffix">PHP</span>
+      </label>
+
+      <label className="hero-donate-card__note-toggle">
+        <input
+          type="checkbox"
+          checked={addNote}
+          onChange={(e) => setAddNote(e.target.checked)}
+        />
+        <span>Add note / comment</span>
+      </label>
+      {addNote && (
+        <textarea
+          className="hero-donate-card__note-area form-control"
+          rows={3}
+          placeholder="Optional message with your gift"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+        />
+      )}
+
+      <Link to={donateContinueHref} className="hero-donate-card__cta">
+        Donate now
+      </Link>
+    </div>
+  );
+}
 
 const stories = [
   {
     date: "May 2025",
     title: "Highs and Lows of Beacon",
+    image: "/highsandlows.jpg",
     excerpt: "As I re-entered its doors this month, I was reminded why it's so hard to put into words what it's like to be part of this place...",
   },
   {
     date: "December 2024",
     title: "The Power of Light",
+    image: "/threegirls.jpg",
     excerpt: "A potential donor called, eager to help the survivors, and she declared boldly how she could help. Her response inspired this reflection...",
   },
   {
     date: "September 2023",
     title: "Thankful to Celebrate 5 Years",
+    image: "/groupcircle.jpeg",
     excerpt: "It's been 5 years since we opened our doors. I remember receiving our license and thinking — I hope we can manage the flood of children who will be referred...",
   },
 ];
@@ -160,20 +276,22 @@ const stories = [
 /* ── component ── */
 
 function LandingPage() {
-  const [breakdowns, setBreakdowns] = useState<ProgramBreakdown[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [showButtons, setShowButtons] = useState(false);
+  const location = useLocation();
+  const [showHeroButtons, setShowHeroButtons] = useState(false);
 
   useEffect(() => {
-    getAllocations()
-      .then((data) => setBreakdowns(computePercentages(data)))
-      .catch((err) => setError((err as Error).message))
-      .finally(() => setLoading(false));
-  }, []);
+    const raw = location.hash?.replace(/^#/, "");
+    if (!raw) return;
+    const el = document.getElementById(raw);
+    if (!el) return;
+    const t = window.setTimeout(() => {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+    return () => window.clearTimeout(t);
+  }, [location.hash, location.pathname]);
 
   useEffect(() => {
-    const onScroll = () => setShowButtons(window.scrollY > 80);
+    const onScroll = () => setShowHeroButtons(window.scrollY > 80);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
@@ -187,13 +305,13 @@ function LandingPage() {
           <span className="announcement-bar__text">
             100% of every gift goes directly to safe homes and healing for survivors of trafficking.
           </span>
-          <Link to="/login" className="announcement-bar__link">
+          <Link to="/donate" className="announcement-bar__link">
             Give hope today <span aria-hidden="true">&rarr;</span>
           </Link>
         </div>
       </div>
 
-      {/* 3 ─── HERO ─── */}
+      {/* 3 ─── TOP HERO ─── */}
       <section className="hero">
         <div className="hero__video-wrap">
           <video
@@ -212,9 +330,9 @@ function LandingPage() {
             survivors and<br />
             give hope a chance
           </h1>
-          <div className={`hero__actions ${showButtons ? "hero__actions--visible" : ""}`}>
-            <Link to="/login" className="hero__btn hero__btn--primary">
-              Donate Now
+          <div className={`hero__actions ${showHeroButtons ? "hero__actions--visible" : ""}`}>
+            <Link to="/donate" className="hero__btn hero__btn--primary">
+              Start now
             </Link>
             <a href="#mission" className="hero__btn hero__btn--outline">
               Our Mission
@@ -237,7 +355,7 @@ function LandingPage() {
       </section>
 
       {/* 5 ─── WHAT WE DO — 4 PILLARS ─── */}
-      <section id="mission" className="landing-section landing-section--light">
+      <section id="mission" className="landing-section landing-section--light landing-section--mission-tail">
         <div className="container">
           <div className="text-center mb-5">
             <p className="landing-section__eyebrow">What We Do</p>
@@ -262,23 +380,35 @@ function LandingPage() {
         </div>
       </section>
 
-      {/* 6 ─── QUOTE / TESTIMONIAL ─── */}
-      <section className="quote-section">
-        <div className="container">
-          <blockquote className="quote-section__quote">
-            &ldquo;Beacon is a safe place, where we are treated as family.&rdquo;
-          </blockquote>
-          <p className="quote-section__caption">— Beacon Sanctuary Motto</p>
-          <p className="quote-section__sub">
-            We are Beacon: full of hope, love, and new beginnings. Our focus is
-            progress in all aspects of life. We treat each other as family where
-            each individual is seen, heard, and loved.
+      {/* 5b ─── GIVE: Philippines video + donate card (full-width section) ─── */}
+      <section className="landing-donate-video landing-donate-video--featured" id="give">
+        <div className="landing-donate-video__bg">
+          <video
+            className="landing-donate-video__video"
+            src="/philippines_video.mp4"
+            autoPlay
+            muted
+            loop
+            playsInline
+          />
+          <div className="landing-donate-video__overlay" />
+        </div>
+        <div className="landing-donate-video__inner">
+          <h2 className="landing-donate-video__title">
+            Support survivor care
+            <span className="landing-donate-video__title-line">where it&apos;s needed most.</span>
+          </h2>
+          <p className="landing-donate-video__impact-kicker">Here&apos;s what your gift does</p>
+          <p className="landing-donate-video__impact-copy">
+            Your support keeps safe homes staffed, counseling available, and girls in school—so
+            healing isn&apos;t interrupted by practical gaps.
           </p>
+          <HeroDonateCard />
         </div>
       </section>
 
-      {/* 7 ─── IMPACT STATS ─── */}
-      <section id="impact" className="landing-section landing-section--dark">
+      {/* 6 ─── IMPACT STATS (trust-first, before quote) ─── */}
+      <section id="impact" className="landing-section landing-section--dark landing-section--after-give">
         <div className="container text-center">
           <p className="landing-section__eyebrow landing-section__eyebrow--light">
             Our Impact
@@ -296,155 +426,171 @@ function LandingPage() {
         </div>
       </section>
 
+      {/* 7 ─── QUOTE / TESTIMONIAL ─── */}
+      <section className="quote-section quote-section--airy">
+        <div className="container">
+          <blockquote className="quote-section__quote">
+            &ldquo;Beacon is a safe place, where we are treated as family.&rdquo;
+          </blockquote>
+          <p className="quote-section__caption">— Beacon Sanctuary Motto</p>
+          <p className="quote-section__sub">
+            We are Beacon: full of hope, love, and new beginnings. Our focus is
+            progress in all aspects of life. We treat each other as family where
+            each individual is seen, heard, and loved.
+          </p>
+        </div>
+      </section>
+
       {/* 8 ─── FEATURED CAMPAIGN ─── */}
       <section className="landing-section landing-section--light">
         <div className="container">
           <div className="row align-items-center g-5">
             <div className="col-lg-6">
               <p className="landing-section__eyebrow">Featured Campaign</p>
-              <h2 className="landing-section__heading">
+              <h2 className="landing-section__heading campaign-heading">
                 Wheels of Hope:<br />A Van That Changes Lives
               </h2>
-              <p className="landing-section__body">
-                Every mile matters when a girl's safety and future are on the
-                line. Our <strong>Wheels of Hope</strong> campaign supports the
-                purchase of a new van that delivers security, dignity, and
-                connection.
+              <p className="landing-section__body campaign-body-tight">
+                Reliable transport means safety, court dates kept, and girls staying connected to
+                care—not stuck waiting when every mile counts.
               </p>
-              <p className="landing-section__body">
-                The vans bring girls to safety, shuttle them to court hearings
-                to seek justice, and take them to community activities that help
-                them build trust with safe, caring people.
-              </p>
-              <Link to="/login" className="btn btn-primary" style={{ borderRadius: 50 }}>
+              <Link to="/donate" className="btn btn-primary" style={{ borderRadius: 50 }}>
                 Support This Campaign
               </Link>
             </div>
             <div className="col-lg-6">
-              <div className="campaign-placeholder">
-                <i className="bi bi-truck" />
-                <span>Wheels of Hope</span>
-              </div>
+              <figure className="campaign-media">
+                <img
+                  className="campaign-media__img"
+                  src="/BackwardsJump.jpg"
+                  alt="Children playing outdoors—joy and hope at Beacon"
+                  loading="lazy"
+                  decoding="async"
+                />
+                <figcaption className="campaign-media__caption">Wheels of Hope — getting girls where they need to be, safely.</figcaption>
+              </figure>
             </div>
           </div>
         </div>
       </section>
 
       {/* 9 ─── OUR PROGRAMS ─── */}
-      <section className="landing-section landing-section--accent">
+      <section className="landing-section landing-section--accent landing-programs">
         <div className="container">
-          <div className="text-center mb-5">
+          <div className="landing-programs__intro text-center">
             <p className="landing-section__eyebrow">Our Programs &amp; Services</p>
-            <h2 className="landing-section__heading">
-              Meeting every need of every child
+            <h2 className="landing-programs__heading">
+              Every child deserves to feel safe, known, and supported.
             </h2>
+            <p className="landing-programs__sub">
+              We care for the whole child through daily essentials, health and healing,
+              and lasting belonging.
+            </p>
           </div>
-          <div className="row g-4 justify-content-center">
+          <div className="row g-4 g-xl-5 justify-content-center landing-programs__grid">
             {programs.map((p) => (
-              <div key={p.title} className="col-sm-6 col-md-4">
-                <div className="program-card">
-                  <div className="program-card__icon">
-                    <i className={`bi ${p.icon}`} />
+              <div key={p.title} className="col-md-6 col-lg-4">
+                <article className="program-card">
+                  <div className="program-card__media">
+                    <img
+                      className="program-card__img"
+                      src={p.image}
+                      alt={p.title}
+                      loading="lazy"
+                      decoding="async"
+                    />
                   </div>
-                  <h5 className="program-card__title">{p.title}</h5>
-                  <p className="program-card__desc">{p.desc}</p>
-                </div>
+                  <div className="program-card__text">
+                    <h3 className="program-card__title">{p.title}</h3>
+                    <ul className="program-card__list">
+                      {p.points.map((point) => (
+                        <li key={point}>{point}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </article>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* 10 ─── ALLOCATION BREAKDOWN ─── */}
-      <section className="landing-section landing-section--light">
+      {/* 10 ─── GET INVOLVED (photo cards + glass CTA bar) ─── */}
+      <section id="involved" className="landing-section landing-section--light landing-involve-rh">
         <div className="container">
-          <div className="text-center mb-5">
-            <p className="landing-section__eyebrow">Transparency</p>
-            <h2 className="landing-section__heading">
-              Every Donation Makes an Impact
-            </h2>
-            <p className="landing-section__sub">
-              See how funds are allocated across our program areas.
-            </p>
-          </div>
-          {loading && (
-            <div className="text-center py-4">
-              <div className="spinner-border text-primary" role="status">
-                <span className="visually-hidden">Loading...</span>
-              </div>
+          <p className="landing-involve-rh__eyebrow">Get involved</p>
+          <div className="row landing-involve-rh__header g-4 g-lg-5">
+            <div className="col-lg-5">
+              <h2 className="landing-involve-rh__title">
+                Improve lives with us
+              </h2>
             </div>
-          )}
-          {error && <div className="alert alert-danger">Failed to load data: {error}</div>}
-          {!loading && !error && breakdowns.length === 0 && (
-            <div className="alert alert-secondary text-center">No allocation data available yet.</div>
-          )}
-          {!loading && !error && breakdowns.length > 0 && (
-            <div className="row g-4 justify-content-center">
-              {breakdowns.map((b) => (
-                <div key={b.programArea} className="col-sm-6 col-md-4 col-lg-3">
-                  <div className="card allocation-card h-100 text-center p-4">
-                    <div className="card-body d-flex flex-column justify-content-center">
-                      <div className="allocation-card__value">{b.percentage}%</div>
-                      <h5 className="allocation-card__label">{b.programArea}</h5>
-                    </div>
-                  </div>
-                </div>
-              ))}
+            <div className="col-lg-7">
+              <p className="landing-involve-rh__lead">
+                There are many ways to stand with survivors of trafficking. Whether you give,
+                partner with us, volunteer your time, or help amplify our story in your community,
+                you make safe homes, counseling, and hope possible.
+              </p>
+              <p className="landing-involve-rh__lead landing-involve-rh__lead--muted mb-0">
+                Choose a path below to learn more about how you can make a difference—every
+                role matters in building a safer world for children and families.
+              </p>
             </div>
-          )}
-        </div>
-      </section>
-
-      {/* 11 ─── GET INVOLVED ─── */}
-      <section id="involved" className="landing-section landing-section--dark">
-        <div className="container">
-          <div className="text-center mb-5">
-            <p className="landing-section__eyebrow landing-section__eyebrow--light">
-              Get Involved
-            </p>
-            <h2 className="landing-section__heading landing-section__heading--light">
-              Improve lives&nbsp;with&nbsp;us
-            </h2>
-            <p className="landing-section__sub" style={{ color: "var(--beacon-text-muted)" }}>
-              There are many ways to make a difference. Choose yours.
-            </p>
           </div>
-          <div className="row g-4">
+          <div className="row g-3 g-md-4">
             {waysToHelp.map((w) => (
-              <div key={w.title} className="col-sm-6 col-lg-3">
-                <div className="card involve-card h-100 text-center p-4">
-                  <div className="card-body d-flex flex-column">
-                    <div className="involve-card__icon">
-                      <i className={`bi ${w.icon}`} />
-                    </div>
-                    <h5 className="involve-card__title">{w.title}</h5>
-                    <p className="involve-card__desc">{w.description}</p>
-                    <Link to={w.link} className="btn btn-outline-primary mt-auto">
-                      {w.cta}
-                    </Link>
+              <div key={w.title} className="col-12 col-md-6 col-xl-3">
+                <Link
+                  to={w.link}
+                  className="involve-photo-card"
+                  aria-label={`${w.title}: ${w.description}`}
+                >
+                  <div
+                    className="involve-photo-card__bg"
+                    style={{ backgroundImage: `url(${w.image})` }}
+                  />
+                  <div className="involve-photo-card__scrim" aria-hidden="true" />
+                  <h3 className="involve-photo-card__title">{w.title}</h3>
+                  <div className="involve-photo-card__glass">
+                    <span>Learn more</span>
+                    <i className="bi bi-arrow-right involve-photo-card__arrow" aria-hidden="true" />
                   </div>
-                </div>
+                </Link>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* 12 ─── LATEST STORIES ─── */}
-      <section className="landing-section landing-section--light">
+      {/* 11 ─── LATEST STORIES ─── */}
+      <section className="landing-section landing-section--light landing-section--neutral-alt">
         <div className="container">
-          <div className="text-center mb-5">
-            <p className="landing-section__eyebrow">Latest Stories</p>
-            <h2 className="landing-section__heading">
-              News &amp; updates from Beacon
-            </h2>
-          </div>
+          <header className="landing-stories__head">
+            <div className="landing-stories__head-left">
+              <p className="landing-section__eyebrow mb-2">Latest Stories</p>
+              <h2 className="landing-stories__title">
+                News &amp; updates from Beacon
+              </h2>
+            </div>
+            <div className="landing-stories__head-right">
+              <p className="landing-stories__blurb">
+                Stories from inside Beacon—updates, reflections, and milestones from our work with
+                survivors and the community supporting them.
+              </p>
+            </div>
+          </header>
           <div className="row g-4">
             {stories.map((s) => (
               <div key={s.title} className="col-md-4">
                 <div className="story-card">
                   <div className="story-card__image">
-                    <i className="bi bi-journal-text" />
+                    <img
+                      className="story-card__img"
+                      src={s.image}
+                      alt={s.title}
+                      loading="lazy"
+                      decoding="async"
+                    />
                   </div>
                   <div className="story-card__body">
                     <span className="story-card__date">{s.date}</span>
@@ -459,28 +605,35 @@ function LandingPage() {
         </div>
       </section>
 
-      {/* 13 ─── CTA BANNER ─── */}
-      <section className="landing-cta">
-        <div className="container text-center">
-          <h2 className="landing-cta__heading">
-            Bring safety, healing, and empowerment to children in need
-          </h2>
-          <p className="landing-cta__sub">
-            Join the growing community of donors, partners, and volunteers
-            building a safer world for survivors.
-          </p>
-          <div className="d-flex gap-3 justify-content-center flex-wrap">
-            <Link to="/register" className="btn btn-primary btn-lg px-5" style={{ borderRadius: 50 }}>
-              Join Beacon
-            </Link>
-            <Link to="/login" className="btn btn-outline-light btn-lg px-5" style={{ borderRadius: 50 }}>
-              Donate Now
-            </Link>
+      {/* 12 ─── CTA BANNER (video, Radiating Hope–style) ─── */}
+      <section className="landing-cta-video">
+        <div className="container-fluid landing-cta-video__container">
+          <div className="landing-cta-video__card">
+            <video
+              className="landing-cta-video__video"
+              src="/cutelittlegirl.mp4"
+              autoPlay
+              muted
+              loop
+              playsInline
+            />
+            <div className="landing-cta-video__overlay" aria-hidden="true" />
+            <div className="landing-cta-video__content">
+              <p className="landing-cta-video__kicker">Ready to help us on our mission?</p>
+              <div className="landing-cta-video__actions">
+                <Link to="/register" className="landing-cta-video__btn">
+                  Become a member
+                </Link>
+                <Link to="/donate" className="landing-cta-video__btn landing-cta-video__btn--ghost">
+                  Donate
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* 14 ─── FOOTER ─── */}
+      {/* 13 ─── FOOTER ─── */}
       <footer className="landing-footer">
         <div className="container">
           <div className="row g-4">
@@ -496,13 +649,13 @@ function LandingPage() {
               <h6 className="landing-footer__heading">About</h6>
               <ul className="landing-footer__list">
                 <li><a href="#mission">Our Mission</a></li>
-                <li><Link to="/login">Our Team</Link></li>
+                <li><Link to="/login">Sign in</Link></li>
               </ul>
             </div>
             <div className="col-md-2">
               <h6 className="landing-footer__heading">Get Involved</h6>
               <ul className="landing-footer__list">
-                <li><Link to="/login">Donate</Link></li>
+                <li><Link to="/donate">Donate</Link></li>
                 <li><Link to="/register">Partner</Link></li>
                 <li><Link to="/register">Volunteer</Link></li>
               </ul>

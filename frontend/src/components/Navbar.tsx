@@ -33,6 +33,42 @@ function Navbar() {
     .filter(Boolean)
     .join(" ");
 
+  /** On the home page use in-page anchors; elsewhere link back to home with hash */
+  const sectionHref = (fragment: string) =>
+    isLanding ? `#${fragment}` : `/#${fragment}`;
+
+  const primaryNavLinks = (
+    <>
+      <a href={sectionHref("mission")} onClick={() => setMenuOpen(false)}>
+        About
+      </a>
+      <a href={sectionHref("impact")} onClick={() => setMenuOpen(false)}>
+        Impact
+      </a>
+      <NavLink to="/donate" onClick={() => setMenuOpen(false)}>
+        Donate
+      </NavLink>
+      <a href={sectionHref("involved")} onClick={() => setMenuOpen(false)}>
+        Contact Us
+      </a>
+    </>
+  );
+
+  const roleNavLinks = !isLanding ? (
+    <>
+      {isAdmin && (
+        <NavLink to="/admin" onClick={() => setMenuOpen(false)}>
+          Dashboard
+        </NavLink>
+      )}
+      {isDonor && (
+        <NavLink to="/login" onClick={() => setMenuOpen(false)}>
+          My Donations
+        </NavLink>
+      )}
+    </>
+  ) : null;
+
   return (
     <nav className={navClass}>
       <div className="beacon-navbar__inner">
@@ -43,26 +79,8 @@ function Navbar() {
 
         {/* Center: nav links */}
         <div className={`beacon-navbar__center ${menuOpen ? "beacon-navbar__center--open" : ""}`}>
-          {!isLoading && isAuthenticated ? (
-            <>
-              {isAdmin && (
-                <NavLink to="/admin" onClick={() => setMenuOpen(false)}>
-                  Dashboard
-                </NavLink>
-              )}
-              {isDonor && (
-                <NavLink to="/login" onClick={() => setMenuOpen(false)}>
-                  My Donations
-                </NavLink>
-              )}
-            </>
-          ) : (
-            <>
-              <a href="#mission" onClick={() => setMenuOpen(false)}>About</a>
-              <a href="#impact" onClick={() => setMenuOpen(false)}>Impact</a>
-              <a href="#involved" onClick={() => setMenuOpen(false)}>Contact Us</a>
-            </>
-          )}
+          {primaryNavLinks}
+          {roleNavLinks}
         </div>
 
         {/* Right: auth links + CTA */}
@@ -100,23 +118,12 @@ function Navbar() {
       {/* Mobile dropdown */}
       {menuOpen && (
         <div className="beacon-navbar__mobile">
+          {primaryNavLinks}
+          {roleNavLinks}
           {!isLoading && isAuthenticated ? (
-            <>
-              {isAdmin && (
-                <NavLink to="/admin" onClick={() => setMenuOpen(false)}>Dashboard</NavLink>
-              )}
-              {isDonor && (
-                <NavLink to="/login" onClick={() => setMenuOpen(false)}>My Donations</NavLink>
-              )}
-              <NavLink to="/logout" onClick={() => setMenuOpen(false)}>Sign Out</NavLink>
-            </>
+            <NavLink to="/logout" onClick={() => setMenuOpen(false)}>Sign Out</NavLink>
           ) : (
-            <>
-              <a href="#mission" onClick={() => setMenuOpen(false)}>About</a>
-              <a href="#impact" onClick={() => setMenuOpen(false)}>Impact</a>
-              <a href="#involved" onClick={() => setMenuOpen(false)}>Contact Us</a>
-              <NavLink to="/login" onClick={() => setMenuOpen(false)}>Sign In</NavLink>
-            </>
+            <NavLink to="/login" onClick={() => setMenuOpen(false)}>Sign In</NavLink>
           )}
           <Link to="/register" className="beacon-navbar__cta" onClick={() => setMenuOpen(false)}>
             Register

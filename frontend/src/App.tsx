@@ -1,5 +1,6 @@
 import './App.css'
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import type { ReactNode } from 'react'
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
 import LoginPage from './pages/LoginPage.tsx'
 import RegisterPage from './pages/RegisterPage.tsx'
 import LogoutPage from './pages/LogoutPage.tsx'
@@ -23,6 +24,21 @@ import RequireAuth from './components/RequireAuth'
 import PostPlanner from './pages/marketing/PostPlanner.tsx'
 import ProfileCompletionRedirect from './components/ProfileCompletionRedirect'
 import CompleteProfilePage from './pages/CompleteProfilePage.tsx'
+import DonatePage from './pages/DonatePage.tsx'
+
+function RoutedMain({ children }: { children: ReactNode }) {
+  const { pathname } = useLocation()
+  const isLanding = pathname === '/'
+  return (
+    <main
+      id="main-content"
+      tabIndex={-1}
+      className={isLanding ? undefined : 'main-below-fixed-nav'}
+    >
+      {children}
+    </main>
+  )
+}
 
 function App() {
   return (
@@ -34,10 +50,11 @@ function App() {
           </a>
           <Navbar />
           <ProfileCompletionRedirect />
-          <main id="main-content" className="beacon-site-main" tabIndex={-1}>
+          <RoutedMain>
           <AdminSearchProvider>
           <Routes>
             <Route path="/" element={<LandingPage />} />
+            <Route path="/donate" element={<DonatePage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route
@@ -157,7 +174,7 @@ function App() {
             />
           </Routes>
           </AdminSearchProvider>
-          </main>
+          </RoutedMain>
         </Router>
       </AuthProvider>
     </>
