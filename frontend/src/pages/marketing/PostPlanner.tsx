@@ -5,6 +5,7 @@ import {
   type PostPredictionRequest,
   type PostPredictionResponse,
 } from "../../api/postPlanner";
+import { Link } from "react-router-dom";
 
 const PLATFORMS = ["Facebook", "Instagram", "Twitter", "TikTok", "YouTube"];
 const POST_TYPES = ["Organic", "Paid", "Story", "Reel"];
@@ -73,7 +74,7 @@ export default function PostPlanner() {
 
   const tone = result ? riskTone(result.riskBand) : null;
 
-    return (
+      return (
     <div className="beacon-page container py-4">
       {/* Centered header */}
       <div className="row justify-content-center text-center mb-4">
@@ -86,10 +87,17 @@ export default function PostPlanner() {
         </div>
       </div>
 
-      {/* 8 / 4 split: inputs left, predictor right */}
+      {/* Back to Risk Center */}
+      <div className="text-center mb-4">
+        <Link to="/admin/risk" className="btn btn-primary btn-sm">
+          Back to Risk Center
+        </Link>
+      </div>
+
+      {/* 6 / 6 split: inputs left, predictor right */}
       <div className="row g-4">
-        <div className="col-lg-8">
-          <div className="post-planner__form-card">
+        <div className="col-lg-6">
+          <div className="post-planner__form-card h-100">
             <div className="post-planner__form-grid">
               <Select label="Platform" value={req.platform} options={PLATFORMS} onChange={(v) => update("platform", v)} />
               <Select label="Post Type" value={req.postType} options={POST_TYPES} onChange={(v) => update("postType", v)} />
@@ -112,8 +120,8 @@ export default function PostPlanner() {
           </div>
         </div>
 
-        <div className="col-lg-4">
-          <aside className="post-planner__aside">
+        <div className="col-lg-6">
+          <aside className="post-planner__aside h-100">
             <h3>Predicted Success</h3>
             {loading && <p className="mb-0">Scoring…</p>}
             {error && <p className="text-danger mb-0">{error}</p>}
@@ -134,27 +142,32 @@ export default function PostPlanner() {
                   <li>Impact stories (3.1×)</li>
                   <li>YouTube platform (2.8×)</li>
                 </ul>
-
-                <hr className="border-opacity-25 my-3" />
-                <details className="post-planner__reminders">
-                  <summary>Helpful reminders</summary>
-                  <ul className="mt-2">
-                    <li><strong>Peak hours</strong> are roughly 11am–1pm and 6pm–9pm — check "Peak hour" if your post time falls in these windows.</li>
-                    <li><strong>Emotional tone + impact stories</strong> consistently outperform informational content for donation referrals.</li>
-                    <li><strong>3–5 hashtags</strong> tends to be the sweet spot — too few hurts reach, too many looks spammy.</li>
-                    <li><strong>Call to action</strong> (e.g. "Donate today") significantly boosts conversion — leave it checked when relevant.</li>
-                    <li><strong>Avoid</strong> thank-you posts and pure event promotions as standalone fundraising tools — their odds are very low (~0.04–0.06×).</li>
-                    <li><strong>Resident stories</strong> should be told with dignity and consent — high impact, but handle with care.</li>
-                    <li>Boosting a post amplifies whatever signal it has — boost your <em>best</em> drafts, not your average ones.</li>
-                  </ul>
-                </details>
               </>
             )}
           </aside>
         </div>
       </div>
+
+      {/* Full-width Helpful Reminders dropdown below both columns */}
+      <div className="row mt-4">
+        <div className="col-12">
+          <details className="post-planner__reminders post-planner__form-card">
+            <summary>Helpful reminders</summary>
+            <ul className="mt-3 mb-0">
+              <li><strong>Peak hours</strong> are roughly 11am–1pm and 6pm–9pm — check "Peak hour" if your post time falls in these windows.</li>
+              <li><strong>Emotional tone + impact stories</strong> consistently outperform informational content for donation referrals.</li>
+              <li><strong>3–5 hashtags</strong> tends to be the sweet spot — too few hurts reach, too many looks spammy.</li>
+              <li><strong>Call to action</strong> (e.g. "Donate today") significantly boosts conversion — leave it checked when relevant.</li>
+              <li><strong>Avoid</strong> thank-you posts and pure event promotions as standalone fundraising tools — their odds are very low (~0.04–0.06×).</li>
+              <li><strong>Resident stories</strong> should be told with dignity and consent — high impact, but handle with care.</li>
+              <li>Boosting a post amplifies whatever signal it has — boost your <em>best</em> drafts, not your average ones.</li>
+            </ul>
+          </details>
+        </div>
+      </div>
     </div>
   );
+
 
 }
 

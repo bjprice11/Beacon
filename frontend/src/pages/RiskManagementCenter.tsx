@@ -119,9 +119,11 @@ export default function RiskManagementCenter() {
           </p>
         </div>
         <div className="text-center mb-4">
-        <Link to="/admin/post-planner" className="btn btn-outline-primary btn-sm">
-          Open Post Planner →
+        <div className="text-center mb-4">
+        <Link to="/admin/post-planner" className="btn btn-primary btn-sm">
+          Open Post Planner
         </Link>
+        </div>
       </div>
       </div>
 
