@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { BASE_URL } from "../config/api";
-import { fetchJson } from "../lib/fetchJson";
 import type { Supporter } from "../types/Supporter";
 
 function formatDate(dateStr: string): string {
@@ -35,9 +34,11 @@ function DonorPage() {
 
   useEffect(() => {
     if (!id) return;
-    fetchJson<DonorPageData>(`${BASE_URL}/Donor/${id}`, {
-      credentials: "include",
-    })
+    fetch(`${BASE_URL}/Donor/${id}`, { credentials: "include" })
+      .then((res) => {
+        if (!res.ok) throw new Error("Donor not found");
+        return res.json();
+      })
       .then(setData)
       .catch((err) => setError((err as Error).message))
       .finally(() => setLoading(false));

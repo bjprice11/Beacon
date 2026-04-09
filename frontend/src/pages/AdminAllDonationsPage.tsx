@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { BASE_URL } from "../config/api";
-import { fetchJson } from "../lib/fetchJson";
 import Pagination from "../components/Pagination";
 import AdminSearchInput from "../components/AdminSearchInput";
 import { useAdminSearch } from "../context/AdminSearchContext";
@@ -54,9 +53,8 @@ function AdminAllDonationsPage() {
   const { query } = useAdminSearch();
 
   useEffect(() => {
-    fetchJson<AdminDonation[]>(`${BASE_URL}/AllDonations`, {
-      credentials: "include",
-    })
+    fetch(`${BASE_URL}/AllDonations`, { credentials: "include" })
+      .then((res) => res.json())
       .then(setDonations)
       .catch((err) => setError((err as Error).message))
       .finally(() => setLoading(false));

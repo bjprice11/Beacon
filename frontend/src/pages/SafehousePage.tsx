@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { BASE_URL } from "../config/api";
-import { fetchJson } from "../lib/fetchJson";
 import type { Safehouse } from "../types/Safehouse";
 
 interface SafehousePageData {
@@ -17,9 +16,11 @@ function SafehousePage() {
 
   useEffect(() => {
     if (!id) return;
-    fetchJson<SafehousePageData>(`${BASE_URL}/Safehouse/${id}`, {
-      credentials: "include",
-    })
+    fetch(`${BASE_URL}/Safehouse/${id}`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Safehouse not found");
+        return res.json();
+      })
       .then(setData)
       .catch((err) => setError((err as Error).message))
       .finally(() => setLoading(false));

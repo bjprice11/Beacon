@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { BASE_URL } from "../config/api";
-import { fetchJson } from "../lib/fetchJson";
 import type { Safehouse } from "../types/Safehouse";
 import Pagination from "../components/Pagination";
 import AdminSearchInput from "../components/AdminSearchInput";
@@ -15,9 +14,8 @@ function AdminAllSafehousesPage() {
   const { query } = useAdminSearch();
 
   useEffect(() => {
-    fetchJson<Safehouse[]>(`${BASE_URL}/Safehouses`, {
-      credentials: "include",
-    })
+    fetch(`${BASE_URL}/Safehouses`)
+      .then((res) => res.json())
       .then(setSafehouses)
       .catch((err) => setError((err as Error).message))
       .finally(() => setLoading(false));
