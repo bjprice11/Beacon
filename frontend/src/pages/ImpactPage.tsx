@@ -1,5 +1,5 @@
-import { Link } from "react-router-dom";
-import { DonateInlineBanner } from "../components/DonateInlineBanner";
+import { useEffect, useMemo, useState } from "react";
+import { fetchImpactPublicStats, type ImpactPublicStats } from "../api/impactStats";
 import Footer from "../components/Footer";
 
 const impactPosts = [
@@ -26,14 +26,47 @@ const impactPosts = [
   },
 ] as const;
 
-const impactStats = [
+const impactStatsFallback: { label: string; value: string }[] = [
   { label: "Children served", value: "100+" },
   { label: "Residential shelters", value: "2" },
-  { label: "Current residents mentioned", value: "15" },
+  { label: "Current residents in care", value: "15" },
   { label: "Years of operation", value: "5+" },
-] as const;
+];
+
+function formatImpactStatRows(data: ImpactPublicStats | null): { label: string; value: string }[] {
+  if (!data) return impactStatsFallback;
+  const served = data.totalResidentsServed.toLocaleString();
+  const shelters = String(data.residentialShelters);
+  const current = String(data.currentResidents);
+  const years = data.yearsOfOperation > 0 ? `${data.yearsOfOperation}+` : "—";
+  return [
+    { label: "Children served", value: served },
+    { label: "Residential shelters", value: shelters },
+    { label: "Current residents in care", value: current },
+    { label: "Years of operation", value: years },
+  ];
+}
 
 function ImpactPage() {
+  const [stats, setStats] = useState<ImpactPublicStats | null | undefined>(undefined);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchImpactPublicStats().then((s) => {
+      if (!cancelled) setStats(s);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const impactStatRows = useMemo(() => {
+    if (stats === undefined) {
+      return impactStatsFallback.map((s) => ({ ...s, value: "…" }));
+    }
+    return formatImpactStatRows(stats);
+  }, [stats]);
+
   return (
     <div className="impact-page beacon-page">
       <header className="impact-page__hero">
@@ -53,7 +86,7 @@ function ImpactPage() {
       <section className="impact-page__content">
         <div className="container">
           <div className="row g-3 mb-4">
-            {impactStats.map((stat) => (
+            {impactStatRows.map((stat) => (
               <div className="col-6 col-lg-3" key={stat.label}>
                 <div className="impact-page__stat">
                   <p className="impact-page__stat-value mb-1">{stat.value}</p>
@@ -81,27 +114,9 @@ function ImpactPage() {
               </div>
             ))}
           </div>
-
-          <div className="impact-page__cta mt-4">
-            <p className="mb-2">
-              Want ongoing story updates and opportunities to help in real time?
-            </p>
-            <div className="impact-page__cta-actions">
-              <Link to="/donate" className="impact-page__cta-btn">
-                Donate now
-              </Link>
-              <a
-                href="mailto:info@lighthousesanctuary.org?subject=Impact%20Story%20Email%20Updates"
-                className="impact-page__cta-btn impact-page__cta-btn--ghost"
-              >
-                Join email thread
-              </a>
-            </div>
-          </div>
         </div>
       </section>
 
-      <DonateInlineBanner />
       <Footer />
     </div>
   );

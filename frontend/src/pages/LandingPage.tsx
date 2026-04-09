@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { Link, useLocation } from "react-router-dom";
 import Footer from "../components/Footer";
+import { SiteAnnouncementBar } from "../components/SiteAnnouncementBar";
 import { BASE_URL } from "../config/api";
 
 /* ── helpers ── */
@@ -373,19 +374,7 @@ function LandingPage() {
   return (
     <div className="landing">
       {/* 1 ─── ANNOUNCEMENT BAR ─── */}
-      <div className="announcement-bar">
-        <div className="announcement-bar__inner">
-          <Link to="/donate" className="announcement-bar__badge">
-            DONATE
-          </Link>
-          <span className="announcement-bar__text">
-            100% of every gift goes directly to safe homes and healing for survivors of trafficking.
-          </span>
-          <Link to="/donate" className="announcement-bar__link">
-            Give hope today <span aria-hidden="true">&rarr;</span>
-          </Link>
-        </div>
-      </div>
+      <SiteAnnouncementBar />
 
       {/* 3 ─── TOP HERO ─── */}
       <section className="hero">

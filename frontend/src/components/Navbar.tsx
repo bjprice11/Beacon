@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { NavLink, Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.tsx";
+import { showGlobalSiteAnnouncement } from "./SiteAnnouncementBar";
 
 function Navbar() {
   const { authSession, isAuthenticated, isLoading } = useAuth();
@@ -12,6 +13,7 @@ function Navbar() {
     : "/login";
   const location = useLocation();
   const isLanding = location.pathname === "/";
+  const globalSiteAnnouncement = showGlobalSiteAnnouncement(location.pathname);
   const isAuthOverlay =
     location.pathname === "/login" ||
     location.pathname === "/logout" ||
@@ -41,6 +43,7 @@ function Navbar() {
     "beacon-navbar",
     isLanding || isAuthOverlay ? "beacon-navbar--fixed" : "beacon-navbar--static",
     isAuthOverlay ? "beacon-navbar--auth-overlay" : "",
+    globalSiteAnnouncement ? "beacon-navbar--below-global-announcement" : "",
     (isLanding && !scrolled) || isAuthOverlay ? "beacon-navbar--glass" : "",
     !isLanding && !isAuthOverlay ? "beacon-navbar--solid" : "",
     scrolled && isLanding ? "beacon-navbar--scrolled" : "",

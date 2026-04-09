@@ -237,6 +237,75 @@ public class BeaconController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Impact page: aggregate counts from <c>residents</c> and <c>safehouses</c> (no auth).
+    /// Shelters: rows whose <c>status</c> is not &quot;Closed&quot; (case-insensitive); null/empty treated as active.
+    /// Current residents: <c>date_closed</c> is null.
+    /// Years: whole calendar years from the earlier of earliest <c>safehouses.open_date</c> or earliest <c>residents.date_of_admission</c>.
+    /// </summary>
+    [HttpGet("Impact/PublicStats")]
+    [AllowAnonymous]
+    public async Task<ActionResult<ImpactPublicStatsDto>> GetImpactPublicStats(
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var totalResidents = await _beaconContext.Residents.AsNoTracking()
+                .CountAsync(cancellationToken);
+
+            var residentialShelters = await _beaconContext.Safehouses.AsNoTracking()
+                .CountAsync(
+                    s => string.IsNullOrWhiteSpace(s.Status)
+                         || !string.Equals(s.Status.Trim(), "Closed", StringComparison.OrdinalIgnoreCase),
+                    cancellationToken);
+
+            var currentResidents = await _beaconContext.Residents.AsNoTracking()
+                .CountAsync(r => r.DateClosed == null, cancellationToken);
+
+            var openDates = await _beaconContext.Safehouses.AsNoTracking()
+                .Where(s => s.OpenDate.HasValue)
+                .Select(s => s.OpenDate!.Value)
+                .ToListAsync(cancellationToken);
+
+            var admissionDates = await _beaconContext.Residents.AsNoTracking()
+                .Where(r => r.DateOfAdmission.HasValue)
+                .Select(r => r.DateOfAdmission!.Value)
+                .ToListAsync(cancellationToken);
+
+            DateOnly? anchor = null;
+            if (openDates.Count > 0)
+                anchor = openDates.Min();
+            if (admissionDates.Count > 0)
+            {
+                var minAdm = admissionDates.Min();
+                anchor = anchor.HasValue ? (minAdm < anchor.Value ? minAdm : anchor) : minAdm;
+            }
+
+            var yearsOfOperation = 0;
+            if (anchor.HasValue)
+            {
+                var today = DateOnly.FromDateTime(DateTime.UtcNow);
+                yearsOfOperation = today.Year - anchor.Value.Year;
+                if (today < anchor.Value.AddYears(yearsOfOperation))
+                    yearsOfOperation--;
+                yearsOfOperation = Math.Max(0, yearsOfOperation);
+            }
+
+            return Ok(new ImpactPublicStatsDto
+            {
+                TotalResidentsServed = totalResidents,
+                ResidentialShelters = residentialShelters,
+                CurrentResidents = currentResidents,
+                YearsOfOperation = yearsOfOperation,
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Impact/PublicStats: failed to read aggregates.");
+            return Ok(ImpactPublicStatsDto.Empty);
+        }
+    }
+
     //GET SINGLE RESIDENT WITH SAFEHOUSE CITY AND RELATED RECORDS
     [Authorize(Policy = AuthPolicies.AdminOnly)]
     [HttpGet("Resident/{id}")]

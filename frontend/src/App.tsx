@@ -1,6 +1,7 @@
 import './App.css'
 import type { ReactNode } from 'react'
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
+import { SiteAnnouncementBar, showGlobalSiteAnnouncement } from './components/SiteAnnouncementBar'
 import LoginPage from './pages/LoginPage.tsx'
 import RegisterPage from './pages/RegisterPage.tsx'
 import LogoutPage from './pages/LogoutPage.tsx'
@@ -33,14 +34,25 @@ import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import CookieBanner from './components/CookieBanner';
 
 function RoutedMain({ children }: { children: ReactNode }) {
+  const location = useLocation()
+  const globalAnnouncement = showGlobalSiteAnnouncement(location.pathname)
   return (
     <main
       id="main-content"
       tabIndex={-1}
+      className={globalAnnouncement ? 'main-with-site-announcement' : undefined}
     >
       {children}
     </main>
   )
+}
+
+function GlobalSiteAnnouncement() {
+  const location = useLocation()
+  if (!showGlobalSiteAnnouncement(location.pathname)) {
+    return null
+  }
+  return <SiteAnnouncementBar />
 }
 
 function App() {
@@ -51,6 +63,7 @@ function App() {
           <a href="#main-content" className="visually-hidden-focusable position-absolute top-0 start-0 z-3 m-2 btn btn-sm btn-primary">
             Skip to main content
           </a>
+          <GlobalSiteAnnouncement />
           <Navbar />
           <ProfileCompletionRedirect />
           <RoutedMain>
