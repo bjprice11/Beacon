@@ -1785,7 +1785,6 @@ header a.active {
 .beacon-footer a:hover { color: var(--beacon-oat-light); }
 
 /* ═══════════════════════════════════════════════
-<<<<<<< HEAD
    THIRD-PARTY DONATE (PayPal-style shell)
    ═══════════════════════════════════════════════ */
 /* Non-landing routes: keep page content below fixed navbar (see App.tsx main class) */
@@ -2017,7 +2016,9 @@ main#main-content.main-below-fixed-nav {
 }
 .donate-external__back a {
   color: #64748b;
-=======
+}
+
+/* ═══════════════════════════════════════════════
    SITE-WIDE SHELL (landing-aligned, non-marketing routes)
    ═══════════════════════════════════════════════ */
 .beacon-site-main {
@@ -2226,5 +2227,4 @@ main#main-content.main-below-fixed-nav {
 
 .resident-records-accordion .accordion-item:last-of-type {
   margin-bottom: 0 !important;
->>>>>>> origin/main
 }
