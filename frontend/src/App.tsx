@@ -25,6 +25,7 @@ import PostPlanner from './pages/marketing/PostPlanner.tsx'
 import ProfileCompletionRedirect from './components/ProfileCompletionRedirect'
 import CompleteProfilePage from './pages/CompleteProfilePage.tsx'
 import DonatePage from './pages/DonatePage.tsx'
+import RiskManagementCenter from './pages/RiskManagementCenter.tsx'
 
 function RoutedMain({ children }: { children: ReactNode }) {
   const { pathname } = useLocation()
@@ -159,6 +160,14 @@ function App() {
               element={
                 <RequireRole anyOf={['Admin']}>
                   <AdminAllSafehousesPage />
+                </RequireRole>
+              }
+            />
+            <Route
+              path="/admin/risk"
+              element={
+                <RequireRole anyOf={['Admin']}>
+                  <RiskManagementCenter />
                 </RequireRole>
               }
             />

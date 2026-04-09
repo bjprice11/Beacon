@@ -41,6 +41,8 @@ public class AuthIdentityDbContext : IdentityDbContext<ApplicationUser>, IDataPr
     public DbSet<Safehouse> Safehouses { get; set; }
     public DbSet<SafehouseMonthlyMetric> SafehouseMonthlyMetrics { get; set; }
     public DbSet<SocialMediaPost> SocialMediaPosts { get; set; }
+    public DbSet<ResidentMlScore> ResidentMlScores { get; set; }
+    public DbSet<SupporterMlScore> SupporterMlScores { get; set; }
 
     public DbSet<DataProtectionKey> DataProtectionKeys { get; set; } = null!;
 
@@ -137,5 +139,17 @@ public class AuthIdentityDbContext : IdentityDbContext<ApplicationUser>, IDataPr
             .HasOne(p => p.IdentityUser)
             .WithMany()
             .HasForeignKey(p => p.IdentityUserId);
+
+        modelBuilder.Entity<ResidentMlScore>(entity =>
+        {
+            entity.HasKey(e => e.ResidentId);
+            entity.Property(e => e.ResidentId).ValueGeneratedNever();
+        });
+
+        modelBuilder.Entity<SupporterMlScore>(entity =>
+        {
+            entity.HasKey(e => e.SupporterId);
+            entity.Property(e => e.SupporterId).ValueGeneratedNever();
+        });
     }
 }
