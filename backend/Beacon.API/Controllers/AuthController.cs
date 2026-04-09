@@ -34,7 +34,8 @@ public class AuthController(
     UserManager<ApplicationUser> userManager,
     SignInManager<ApplicationUser> signInManager,
     AuthIdentityDbContext db,
-    IConfiguration configuration) : ControllerBase
+    IConfiguration configuration,
+    ILogger<AuthController> logger) : ControllerBase
 {
     private const string DefaultFrontendUrl = "http://localhost:2026";
     private const string DefaultExternalReturnPath = "/login";
@@ -78,35 +79,47 @@ public class AuthController(
             });
         }
 
-        var user = await userManager.GetUserAsync(User);
-        var roles = User.Claims
-            .Where(claim => claim.Type == ClaimTypes.Role)
-            .Select(claim => claim.Value)
-            .Distinct()
-            .OrderBy(role => role)
-            .ToArray();
-
-        int? supporterId = null;
-        if (user?.Id is { Length: > 0 })
+        try
         {
-            supporterId = await db.Supporters
-                .AsNoTracking()
-                .Where(s => s.IdentityUserId == user.Id)
-                .Select(s => (int?)s.SupporterId)
-                .FirstOrDefaultAsync();
+            var user = await userManager.GetUserAsync(User);
+            var roles = User.Claims
+                .Where(claim => claim.Type == ClaimTypes.Role)
+                .Select(claim => claim.Value)
+                .Distinct()
+                .OrderBy(role => role)
+                .ToArray();
+
+            int? supporterId = null;
+            if (user?.Id is { Length: > 0 })
+            {
+                supporterId = await db.Supporters
+                    .AsNoTracking()
+                    .Where(s => s.IdentityUserId == user.Id)
+                    .Select(s => (int?)s.SupporterId)
+                    .FirstOrDefaultAsync();
+            }
+
+            var needsProfileCompletion = await ComputeNeedsProfileCompletionAsync(user, roles);
+
+            return Ok(new
+            {
+                isAuthenticated = true,
+                userName = user?.UserName ?? User.Identity?.Name,
+                email = user?.Email,
+                roles,
+                supporterId,
+                needsProfileCompletion
+            });
         }
-
-        var needsProfileCompletion = await ComputeNeedsProfileCompletionAsync(user, roles);
-
-        return Ok(new
+        catch (Exception ex)
         {
-            isAuthenticated = true,
-            userName = user?.UserName ?? User.Identity?.Name,
-            email = user?.Email,
-            roles,
-            supporterId,
-            needsProfileCompletion
-        });
+            // Unhandled exceptions here often surface to the client as 502 + "CORS" (proxy error without ACAO).
+            logger.LogError(ex, "GET /api/auth/me failed while building the session");
+            return StatusCode(StatusCodes.Status500InternalServerError, new
+            {
+                message = "Unable to load session.",
+            });
+        }
     }
 
     private async Task<bool> ComputeNeedsProfileCompletionAsync(ApplicationUser? user, string[] roles)
