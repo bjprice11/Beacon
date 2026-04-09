@@ -389,7 +389,7 @@ public class BeaconController : ControllerBase
         var errors = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         if (body.ResidentId <= 0)
-            errors["residentId"] = "Required";
+            errors["resident_id"] = "Required";
 
         var residentExists = body.ResidentId > 0 &&
                              await _beaconContext.Residents.AsNoTracking()
@@ -398,35 +398,35 @@ public class BeaconController : ControllerBase
             return NotFound(new { message = "Resident not found." });
 
         if (body.RecordDate == default)
-            errors["recordDate"] = "Required";
+            errors["record_date"] = "Required";
 
         if (string.IsNullOrWhiteSpace(body.SchoolName))
-            errors["schoolName"] = "Required";
+            errors["school_name"] = "Required";
 
         var enrollment = (body.EnrollmentStatus ?? "").Trim();
         if (enrollment is not ("Enrolled" or "Not Enrolled"))
-            errors["enrollmentStatus"] = "Choose Enrolled or Not Enrolled.";
+            errors["enrollment_status"] = "Choose Enrolled or Not Enrolled.";
 
         var completion = (body.CompletionStatus ?? "").Trim();
         if (completion is not ("NotStarted" or "InProgress"))
-            errors["completionStatus"] = "Choose Not started or In progress.";
+            errors["completion_status"] = "Choose Not Started or In Progress.";
 
         if (body.AttendanceRate is null)
-            errors["attendanceRate"] = "Required";
+            errors["attendance_rate"] = "Required";
         else
         {
             var att = Math.Round(body.AttendanceRate.Value, 3, MidpointRounding.AwayFromZero);
             if (att < 0m || att > 1m)
-                errors["attendanceRate"] = "Must be between 0 and 1.";
+                errors["attendance_rate"] = "Must be between 0 and 1.";
         }
 
         if (body.ProgressPercent is null)
-            errors["progressPercent"] = "Required";
+            errors["progress_percent"] = "Required";
         else
         {
             var prog = Math.Round(body.ProgressPercent.Value, 1, MidpointRounding.AwayFromZero);
             if (prog < 0m || prog > 100m)
-                errors["progressPercent"] = "Must be between 0 and 100.";
+                errors["progress_percent"] = "Must be between 0 and 100.";
         }
 
         if (errors.Count > 0)
@@ -455,7 +455,8 @@ public class BeaconController : ControllerBase
         _beaconContext.Set<EducationRecord>().Add(entity);
         await _beaconContext.SaveChangesAsync();
 
-        return StatusCode(StatusCodes.Status201Created, new { educationRecordId = entity.EducationRecordId });
+        return StatusCode(StatusCodes.Status201Created,
+            new CreateEducationRecordResult { EducationRecordId = entity.EducationRecordId });
     }
 
     //GET SINGLE DONOR WITH FULL DONATION HISTORY

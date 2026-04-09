@@ -87,7 +87,7 @@ export function EducationRecordsSection({
       <AddEducationRecordModal
         open={addOpen}
         onClose={() => setAddOpen(false)}
-        residentId={residentId}
+        initialResidentId={Number.isFinite(residentId) ? residentId : undefined}
         onCreated={onEducationRecordsChanged}
       />
 
