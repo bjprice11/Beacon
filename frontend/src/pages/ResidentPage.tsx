@@ -157,11 +157,7 @@ function ResidentQuickMetricsSection({
       <p className="landing-section__eyebrow mb-3">Case metrics</p>
       <div className="row g-3 align-items-stretch">
         <div className="col-12 col-md-4">
-          <div
-            className="resident-metric-tile resident-metric-tile--therapy h-100"
-            role="group"
-            aria-label="Therapy session recency"
-          >
+          <div className="resident-metric-tile h-100" role="group" aria-label="Therapy session recency">
             <div className="resident-metric-tile__accent" aria-hidden="true" />
             <div className="resident-metric-tile__body">
               <p className="resident-metric-tile__label mb-1">Days since last therapy session</p>
@@ -171,11 +167,7 @@ function ResidentQuickMetricsSection({
           </div>
         </div>
         <div className="col-12 col-md-4">
-          <div
-            className="resident-metric-tile resident-metric-tile--education h-100"
-            role="group"
-            aria-label="Education progress"
-          >
+          <div className="resident-metric-tile h-100" role="group" aria-label="Education progress">
             <div className="resident-metric-tile__accent" aria-hidden="true" />
             <div className="resident-metric-tile__body">
               <p className="resident-metric-tile__label mb-1">Education progress</p>
@@ -185,11 +177,7 @@ function ResidentQuickMetricsSection({
           </div>
         </div>
         <div className="col-12 col-md-4">
-          <div
-            className="resident-metric-tile resident-metric-tile--health h-100"
-            role="group"
-            aria-label="Health status"
-          >
+          <div className="resident-metric-tile h-100" role="group" aria-label="Health status">
             <div className="resident-metric-tile__accent" aria-hidden="true" />
             <div className="resident-metric-tile__body">
               <p className="resident-metric-tile__label mb-1">Health status</p>
@@ -245,51 +233,53 @@ function residentClassificationFlagLines(r: ResidentDetail): FlagLine[] {
   return out;
 }
 
-function ResidentHouseholdClassificationCard({ resident }: { resident: ResidentDetail }) {
+function ResidentFlagsBar({ resident }: { resident: ResidentDetail }) {
   const household = residentHouseholdFlagLines(resident);
   const classification = residentClassificationFlagLines(resident);
   const total = household.length + classification.length;
+  const showHousehold = household.length > 0;
+  const showClassification = classification.length > 0;
 
   return (
-    <div className="card shadow-sm beacon-detail-card resident-record-preview-card h-100">
-      <div className="card-body d-flex flex-column">
-        <div className="mb-3">
-          <h3 className="h5 mb-1 fw-semibold">Household &amp; classification</h3>
+    <div className="card shadow-sm beacon-detail-card resident-profile-flags-bar">
+      <div className="card-body">
+        <div className="d-flex flex-wrap align-items-baseline justify-content-between gap-2 mb-3">
+          <h2 className="h5 mb-0 fw-semibold">Flags</h2>
           <p className="text-muted small mb-0">
             {total === 0 ? "No flags recorded" : `${total} active flag${total === 1 ? "" : "s"}`}
           </p>
         </div>
 
         {total === 0 ? (
-          <p className="small text-muted mb-0 mt-auto">
+          <p className="small text-muted mb-0">
             Intake flags will appear here when they are set on the resident record.
           </p>
         ) : (
-          <div className="small mt-auto">
-            {household.length > 0 ? (
-              <div className="mb-3">
+          <div className="row g-3 g-md-4 small">
+            {showHousehold ? (
+              <div className={showClassification ? "col-md-6" : "col-12"}>
                 <p className="landing-section__eyebrow mb-2">Household</p>
-                <ul className="list-unstyled mb-0 resident-profile-flags">
+                <ul className="list-unstyled mb-0 resident-profile-flags d-flex flex-wrap gap-2">
                   {household.map(({ label, detail }) => (
-                    <li key={label} className="mb-2">
-                      <span className="badge bg-secondary rounded-pill me-1 align-middle">{label}</span>
+                    <li key={label} className="mb-0">
+                      <span className="badge bg-secondary rounded-pill">{label}</span>
                       {detail ? (
-                        <span className="text-muted d-block mt-1 ps-1">{detail}</span>
+                        <span className="text-muted d-block mt-1 small">{detail}</span>
                       ) : null}
                     </li>
                   ))}
                 </ul>
               </div>
             ) : null}
-            {classification.length > 0 ? (
-              <div>
+            {showClassification ? (
+              <div className={showHousehold ? "col-md-6" : "col-12"}>
                 <p className="landing-section__eyebrow mb-2">Classification</p>
-                <ul className="list-unstyled mb-0 resident-profile-flags">
+                <ul className="list-unstyled mb-0 resident-profile-flags d-flex flex-wrap gap-2">
                   {classification.map(({ label, detail }) => (
-                    <li key={`${label}-${detail ?? ""}`} className="mb-2">
-                      <span className="badge bg-secondary rounded-pill me-1 align-middle">{label}</span>
+                    <li key={`${label}-${detail ?? ""}`} className="mb-0">
+                      <span className="badge bg-secondary rounded-pill">{label}</span>
                       {detail ? (
-                        <span className="text-muted d-block mt-1 ps-1">{detail}</span>
+                        <span className="text-muted d-block mt-1 small">{detail}</span>
                       ) : null}
                     </li>
                   ))}
@@ -582,12 +572,17 @@ function ResidentPage() {
           </div>
         </aside>
 
-        <div className="col-lg-8">
-          <p className="landing-section__eyebrow mb-3">Case records</p>
+        <div className="col-lg-8 resident-profile-main">
+          <ResidentQuickMetricsSection
+            daysSinceTherapy={daysSinceTherapy}
+            educationProgressPercent={educationProgressPercent}
+            healthStatusLabel={healthStatusLabel}
+          />
+
+          <ResidentFlagsBar resident={resident} />
+
+          <p className="landing-section__eyebrow mb-3 mt-1">Case records</p>
           <div className="row row-cols-1 row-cols-md-2 g-3 resident-record-sections-grid">
-            <div className="col">
-              <ResidentHouseholdClassificationCard resident={resident} />
-            </div>
             <div className="col">
               <EducationRecordsSection
                 records={educationRecords}
@@ -625,12 +620,6 @@ function ResidentPage() {
               />
             </div>
           </div>
-
-          <ResidentQuickMetricsSection
-            daysSinceTherapy={daysSinceTherapy}
-            educationProgressPercent={educationProgressPercent}
-            healthStatusLabel={healthStatusLabel}
-          />
         </div>
       </div>
     </div>
