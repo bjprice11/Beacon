@@ -7,7 +7,6 @@ import AdminGlassFilterBar, {
   type AdminGlassFilterSection,
 } from "../components/AdminGlassFilterBar";
 import { useAdminSearch } from "../context/AdminSearchContext";
-
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
   const mm = String(d.getMonth() + 1).padStart(2, "0");
@@ -56,8 +55,9 @@ function AdminAllDonorsPage() {
     country: "",
     relationship: "",
   });
-
   useEffect(() => {
+    setLoading(true);
+    setError(null);
     fetch(`${BASE_URL}/AllDonors`, { credentials: "include" })
       .then((res) => res.json())
       .then(setDonors)
@@ -229,21 +229,23 @@ function AdminAllDonorsPage() {
           <p className="landing-section__eyebrow mb-1">Admin</p>
           <h1 className="mb-0">All Donors</h1>
         </div>
-        <div className="btn-group">
-          <button
-            type="button"
-            className={`btn ${view === "table" ? "btn-primary" : "btn-outline-primary"}`}
-            onClick={() => setView("table")}
-          >
-            Table
-          </button>
-          <button
-            type="button"
-            className={`btn ${view === "card" ? "btn-primary" : "btn-outline-primary"}`}
-            onClick={() => setView("card")}
-          >
-            Cards
-          </button>
+        <div className="d-flex flex-wrap gap-2 align-items-center">
+          <div className="btn-group">
+            <button
+              type="button"
+              className={`btn ${view === "table" ? "btn-primary" : "btn-outline-primary"}`}
+              onClick={() => setView("table")}
+            >
+              Table
+            </button>
+            <button
+              type="button"
+              className={`btn ${view === "card" ? "btn-primary" : "btn-outline-primary"}`}
+              onClick={() => setView("card")}
+            >
+              Cards
+            </button>
+          </div>
         </div>
       </div>
 

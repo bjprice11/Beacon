@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Beacon.API.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Npgsql;
 
 namespace Beacon.API.Controllers;
 
@@ -84,12 +85,780 @@ public class BeaconController : ControllerBase
 
     [HttpPost]
     [Authorize(Policy = AuthPolicies.AdminOnly)]
-    public async Task<IActionResult> CreateResident([FromBody] Resident resident)
+    public async Task<IActionResult> CreateResident([FromBody] AdminCreateResidentRequest? body)
     {
-        resident.ResidentId = await _beaconContext.AllocateNextResidentIdAsync();
-        _beaconContext.Residents.Add(resident);
-        await _beaconContext.SaveChangesAsync();
-        return Created($"/residents/{resident.ResidentId}", resident);
+        if (body == null)
+            return BadRequest(new { message = "Invalid or empty JSON body." });
+
+        if (body.SafehouseId <= 0)
+        {
+            return BadRequest(new
+            {
+                message = "A valid safehouse is required.",
+                errors = new Dictionary<string, string> { ["safehouseId"] = "Required" },
+            });
+        }
+
+        var safehouseExists = await _beaconContext.Safehouses.AsNoTracking()
+            .AnyAsync(s => s.SafehouseId == body.SafehouseId);
+        if (!safehouseExists)
+        {
+            return BadRequest(new
+            {
+                message = "Safehouse not found for the given id.",
+                errors = new Dictionary<string, string> { ["safehouseId"] = "Not found" },
+            });
+        }
+
+        var dob = ParseOptionalDateOnly(body.DateOfBirth);
+        var createdAt = DateTime.UtcNow;
+        var firstName = NullIfWhiteSpace(body.FirstName);
+        var lastInitial = NullIfWhiteSpace(body.LastInitial);
+        var caseControlNo = NullIfWhiteSpace(body.CaseControlNo);
+        var internalCode = NullIfWhiteSpace(body.InternalCode);
+        var caseStatus = NullIfWhiteSpace(body.CaseStatus);
+        var sex = NullIfWhiteSpace(body.Sex);
+        var initialRisk = NullIfWhiteSpace(body.InitialRiskLevel);
+        var currentRisk = NullIfWhiteSpace(body.CurrentRiskLevel);
+
+        const int maxAttempts = 8;
+        for (var attempt = 0; attempt < maxAttempts; attempt++)
+        {
+            var residentId = await _beaconContext.AllocateNextResidentIdAsync();
+            try
+            {
+                await _beaconContext.InsertResidentRowAsync(
+                    residentId,
+                    firstName,
+                    lastInitial,
+                    caseControlNo,
+                    internalCode,
+                    body.SafehouseId,
+                    caseStatus,
+                    sex,
+                    dob,
+                    initialRisk,
+                    currentRisk,
+                    createdAt,
+                    HttpContext.RequestAborted);
+            }
+            catch (Exception ex)
+            {
+                if (TryGetPostgresException(ex, out var pgEx) && pgEx is { } pg)
+                {
+                    if (attempt < maxAttempts - 1
+                        && string.Equals(pg.SqlState, PostgresErrorCodes.UniqueViolation, StringComparison.Ordinal)
+                        && IsResidentsPrimaryKeyViolation(pg))
+                    {
+                        _logger.LogWarning(
+                            "CreateResident: resident PK conflict on id {ResidentId} (attempt {Attempt}); retrying. {Detail}",
+                            residentId,
+                            attempt + 1,
+                            pg.Detail ?? pg.MessageText);
+                        continue;
+                    }
+
+                    var detail = !string.IsNullOrWhiteSpace(pg.Detail)
+                        ? pg.Detail!
+                        : (pg.MessageText ?? "Database rejected the insert.");
+                    var status = string.Equals(pg.SqlState, PostgresErrorCodes.ForeignKeyViolation, StringComparison.Ordinal)
+                        ? StatusCodes.Status400BadRequest
+                        : StatusCodes.Status409Conflict;
+                    return Problem(
+                        title: "Could not create resident",
+                        detail: detail,
+                        statusCode: status);
+                }
+
+                _logger.LogError(ex, "CreateResident: database insert failed");
+                return Problem(
+                    title: "Could not create resident",
+                    detail: "The database rejected this insert. Check logs for details.",
+                    statusCode: StatusCodes.Status409Conflict);
+            }
+
+            var resident = new Resident
+            {
+                ResidentId = residentId,
+                FirstName = firstName,
+                LastInitial = lastInitial,
+                CaseControlNo = caseControlNo,
+                InternalCode = internalCode,
+                SafehouseId = body.SafehouseId,
+                CaseStatus = caseStatus,
+                Sex = sex,
+                DateOfBirth = dob,
+                InitialRiskLevel = initialRisk,
+                CurrentRiskLevel = currentRisk,
+                CreatedAt = createdAt,
+                EducationRecords = new List<EducationRecord>(),
+                HealthWellbeingRecords = new List<HealthWellbeingRecord>(),
+                HomeVisitations = new List<HomeVisitation>(),
+                IncidentReports = new List<IncidentReport>(),
+                InterventionPlans = new List<InterventionPlan>(),
+                ProcessRecordings = new List<ProcessRecording>(),
+            };
+            return Created($"/residents/{resident.ResidentId}", resident);
+        }
+
+        return Problem(
+            title: "Could not create resident",
+            detail: "Could not allocate a unique resident id after several attempts. Try again in a moment.",
+            statusCode: StatusCodes.Status409Conflict);
+    }
+
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
+    [HttpPost("Partners")]
+    public async Task<IActionResult> CreatePartner([FromBody] AdminCreatePartnerRequest? body)
+    {
+        if (body == null)
+            return BadRequest(new { message = "Invalid request body." });
+        if (string.IsNullOrWhiteSpace(body.PartnerName))
+            return BadRequest(new { message = "Partner name is required.", errors = new Dictionary<string, string> { ["partner_name"] = "Required" } });
+
+        var partnerName = body.PartnerName.Trim();
+        var contactName = partnerName;
+
+        const int maxAttempts = 8;
+        for (var attempt = 0; attempt < maxAttempts; attempt++)
+        {
+            var partnerId = await _beaconContext.AllocateNextPartnerIdAsync();
+            try
+            {
+                await _beaconContext.InsertPartnerRowAsync(
+                    partnerId,
+                    partnerName,
+                    NullIfWhiteSpace(body.PartnerType),
+                    NullIfWhiteSpace(body.RoleType),
+                    contactName,
+                    NullIfWhiteSpace(body.Email),
+                    NullIfWhiteSpace(body.Phone),
+                    NullIfWhiteSpace(body.Region),
+                    NullIfWhiteSpace(body.Status),
+                    body.StartDate,
+                    NullIfWhiteSpace(body.Notes),
+                    HttpContext.RequestAborted);
+            }
+            catch (Exception ex)
+            {
+                if (TryGetPostgresException(ex, out var pgEx) && pgEx is { } pg)
+                {
+                    if (attempt < maxAttempts - 1
+                        && string.Equals(pg.SqlState, PostgresErrorCodes.UniqueViolation, StringComparison.Ordinal)
+                        && IsPartnersPrimaryKeyViolation(pg))
+                    {
+                        _logger.LogWarning(
+                            "CreatePartner: partner PK conflict on id {PartnerId} (attempt {Attempt}); retrying. {Detail}",
+                            partnerId,
+                            attempt + 1,
+                            pg.Detail ?? pg.MessageText);
+                        continue;
+                    }
+
+                    var detail = !string.IsNullOrWhiteSpace(pg.Detail)
+                        ? pg.Detail!
+                        : (pg.MessageText ?? "Database rejected the insert.");
+                    var status = string.Equals(pg.SqlState, PostgresErrorCodes.ForeignKeyViolation, StringComparison.Ordinal)
+                        ? StatusCodes.Status400BadRequest
+                        : StatusCodes.Status409Conflict;
+                    return Problem(
+                        title: "Could not create partner",
+                        detail: detail,
+                        statusCode: status);
+                }
+
+                _logger.LogError(ex, "CreatePartner: database insert failed");
+                return Problem(
+                    title: "Could not create partner",
+                    detail: "The database rejected this insert. Check logs for details.",
+                    statusCode: StatusCodes.Status409Conflict);
+            }
+
+            var entity = new Partner
+            {
+                PartnerId = partnerId,
+                PartnerName = partnerName,
+                PartnerType = NullIfWhiteSpace(body.PartnerType),
+                RoleType = NullIfWhiteSpace(body.RoleType),
+                ContactName = contactName,
+                Email = NullIfWhiteSpace(body.Email),
+                Phone = NullIfWhiteSpace(body.Phone),
+                Region = NullIfWhiteSpace(body.Region),
+                Status = NullIfWhiteSpace(body.Status),
+                StartDate = body.StartDate,
+                EndDate = null,
+                Notes = NullIfWhiteSpace(body.Notes),
+            };
+            return StatusCode(StatusCodes.Status201Created, entity);
+        }
+
+        return Problem(
+            title: "Could not create partner",
+            detail: "Could not allocate a unique partner id after several attempts. Try again in a moment.",
+            statusCode: StatusCodes.Status409Conflict);
+    }
+
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
+    [HttpPost("Safehouses")]
+    public async Task<IActionResult> CreateSafehouse([FromBody] AdminCreateSafehouseRequest? body)
+    {
+        if (body == null)
+            return BadRequest(new { message = "Invalid request body." });
+        if (string.IsNullOrWhiteSpace(body.Name))
+            return BadRequest(new { message = "Name is required.", errors = new Dictionary<string, string> { ["name"] = "Required" } });
+
+        var name = body.Name.Trim();
+
+        const int maxAttempts = 8;
+        for (var attempt = 0; attempt < maxAttempts; attempt++)
+        {
+            var safehouseId = await _beaconContext.AllocateNextSafehouseIdAsync();
+            string safehouseCode;
+            try
+            {
+                (safehouseId, safehouseCode) = await _beaconContext.InsertSafehouseRowAsync(
+                    safehouseId,
+                    name,
+                    NullIfWhiteSpace(body.Region),
+                    NullIfWhiteSpace(body.City),
+                    NullIfWhiteSpace(body.Province),
+                    NullIfWhiteSpace(body.Country),
+                    body.OpenDate,
+                    NullIfWhiteSpace(body.Status),
+                    body.CapacityGirls,
+                    body.CurrentOccupancy,
+                    body.CapacityStaff,
+                    HttpContext.RequestAborted);
+            }
+            catch (Exception ex)
+            {
+                if (TryGetPostgresException(ex, out var pgEx) && pgEx is { } pg)
+                {
+                    if (attempt < maxAttempts - 1
+                        && string.Equals(pg.SqlState, PostgresErrorCodes.UniqueViolation, StringComparison.Ordinal)
+                        && IsSafehousesPrimaryKeyViolation(pg))
+                    {
+                        _logger.LogWarning(
+                            "CreateSafehouse: safehouse PK conflict on id {SafehouseId} (attempt {Attempt}); retrying. {Detail}",
+                            safehouseId,
+                            attempt + 1,
+                            pg.Detail ?? pg.MessageText);
+                        continue;
+                    }
+
+                    var detail = !string.IsNullOrWhiteSpace(pg.Detail)
+                        ? pg.Detail!
+                        : (pg.MessageText ?? "Database rejected the insert.");
+                    var status = string.Equals(pg.SqlState, PostgresErrorCodes.ForeignKeyViolation, StringComparison.Ordinal)
+                        ? StatusCodes.Status400BadRequest
+                        : StatusCodes.Status409Conflict;
+                    return Problem(
+                        title: "Could not create safehouse",
+                        detail: detail,
+                        statusCode: status);
+                }
+
+                _logger.LogError(ex, "CreateSafehouse: database insert failed");
+                return Problem(
+                    title: "Could not create safehouse",
+                    detail: "The database rejected this insert. Check logs for details.",
+                    statusCode: StatusCodes.Status409Conflict);
+            }
+
+            var entity = new Safehouse
+            {
+                SafehouseId = safehouseId,
+                SafehouseCode = safehouseCode,
+                Name = name,
+                Region = NullIfWhiteSpace(body.Region),
+                City = NullIfWhiteSpace(body.City),
+                Province = NullIfWhiteSpace(body.Province),
+                Country = NullIfWhiteSpace(body.Country),
+                OpenDate = body.OpenDate,
+                Status = NullIfWhiteSpace(body.Status),
+                CapacityGirls = body.CapacityGirls,
+                CapacityStaff = body.CapacityStaff,
+                CurrentOccupancy = body.CurrentOccupancy,
+                Notes = null,
+            };
+            return StatusCode(StatusCodes.Status201Created, entity);
+        }
+
+        return Problem(
+            title: "Could not create safehouse",
+            detail: "Could not allocate a unique safehouse id after several attempts. Try again in a moment.",
+            statusCode: StatusCodes.Status409Conflict);
+    }
+
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
+    [HttpPost("Supporters")]
+    public async Task<IActionResult> CreateSupporterAdmin([FromBody] AdminCreateSupporterRequest? body)
+    {
+        if (body == null)
+            return BadRequest(new { message = "Invalid request body." });
+
+        if (string.IsNullOrWhiteSpace(body.FirstName) || string.IsNullOrWhiteSpace(body.LastName))
+        {
+            return BadRequest(new
+            {
+                message = "First name and last name are required.",
+                errors = new Dictionary<string, string>
+                {
+                    ["firstName"] = "Required",
+                    ["lastName"] = "Required",
+                },
+            });
+        }
+
+        var displayName = $"{body.FirstName.Trim()} {body.LastName.Trim()}";
+        var status = string.IsNullOrWhiteSpace(body.Status) ? "Active" : body.Status.Trim();
+        var createdAt = DateTime.UtcNow;
+
+        const int maxAttempts = 8;
+        for (var attempt = 0; attempt < maxAttempts; attempt++)
+        {
+            var supporterId = await _beaconContext.AllocateNextSupporterIdAsync();
+            try
+            {
+                await _beaconContext.InsertSupporterAdminRowAsync(
+                    supporterId,
+                    NullIfWhiteSpace(body.SupporterType),
+                    displayName,
+                    NullIfWhiteSpace(body.FirstName),
+                    NullIfWhiteSpace(body.LastName),
+                    NullIfWhiteSpace(body.RelationshipType),
+                    NullIfWhiteSpace(body.Region),
+                    NullIfWhiteSpace(body.Email),
+                    NullIfWhiteSpace(body.Phone),
+                    status,
+                    createdAt,
+                    NullIfWhiteSpace(body.AcquisitionChannel),
+                    HttpContext.RequestAborted);
+            }
+            catch (Exception ex)
+            {
+                if (TryGetPostgresException(ex, out var pgEx) && pgEx is { } pg)
+                {
+                    if (attempt < maxAttempts - 1
+                        && string.Equals(pg.SqlState, PostgresErrorCodes.UniqueViolation, StringComparison.Ordinal)
+                        && IsSupportersPrimaryKeyViolation(pg))
+                    {
+                        _logger.LogWarning(
+                            "CreateSupporterAdmin: supporter PK conflict on id {SupporterId} (attempt {Attempt}); retrying. {Detail}",
+                            supporterId,
+                            attempt + 1,
+                            pg.Detail ?? pg.MessageText);
+                        continue;
+                    }
+
+                    var detail = !string.IsNullOrWhiteSpace(pg.Detail)
+                        ? pg.Detail!
+                        : (pg.MessageText ?? "Database rejected the insert.");
+                    var httpStatus = string.Equals(pg.SqlState, PostgresErrorCodes.ForeignKeyViolation, StringComparison.Ordinal)
+                        ? StatusCodes.Status400BadRequest
+                        : StatusCodes.Status409Conflict;
+                    return Problem(
+                        title: "Could not create donor record",
+                        detail: detail,
+                        statusCode: httpStatus);
+                }
+
+                _logger.LogError(ex, "CreateSupporterAdmin: database insert failed");
+                return Problem(
+                    title: "Could not create donor record",
+                    detail: "The database rejected this insert. Check logs for details.",
+                    statusCode: StatusCodes.Status409Conflict);
+            }
+
+            var entity = new Supporter
+            {
+                SupporterId = supporterId,
+                SupporterType = NullIfWhiteSpace(body.SupporterType),
+                DisplayName = displayName,
+                OrganizationName = null,
+                FirstName = NullIfWhiteSpace(body.FirstName),
+                LastName = NullIfWhiteSpace(body.LastName),
+                RelationshipType = NullIfWhiteSpace(body.RelationshipType),
+                Region = NullIfWhiteSpace(body.Region),
+                Country = null,
+                Email = NullIfWhiteSpace(body.Email),
+                Phone = NullIfWhiteSpace(body.Phone),
+                Status = status,
+                CreatedAt = createdAt,
+                FirstDonationDate = null,
+                AcquisitionChannel = NullIfWhiteSpace(body.AcquisitionChannel),
+            };
+            return StatusCode(StatusCodes.Status201Created, entity);
+        }
+
+        return Problem(
+            title: "Could not create donor record",
+            detail: "Could not allocate a unique supporter id after several attempts. Try again in a moment.",
+            statusCode: StatusCodes.Status409Conflict);
+    }
+
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
+    [HttpPut("Resident/{id:int}")]
+    public async Task<IActionResult> UpdateResident(int id, [FromBody] AdminCreateResidentRequest? body)
+    {
+        if (body == null)
+            return BadRequest(new { message = "Invalid or empty JSON body." });
+
+        if (body.SafehouseId <= 0)
+        {
+            return BadRequest(new
+            {
+                message = "A valid safehouse is required.",
+                errors = new Dictionary<string, string> { ["safehouseId"] = "Required" },
+            });
+        }
+
+        var safehouseExists = await _beaconContext.Safehouses.AsNoTracking()
+            .AnyAsync(s => s.SafehouseId == body.SafehouseId, HttpContext.RequestAborted);
+        if (!safehouseExists)
+        {
+            return BadRequest(new
+            {
+                message = "Safehouse not found for the given id.",
+                errors = new Dictionary<string, string> { ["safehouseId"] = "Not found" },
+            });
+        }
+
+        var residentExists = await _beaconContext.Residents.AsNoTracking()
+            .AnyAsync(r => r.ResidentId == id, HttpContext.RequestAborted);
+        if (!residentExists)
+            return NotFound();
+
+        var dob = ParseOptionalDateOnly(body.DateOfBirth);
+        var firstName = NullIfWhiteSpace(body.FirstName);
+        var lastInitial = NullIfWhiteSpace(body.LastInitial);
+        var caseControlNo = NullIfWhiteSpace(body.CaseControlNo);
+        var internalCode = NullIfWhiteSpace(body.InternalCode);
+        var caseStatus = NullIfWhiteSpace(body.CaseStatus);
+        var sex = NullIfWhiteSpace(body.Sex);
+        var initialRisk = NullIfWhiteSpace(body.InitialRiskLevel);
+        var currentRisk = NullIfWhiteSpace(body.CurrentRiskLevel);
+
+        try
+        {
+            var n = await _beaconContext.UpdateResidentRowAsync(
+                id,
+                firstName,
+                lastInitial,
+                caseControlNo,
+                internalCode,
+                body.SafehouseId,
+                caseStatus,
+                sex,
+                dob,
+                initialRisk,
+                currentRisk,
+                HttpContext.RequestAborted);
+            if (n == 0)
+                return NotFound();
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            return DatabaseMutationFailed("Could not update resident", "UpdateResident: failed", ex);
+        }
+    }
+
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
+    [HttpPost("Resident/{id:int}/Update")]
+    public Task<IActionResult> PostUpdateResident(int id, [FromBody] AdminCreateResidentRequest? body)
+        => UpdateResident(id, body);
+
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
+    [HttpPut("Partners/{id:int}")]
+    public async Task<IActionResult> UpdatePartner(int id, [FromBody] AdminCreatePartnerRequest? body)
+    {
+        if (body == null)
+            return BadRequest(new { message = "Invalid request body." });
+        if (string.IsNullOrWhiteSpace(body.PartnerName))
+            return BadRequest(new { message = "Partner name is required.", errors = new Dictionary<string, string> { ["partner_name"] = "Required" } });
+
+        var exists = await _beaconContext.Partners.AsNoTracking()
+            .AnyAsync(p => p.PartnerId == id, HttpContext.RequestAborted);
+        if (!exists)
+            return NotFound();
+
+        var partnerName = body.PartnerName.Trim();
+        var contactName = partnerName;
+        try
+        {
+            var n = await _beaconContext.UpdatePartnerRowAsync(
+                id,
+                partnerName,
+                NullIfWhiteSpace(body.PartnerType),
+                NullIfWhiteSpace(body.RoleType),
+                contactName,
+                NullIfWhiteSpace(body.Email),
+                NullIfWhiteSpace(body.Phone),
+                NullIfWhiteSpace(body.Region),
+                NullIfWhiteSpace(body.Status),
+                body.StartDate,
+                NullIfWhiteSpace(body.Notes),
+                HttpContext.RequestAborted);
+            if (n == 0)
+                return NotFound();
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            return DatabaseMutationFailed("Could not update partner", "UpdatePartner: failed", ex);
+        }
+    }
+
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
+    [HttpPost("Partners/{id:int}/Update")]
+    public Task<IActionResult> PostUpdatePartner(int id, [FromBody] AdminCreatePartnerRequest? body)
+        => UpdatePartner(id, body);
+
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
+    [HttpPut("Safehouses/{id:int}")]
+    public async Task<IActionResult> UpdateSafehouse(int id, [FromBody] AdminCreateSafehouseRequest? body)
+    {
+        if (body == null)
+            return BadRequest(new { message = "Invalid request body." });
+        if (string.IsNullOrWhiteSpace(body.Name))
+            return BadRequest(new { message = "Name is required.", errors = new Dictionary<string, string> { ["name"] = "Required" } });
+
+        var exists = await _beaconContext.Safehouses.AsNoTracking()
+            .AnyAsync(s => s.SafehouseId == id, HttpContext.RequestAborted);
+        if (!exists)
+            return NotFound();
+
+        var name = body.Name.Trim();
+        try
+        {
+            var n = await _beaconContext.UpdateSafehouseRowAsync(
+                id,
+                name,
+                NullIfWhiteSpace(body.Region),
+                NullIfWhiteSpace(body.City),
+                NullIfWhiteSpace(body.Province),
+                NullIfWhiteSpace(body.Country),
+                body.OpenDate,
+                NullIfWhiteSpace(body.Status),
+                body.CapacityGirls,
+                body.CurrentOccupancy,
+                body.CapacityStaff,
+                HttpContext.RequestAborted);
+            if (n == 0)
+                return NotFound();
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            return DatabaseMutationFailed("Could not update safehouse", "UpdateSafehouse: failed", ex);
+        }
+    }
+
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
+    [HttpPost("Safehouses/{id:int}/Update")]
+    public Task<IActionResult> PostUpdateSafehouse(int id, [FromBody] AdminCreateSafehouseRequest? body)
+        => UpdateSafehouse(id, body);
+
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
+    [HttpPut("Supporters/{id:int}")]
+    public async Task<IActionResult> UpdateSupporterAdmin(int id, [FromBody] AdminCreateSupporterRequest? body)
+    {
+        if (body == null)
+            return BadRequest(new { message = "Invalid request body." });
+
+        if (string.IsNullOrWhiteSpace(body.FirstName) || string.IsNullOrWhiteSpace(body.LastName))
+        {
+            return BadRequest(new
+            {
+                message = "First name and last name are required.",
+                errors = new Dictionary<string, string>
+                {
+                    ["firstName"] = "Required",
+                    ["lastName"] = "Required",
+                },
+            });
+        }
+
+        var exists = await _beaconContext.Supporters.AsNoTracking()
+            .AnyAsync(s => s.SupporterId == id, HttpContext.RequestAborted);
+        if (!exists)
+            return NotFound();
+
+        var displayName = $"{body.FirstName.Trim()} {body.LastName.Trim()}";
+        var status = string.IsNullOrWhiteSpace(body.Status) ? "Active" : body.Status.Trim();
+
+        try
+        {
+            var n = await _beaconContext.UpdateSupporterAdminRowAsync(
+                id,
+                NullIfWhiteSpace(body.SupporterType),
+                displayName,
+                NullIfWhiteSpace(body.FirstName),
+                NullIfWhiteSpace(body.LastName),
+                NullIfWhiteSpace(body.RelationshipType),
+                NullIfWhiteSpace(body.Region),
+                NullIfWhiteSpace(body.Email),
+                NullIfWhiteSpace(body.Phone),
+                status,
+                NullIfWhiteSpace(body.AcquisitionChannel),
+                HttpContext.RequestAborted);
+            if (n == 0)
+                return NotFound();
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            return DatabaseMutationFailed("Could not update donor record", "UpdateSupporterAdmin: failed", ex);
+        }
+    }
+
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
+    [HttpPost("Supporters/{id:int}/Update")]
+    public Task<IActionResult> PostUpdateSupporterAdmin(int id, [FromBody] AdminCreateSupporterRequest? body)
+        => UpdateSupporterAdmin(id, body);
+
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
+    [HttpPut("Donor/{id:int}")]
+    public Task<IActionResult> UpdateDonor(int id, [FromBody] AdminCreateSupporterRequest? body)
+        => UpdateSupporterAdmin(id, body);
+
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
+    [HttpPost("Donor/{id:int}/Update")]
+    public Task<IActionResult> PostUpdateDonor(int id, [FromBody] AdminCreateSupporterRequest? body)
+        => UpdateSupporterAdmin(id, body);
+
+    /// <summary>Admin: delete a resident and related case records (cascade per EF / DB).</summary>
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
+    [HttpPost("Resident/{id:int}/Delete")]
+    public Task<IActionResult> PostDeleteResident(int id) => DeleteResidentCoreAsync(id);
+
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
+    [HttpDelete("Resident/{id:int}")]
+    public Task<IActionResult> DeleteResident(int id) => DeleteResidentCoreAsync(id);
+
+    /// <summary>Admin: delete a safehouse. May cascade to residents and related rows depending on DB rules.</summary>
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
+    [HttpPost("Safehouse/{id:int}/Delete")]
+    public Task<IActionResult> PostDeleteSafehouse(int id) => DeleteSafehouseCoreAsync(id);
+
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
+    [HttpDelete("Safehouse/{id:int}")]
+    public Task<IActionResult> DeleteSafehouse(int id) => DeleteSafehouseCoreAsync(id);
+
+    /// <summary>Admin: delete a partner (assignments cascade; identity link cleared first).</summary>
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
+    [HttpPost("Partner/{id:int}/Delete")]
+    public Task<IActionResult> PostDeletePartner(int id) => DeletePartnerCoreAsync(id);
+
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
+    [HttpDelete("Partner/{id:int}")]
+    public Task<IActionResult> DeletePartner(int id) => DeletePartnerCoreAsync(id);
+
+    /// <summary>Admin: delete a donor/supporter row (donations cascade per model).</summary>
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
+    [HttpPost("Donor/{id:int}/Delete")]
+    public Task<IActionResult> PostDeleteDonor(int id) => DeleteDonorCoreAsync(id);
+
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
+    [HttpDelete("Donor/{id:int}")]
+    public Task<IActionResult> DeleteDonor(int id) => DeleteDonorCoreAsync(id);
+
+    private async Task<IActionResult> DeleteResidentCoreAsync(int id)
+    {
+        try
+        {
+            var deleted = await _beaconContext.DeleteResidentCascadeByIdAsync(id, HttpContext.RequestAborted);
+            if (deleted == 0)
+                return NotFound();
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            return DatabaseMutationFailed("Could not delete resident", "DeleteResident: failed", ex);
+        }
+    }
+
+    private async Task<IActionResult> DeleteSafehouseCoreAsync(int id)
+    {
+        var entity = await _beaconContext.Safehouses
+            .FirstOrDefaultAsync(s => s.SafehouseId == id, HttpContext.RequestAborted);
+        if (entity == null)
+            return NotFound();
+
+        _beaconContext.Safehouses.Remove(entity);
+        try
+        {
+            await _beaconContext.SaveChangesAsync(HttpContext.RequestAborted);
+        }
+        catch (Exception ex)
+        {
+            return DatabaseMutationFailed("Could not delete safehouse", "DeleteSafehouse: failed", ex);
+        }
+
+        return NoContent();
+    }
+
+    private async Task<IActionResult> DeletePartnerCoreAsync(int id)
+    {
+        var entity = await _beaconContext.Partners
+            .FirstOrDefaultAsync(p => p.PartnerId == id, HttpContext.RequestAborted);
+        if (entity == null)
+            return NotFound();
+
+        entity.IdentityUserId = null;
+        _beaconContext.Partners.Remove(entity);
+        try
+        {
+            await _beaconContext.SaveChangesAsync(HttpContext.RequestAborted);
+        }
+        catch (Exception ex)
+        {
+            return DatabaseMutationFailed("Could not delete partner", "DeletePartner: failed", ex);
+        }
+
+        return NoContent();
+    }
+
+    private async Task<IActionResult> DeleteDonorCoreAsync(int id)
+    {
+        var entity = await _beaconContext.Supporters
+            .FirstOrDefaultAsync(s => s.SupporterId == id, HttpContext.RequestAborted);
+        if (entity == null)
+            return NotFound();
+
+        entity.IdentityUserId = null;
+        _beaconContext.Supporters.Remove(entity);
+        try
+        {
+            await _beaconContext.SaveChangesAsync(HttpContext.RequestAborted);
+        }
+        catch (Exception ex)
+        {
+            return DatabaseMutationFailed("Could not delete donor", "DeleteDonor: failed", ex);
+        }
+
+        return NoContent();
+    }
+
+    private IActionResult DatabaseMutationFailed(string title, string logContext, Exception ex)
+    {
+        if (TryGetPostgresException(ex, out var pgEx) && pgEx is { } pg)
+        {
+            var detail = !string.IsNullOrWhiteSpace(pg.Detail)
+                ? pg.Detail!
+                : (pg.MessageText ?? "Database rejected the request.");
+            var status = string.Equals(pg.SqlState, PostgresErrorCodes.ForeignKeyViolation, StringComparison.Ordinal)
+                ? StatusCodes.Status400BadRequest
+                : StatusCodes.Status409Conflict;
+            return Problem(title: title, detail: detail, statusCode: status);
+        }
+
+        _logger.LogError(ex, "{LogContext}", logContext);
+        return Problem(
+            title: title,
+            detail: "The database rejected this operation. Check logs for details.",
+            statusCode: StatusCodes.Status409Conflict);
     }
 
     //SEARCH BAR FUNCTIONALITY
@@ -337,13 +1106,17 @@ public class BeaconController : ControllerBase
             .Where(x => x.ResidentId == id)
             .Select(x => new
             {
+                x.ResidentId,
                 x.FirstName,
                 x.LastInitial,
+                x.CaseControlNo,
+                x.InternalCode,
                 x.DateOfBirth,
                 x.Sex,
                 x.CaseStatus,
                 x.SafehouseId,
                 x.LengthOfStay,
+                x.InitialRiskLevel,
                 x.CurrentRiskLevel,
             })
             .FirstOrDefault();
@@ -524,6 +1297,11 @@ public class BeaconController : ControllerBase
 
         return Ok(new
         {
+            r.ResidentId,
+            r.FirstName,
+            r.LastInitial,
+            r.CaseControlNo,
+            r.InternalCode,
             Name = (r.FirstName ?? "") + " " + (r.LastInitial ?? ""),
             r.DateOfBirth,
             r.Sex,
@@ -531,6 +1309,7 @@ public class BeaconController : ControllerBase
             SafehouseId = r.SafehouseId,
             SafehouseCity = safehouse?.City,
             r.LengthOfStay,
+            r.InitialRiskLevel,
             r.CurrentRiskLevel,
             educationRecords,
             healthWellbeingRecords,
@@ -1446,6 +2225,70 @@ public class BeaconController : ControllerBase
 
     private static string? NullIfWhiteSpace(string? s) =>
         string.IsNullOrWhiteSpace(s) ? null : s.Trim();
+
+    private static DateOnly? ParseOptionalDateOnly(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return null;
+        var t = value.Trim();
+        if (t.Length >= 10 && DateOnly.TryParse(t.AsSpan(0, 10), out var fromIsoDate))
+            return fromIsoDate;
+        return DateOnly.TryParse(t, out var parsed) ? parsed : null;
+    }
+
+    private static bool TryGetPostgresException(Exception ex, out PostgresException? pg)
+    {
+        if (ex is PostgresException direct)
+        {
+            pg = direct;
+            return true;
+        }
+
+        for (var e = ex.InnerException; e != null; e = e.InnerException)
+        {
+            if (e is PostgresException p)
+            {
+                pg = p;
+                return true;
+            }
+        }
+
+        pg = null;
+        return false;
+    }
+
+    /// <summary>True when unique violation is on <c>residents.resident_id</c> / <c>pk_residents</c>, not another unique index.</summary>
+    private static bool IsResidentsPrimaryKeyViolation(PostgresException pg)
+    {
+        if (string.Equals(pg.ConstraintName, "pk_residents", StringComparison.OrdinalIgnoreCase))
+            return true;
+        var d = pg.Detail ?? string.Empty;
+        return d.Contains("(resident_id)", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsSupportersPrimaryKeyViolation(PostgresException pg)
+    {
+        if (string.Equals(pg.ConstraintName, "pk_supporters", StringComparison.OrdinalIgnoreCase))
+            return true;
+        var d = pg.Detail ?? string.Empty;
+        return d.Contains("(supporter_id)", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsPartnersPrimaryKeyViolation(PostgresException pg)
+    {
+        if (string.Equals(pg.ConstraintName, "pk_partners", StringComparison.OrdinalIgnoreCase))
+            return true;
+        var d = pg.Detail ?? string.Empty;
+        return d.Contains("(partner_id)", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsSafehousesPrimaryKeyViolation(PostgresException pg)
+    {
+        if (string.Equals(pg.ConstraintName, "pk_safehouses", StringComparison.OrdinalIgnoreCase))
+            return true;
+        var d = pg.Detail ?? string.Empty;
+        return d.Contains("(safehouse_id)", StringComparison.OrdinalIgnoreCase);
+    }
 
     private static List<string> MergeDistinctStrings(IEnumerable<string> fromDb, IEnumerable<string> defaults) =>
         fromDb.Concat(defaults).Distinct(StringComparer.OrdinalIgnoreCase)

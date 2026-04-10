@@ -1,8 +1,9 @@
+using Beacon.API.Models;
 using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using Beacon.API.Models;
+using Npgsql;
 
 namespace Beacon.API.Data;
 
@@ -124,6 +125,32 @@ public class AuthIdentityDbContext : IdentityDbContext<ApplicationUser>, IDataPr
     }
 
     /// <summary>
+    /// Next <c>partner_id</c> for admin inserts. Imported DBs often have integer PKs without PG IDENTITY.
+    /// </summary>
+    public async Task<int> AllocateNextPartnerIdAsync(CancellationToken cancellationToken = default)
+    {
+        var maxId = await Partners
+            .AsNoTracking()
+            .OrderByDescending(p => p.PartnerId)
+            .Select(p => p.PartnerId)
+            .FirstOrDefaultAsync(cancellationToken);
+        return maxId + 1;
+    }
+
+    /// <summary>
+    /// Next <c>safehouse_id</c> for admin inserts (legacy/imported DBs without IDENTITY on the PK).
+    /// </summary>
+    public async Task<int> AllocateNextSafehouseIdAsync(CancellationToken cancellationToken = default)
+    {
+        var maxId = await Safehouses
+            .AsNoTracking()
+            .OrderByDescending(s => s.SafehouseId)
+            .Select(s => s.SafehouseId)
+            .FirstOrDefaultAsync(cancellationToken);
+        return maxId + 1;
+    }
+
+    /// <summary>
     /// Inserts a supporter row with an explicit <c>supporter_id</c>. Uses SQL so the key is never omitted
     /// (some legacy DBs have NOT NULL <c>supporter_id</c> without IDENTITY; EF can still omit the column).
     /// </summary>
@@ -166,6 +193,404 @@ public class AuthIdentityDbContext : IdentityDbContext<ApplicationUser>, IDataPr
                 {status})",
             cancellationToken);
     }
+
+    /// <summary>
+    /// Inserts a resident with only the columns needed for admin create. Production schemas imported from CSV
+    /// may omit columns the EF model maps (e.g. <c>family_is4ps</c>); raw SQL avoids generating INSERT …
+    /// for every mapped property.
+    /// </summary>
+    public Task<int> InsertResidentRowAsync(
+        int residentId,
+        string? firstName,
+        string? lastInitial,
+        string? caseControlNo,
+        string? internalCode,
+        int safehouseId,
+        string? caseStatus,
+        string? sex,
+        DateOnly? dateOfBirth,
+        string? initialRiskLevel,
+        string? currentRiskLevel,
+        DateTime createdAtUtc,
+        CancellationToken cancellationToken = default)
+    {
+        return Database.ExecuteSqlInterpolatedAsync(
+            $@"
+            INSERT INTO residents (
+                resident_id,
+                first_name,
+                last_initial,
+                case_control_no,
+                internal_code,
+                safehouse_id,
+                case_status,
+                sex,
+                date_of_birth,
+                initial_risk_level,
+                current_risk_level,
+                created_at
+            ) VALUES (
+                {residentId},
+                {firstName},
+                {lastInitial},
+                {caseControlNo},
+                {internalCode},
+                {safehouseId},
+                {caseStatus},
+                {sex},
+                {dateOfBirth},
+                {initialRiskLevel},
+                {currentRiskLevel},
+                {createdAtUtc})",
+            cancellationToken);
+    }
+
+    /// <summary>
+    /// Inserts a partner row with only columns used by admin create (avoids schema drift on imported DBs).
+    /// Uses an explicit <c>partner_id</c> so legacy DBs without IDENTITY behave like <see cref="InsertResidentRowAsync"/>.
+    /// </summary>
+    public Task InsertPartnerRowAsync(
+        int partnerId,
+        string partnerName,
+        string? partnerType,
+        string? roleType,
+        string contactName,
+        string? email,
+        string? phone,
+        string? region,
+        string? status,
+        DateOnly? startDate,
+        string? notes,
+        CancellationToken cancellationToken = default)
+    {
+        return Database.ExecuteSqlInterpolatedAsync(
+            $@"
+            INSERT INTO partners (
+                partner_id,
+                partner_name, partner_type, role_type, contact_name, email, phone, region, status,
+                start_date, end_date, notes, identity_user_id)
+            VALUES (
+                {partnerId},
+                {partnerName},
+                {partnerType},
+                {roleType},
+                {contactName},
+                {email},
+                {phone},
+                {region},
+                {status},
+                {startDate},
+                NULL,
+                {notes},
+                NULL)",
+            cancellationToken);
+    }
+
+    /// <summary>
+    /// Inserts a safehouse with explicit <c>safehouse_id</c>; temporary <c>safehouse_code</c>, then <c>SH-{id}</c>.
+    /// </summary>
+    public async Task<(int SafehouseId, string SafehouseCode)> InsertSafehouseRowAsync(
+        int safehouseId,
+        string name,
+        string? region,
+        string? city,
+        string? province,
+        string? country,
+        DateOnly? openDate,
+        string? status,
+        int? capacityGirls,
+        int? currentOccupancy,
+        int? capacityStaff,
+        CancellationToken cancellationToken = default)
+    {
+        await using var tx = await Database.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            var tempCode = "TMP-" + Guid.NewGuid().ToString("N");
+            await Database.ExecuteSqlInterpolatedAsync(
+                $@"
+                INSERT INTO safehouses (
+                    safehouse_id,
+                    safehouse_code, name, region, city, province, country, open_date, status,
+                    capacity_girls, current_occupancy, capacity_staff, notes)
+                VALUES (
+                    {safehouseId},
+                    {tempCode},
+                    {name},
+                    {region},
+                    {city},
+                    {province},
+                    {country},
+                    {openDate},
+                    {status},
+                    {capacityGirls},
+                    {currentOccupancy},
+                    {capacityStaff},
+                    NULL)",
+                cancellationToken);
+
+            var finalCode = $"SH-{safehouseId}";
+            await Database.ExecuteSqlInterpolatedAsync(
+                $@"UPDATE safehouses SET safehouse_code = {finalCode} WHERE safehouse_id = {safehouseId}",
+                cancellationToken);
+            await tx.CommitAsync(cancellationToken);
+            return (safehouseId, finalCode);
+        }
+        catch
+        {
+            await tx.RollbackAsync(cancellationToken);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Admin create for <c>supporters</c>: explicit <c>supporter_id</c> and narrow column list.
+    /// </summary>
+    public Task InsertSupporterAdminRowAsync(
+        int supporterId,
+        string? supporterType,
+        string displayName,
+        string? firstName,
+        string? lastName,
+        string? relationshipType,
+        string? region,
+        string? email,
+        string? phone,
+        string status,
+        DateTime createdAtUtc,
+        string? acquisitionChannel,
+        CancellationToken cancellationToken = default)
+    {
+        return Database.ExecuteSqlInterpolatedAsync(
+            $@"
+            INSERT INTO supporters (
+                supporter_id,
+                supporter_type,
+                display_name,
+                organization_name,
+                first_name,
+                last_name,
+                relationship_type,
+                region,
+                country,
+                email,
+                phone,
+                status,
+                created_at,
+                first_donation_date,
+                acquisition_channel,
+                identity_user_id)
+            VALUES (
+                {supporterId},
+                {supporterType},
+                {displayName},
+                NULL,
+                {firstName},
+                {lastName},
+                {relationshipType},
+                {region},
+                NULL,
+                {email},
+                {phone},
+                {status},
+                {createdAtUtc},
+                NULL,
+                {acquisitionChannel},
+                NULL)",
+            cancellationToken);
+    }
+
+    /// <summary>Admin update: same narrow column set as <see cref="InsertResidentRowAsync"/> (no <c>created_at</c> change).</summary>
+    public Task<int> UpdateResidentRowAsync(
+        int residentId,
+        string? firstName,
+        string? lastInitial,
+        string? caseControlNo,
+        string? internalCode,
+        int safehouseId,
+        string? caseStatus,
+        string? sex,
+        DateOnly? dateOfBirth,
+        string? initialRiskLevel,
+        string? currentRiskLevel,
+        CancellationToken cancellationToken = default)
+    {
+        return Database.ExecuteSqlInterpolatedAsync(
+            $@"
+            UPDATE residents SET
+                first_name = {firstName},
+                last_initial = {lastInitial},
+                case_control_no = {caseControlNo},
+                internal_code = {internalCode},
+                safehouse_id = {safehouseId},
+                case_status = {caseStatus},
+                sex = {sex},
+                date_of_birth = {dateOfBirth},
+                initial_risk_level = {initialRiskLevel},
+                current_risk_level = {currentRiskLevel}
+            WHERE resident_id = {residentId}",
+            cancellationToken);
+    }
+
+    public Task<int> UpdatePartnerRowAsync(
+        int partnerId,
+        string partnerName,
+        string? partnerType,
+        string? roleType,
+        string contactName,
+        string? email,
+        string? phone,
+        string? region,
+        string? status,
+        DateOnly? startDate,
+        string? notes,
+        CancellationToken cancellationToken = default)
+    {
+        return Database.ExecuteSqlInterpolatedAsync(
+            $@"
+            UPDATE partners SET
+                partner_name = {partnerName},
+                partner_type = {partnerType},
+                role_type = {roleType},
+                contact_name = {contactName},
+                email = {email},
+                phone = {phone},
+                region = {region},
+                status = {status},
+                start_date = {startDate},
+                notes = {notes}
+            WHERE partner_id = {partnerId}",
+            cancellationToken);
+    }
+
+    /// <summary>Admin update; does not change <c>safehouse_code</c>.</summary>
+    public Task<int> UpdateSafehouseRowAsync(
+        int safehouseId,
+        string name,
+        string? region,
+        string? city,
+        string? province,
+        string? country,
+        DateOnly? openDate,
+        string? status,
+        int? capacityGirls,
+        int? currentOccupancy,
+        int? capacityStaff,
+        CancellationToken cancellationToken = default)
+    {
+        return Database.ExecuteSqlInterpolatedAsync(
+            $@"
+            UPDATE safehouses SET
+                name = {name},
+                region = {region},
+                city = {city},
+                province = {province},
+                country = {country},
+                open_date = {openDate},
+                status = {status},
+                capacity_girls = {capacityGirls},
+                current_occupancy = {currentOccupancy},
+                capacity_staff = {capacityStaff}
+            WHERE safehouse_id = {safehouseId}",
+            cancellationToken);
+    }
+
+    public Task<int> UpdateSupporterAdminRowAsync(
+        int supporterId,
+        string? supporterType,
+        string displayName,
+        string? firstName,
+        string? lastName,
+        string? relationshipType,
+        string? region,
+        string? email,
+        string? phone,
+        string status,
+        string? acquisitionChannel,
+        CancellationToken cancellationToken = default)
+    {
+        return Database.ExecuteSqlInterpolatedAsync(
+            $@"
+            UPDATE supporters SET
+                supporter_type = {supporterType},
+                display_name = {displayName},
+                first_name = {firstName},
+                last_name = {lastName},
+                relationship_type = {relationshipType},
+                region = {region},
+                email = {email},
+                phone = {phone},
+                status = {status},
+                acquisition_channel = {acquisitionChannel}
+            WHERE supporter_id = {supporterId}",
+            cancellationToken);
+    }
+
+    /// <summary>
+    /// Deletes a resident and known child rows with SQL (no full-row SELECT). Skips
+    /// <c>resident_ml_scores</c> when that optional table is absent (common on Railway imports).
+    /// </summary>
+    /// <returns>Number of rows deleted from <c>residents</c> (0 if none matched).</returns>
+    public async Task<int> DeleteResidentCascadeByIdAsync(int residentId,
+        CancellationToken cancellationToken = default)
+    {
+        await using var tx = await Database.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            await Database.ExecuteSqlInterpolatedAsync(
+                $"DELETE FROM education_records WHERE resident_id = {residentId}",
+                cancellationToken);
+            await Database.ExecuteSqlInterpolatedAsync(
+                $"DELETE FROM health_wellbeing_records WHERE resident_id = {residentId}",
+                cancellationToken);
+            await Database.ExecuteSqlInterpolatedAsync(
+                $"DELETE FROM home_visitations WHERE resident_id = {residentId}",
+                cancellationToken);
+            await Database.ExecuteSqlInterpolatedAsync(
+                $"DELETE FROM incident_reports WHERE resident_id = {residentId}",
+                cancellationToken);
+            await Database.ExecuteSqlInterpolatedAsync(
+                $"DELETE FROM intervention_plans WHERE resident_id = {residentId}",
+                cancellationToken);
+            await Database.ExecuteSqlInterpolatedAsync(
+                $"DELETE FROM process_recordings WHERE resident_id = {residentId}",
+                cancellationToken);
+
+            try
+            {
+                await Database.ExecuteSqlInterpolatedAsync(
+                    $"DELETE FROM resident_ml_scores WHERE resident_id = {residentId}",
+                    cancellationToken);
+            }
+            catch (Exception ex) when (IsPostgresUndefinedTable(ex))
+            {
+            }
+
+            var deleted = await Database.ExecuteSqlInterpolatedAsync(
+                $"DELETE FROM residents WHERE resident_id = {residentId}",
+                cancellationToken);
+            await tx.CommitAsync(cancellationToken);
+            return deleted;
+        }
+        catch
+        {
+            await tx.RollbackAsync(cancellationToken);
+            throw;
+        }
+    }
+
+    private static bool IsPostgresUndefinedTable(Exception ex)
+    {
+        for (var e = ex; e != null; e = e.InnerException)
+        {
+            if (e is PostgresException pg
+                && string.Equals(pg.SqlState, PostgresErrorCodes.UndefinedTable, StringComparison.Ordinal))
+                return true;
+        }
+
+        return false;
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // THIS MUST BE THE FIRST LINE IN THIS METHOD

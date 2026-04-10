@@ -1345,6 +1345,20 @@ a.admin-all-residents-card-link:focus-visible .admin-all-residents-card {
 .landing-footer a:hover {
   color: var(--beacon-oat-light);
 }
+
+.landing-footer__cookie-btn {
+  font-size: inherit;
+  color: var(--beacon-oat);
+  text-decoration: underline;
+  border: 0;
+  background: none;
+  vertical-align: baseline;
+}
+
+.landing-footer__cookie-btn:hover {
+  color: var(--beacon-oat-light);
+}
+
 .landing-footer__socials {
   display: flex;
   align-items: center;
@@ -1626,6 +1640,40 @@ a.admin-all-residents-card-link:focus-visible .admin-all-residents-card {
   margin: 0 auto 2.5rem;
 }
 
+/* Admin dashboard global search — larger mark + high-contrast “bubble” */
+.search-bar__logo {
+  box-sizing: border-box;
+  width: 4.25rem;
+  height: 4.25rem;
+  min-width: 4.25rem;
+  min-height: 4.25rem;
+  object-fit: contain;
+  padding: 0.5rem;
+  background: #fff;
+  border: 3px solid var(--beacon-primary);
+  border-radius: 50%;
+  box-shadow:
+    0 4px 14px rgba(45, 79, 53, 0.22),
+    0 0 0 1px rgba(45, 79, 53, 0.08);
+}
+
+/* Hub list pages — slightly smaller but same treatment */
+.admin-hub-search__logo {
+  box-sizing: border-box;
+  width: 3.75rem;
+  height: 3.75rem;
+  min-width: 3.75rem;
+  min-height: 3.75rem;
+  object-fit: contain;
+  padding: 0.45rem;
+  background: #fff;
+  border: 3px solid var(--beacon-primary);
+  border-radius: 50%;
+  box-shadow:
+    0 4px 14px rgba(45, 79, 53, 0.22),
+    0 0 0 1px rgba(45, 79, 53, 0.08);
+}
+
 .admin-dashboard__panel {
   background: var(--beacon-bg-card);
   border: 1px solid var(--beacon-border);
@@ -1656,6 +1704,22 @@ a.admin-all-residents-card-link:focus-visible .admin-all-residents-card {
   transform: translateY(-4px);
   box-shadow: 0 14px 36px rgba(27, 38, 29, 0.1);
   border-color: rgba(45, 79, 53, 0.2);
+}
+
+/* Second column inside the “Resident records” card: stack on small screens, split with rule on lg+ */
+.admin-dashboard__profiles-column {
+  border-top: 1px solid var(--beacon-border);
+  padding-top: 1.25rem;
+}
+
+@media (min-width: 992px) {
+  .admin-dashboard__profiles-column {
+    border-top: none;
+    padding-top: 0;
+    border-left: 1px solid var(--beacon-border);
+    padding-left: 1.5rem;
+    margin-left: 0.25rem;
+  }
 }
 
 .admin-dashboard__nav {
@@ -4102,6 +4166,7 @@ main.main-with-site-announcement .beacon-page--auth:not(.login-page):not(.regist
   font-size: 1.05rem;
   line-height: 1.65;
   max-width: 42rem;
+  margin-inline: auto;
   margin-bottom: 1.5rem;
 }
 

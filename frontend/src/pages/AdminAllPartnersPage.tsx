@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import Pagination from "../components/Pagination";
 import AdminSearchInput from "../components/AdminSearchInput";
 import AdminDashboardBackLink from "../components/AdminDashboardBackLink";
@@ -7,6 +8,7 @@ import AdminGlassFilterBar, {
 } from "../components/AdminGlassFilterBar";
 import { useAdminSearch } from "../context/AdminSearchContext";
 import { BASE_URL } from "../config/api";
+import { CreatePartnerModal } from "../components/admin/AdminCreateEntityModals";
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
@@ -42,6 +44,7 @@ interface AdminPartner {
 }
 
 function AdminAllPartnersPage() {
+  const navigate = useNavigate();
   const [partners, setPartners] = useState<AdminPartner[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -56,14 +59,18 @@ function AdminAllPartnersPage() {
     organization: "",
     role: "",
   });
+  const [createOpen, setCreateOpen] = useState(false);
+  const [refreshList, setRefreshList] = useState(0);
 
   useEffect(() => {
+    setLoading(true);
+    setError(null);
     fetch(`${BASE_URL}/AllPartners`, { credentials: "include" })
       .then((res) => res.json())
       .then(setPartners)
       .catch((err) => setError((err as Error).message))
       .finally(() => setLoading(false));
-  }, []);
+  }, [refreshList]);
 
   const normalizedQuery = query.trim().toLowerCase();
 
@@ -214,6 +221,11 @@ function AdminAllPartnersPage() {
 
   return (
     <div className="beacon-page container py-4 admin-list-page">
+      <CreatePartnerModal
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onSaved={() => setRefreshList((n) => n + 1)}
+      />
       <AdminDashboardBackLink />
       <AdminSearchInput placeholder="Search partners by name, role, safehouse, or status..." />
 
@@ -233,21 +245,30 @@ function AdminAllPartnersPage() {
           <p className="landing-section__eyebrow mb-1">Admin</p>
           <h1 className="mb-0">All Partners</h1>
         </div>
-        <div className="btn-group">
+        <div className="d-flex flex-wrap gap-2 align-items-center">
           <button
             type="button"
-            className={`btn ${view === "table" ? "btn-primary" : "btn-outline-primary"}`}
-            onClick={() => setView("table")}
+            className="btn btn-success"
+            onClick={() => setCreateOpen(true)}
           >
-            Table
+            New partner
           </button>
-          <button
-            type="button"
-            className={`btn ${view === "card" ? "btn-primary" : "btn-outline-primary"}`}
-            onClick={() => setView("card")}
-          >
-            Cards
-          </button>
+          <div className="btn-group">
+            <button
+              type="button"
+              className={`btn ${view === "table" ? "btn-primary" : "btn-outline-primary"}`}
+              onClick={() => setView("table")}
+            >
+              Table
+            </button>
+            <button
+              type="button"
+              className={`btn ${view === "card" ? "btn-primary" : "btn-outline-primary"}`}
+              onClick={() => setView("card")}
+            >
+              Cards
+            </button>
+          </div>
         </div>
       </div>
 
@@ -271,7 +292,20 @@ function AdminAllPartnersPage() {
               </thead>
               <tbody>
                 {visiblePartners.map((p, i) => (
-                  <tr key={`${p.partnerId}-${i}`}>
+                  <tr
+                    key={`${p.partnerId}-${i}`}
+                    role="link"
+                    tabIndex={0}
+                    aria-label={`Open partner profile for ${p.partnerName}`}
+                    className="cursor-pointer"
+                    onClick={() => navigate(`/partner/${p.partnerId}`)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        navigate(`/partner/${p.partnerId}`);
+                      }
+                    }}
+                  >
                     <td>{p.partnerId}</td>
                     <td>{p.partnerName}</td>
                     <td>{p.organizationType ?? "\u2014"}</td>
@@ -292,6 +326,11 @@ function AdminAllPartnersPage() {
         <div className="row g-4">
           {visiblePartners.map((p, i) => (
             <div key={`${p.partnerId}-${i}`} className="col-sm-6 col-lg-4">
+              <Link
+                to={`/partner/${p.partnerId}`}
+                className="admin-all-residents-card-link text-decoration-none text-reset d-block h-100"
+                aria-label={`Open partner profile for ${p.partnerName}`}
+              >
               <div className="admin-all-residents-card card h-100 shadow-sm">
                 <div className="card-body d-flex flex-column">
                   <h5 className="card-title mb-3">{p.partnerName}</h5>
@@ -317,6 +356,7 @@ function AdminAllPartnersPage() {
                   </dl>
                 </div>
               </div>
+              </Link>
             </div>
           ))}
         </div>

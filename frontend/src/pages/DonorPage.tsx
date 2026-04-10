@@ -1,7 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { BASE_URL } from "../config/api";
 import type { Supporter } from "../types/Supporter";
+import { AdminDeleteRecordButton } from "../components/admin/AdminDeleteRecordButton";
+import {
+  EditDonorModal,
+  type DonorModalInitial,
+} from "../components/admin/AdminCreateEntityModals";
+import { useAuth } from "../context/AuthContext";
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
@@ -28,9 +34,12 @@ interface DonorPageData {
 
 function DonorPage() {
   const { id } = useParams();
+  const { authSession } = useAuth();
+  const isAdmin = authSession?.roles.includes("Admin") ?? false;
   const [data, setData] = useState<DonorPageData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -43,6 +52,45 @@ function DonorPage() {
       .catch((err) => setError((err as Error).message))
       .finally(() => setLoading(false));
   }, [id]);
+
+  const reloadDonor = async () => {
+    if (!id) return;
+    try {
+      const res = await fetch(`${BASE_URL}/Donor/${id}`, {
+        credentials: "include",
+      });
+      if (!res.ok) return;
+      setData(await res.json());
+    } catch {
+      /* keep existing */
+    }
+  };
+
+  const donorModalInitial = useMemo((): DonorModalInitial | null => {
+    if (!data?.supporter) return null;
+    const s = data.supporter;
+    let firstName = s.firstName ?? "";
+    let lastName = s.lastName ?? "";
+    if (!firstName.trim() && !lastName.trim()) {
+      const dn = (s.displayName ?? "").trim();
+      if (dn) {
+        const parts = dn.split(/\s+/);
+        firstName = parts[0] ?? "";
+        lastName = parts.length > 1 ? parts.slice(1).join(" ") : "";
+      }
+    }
+    return {
+      supporterType: s.supporterType ?? "",
+      firstName,
+      lastName,
+      relationshipType: s.relationshipType ?? "",
+      region: s.region ?? "",
+      email: s.email ?? "",
+      phone: s.phone ?? "",
+      status: s.status ?? "Active",
+      acquisitionChannel: s.acquisitionChannel ?? "",
+    };
+  }, [data]);
 
   if (loading) {
     return (
@@ -83,10 +131,41 @@ function DonorPage() {
 
   return (
     <div className="beacon-page container py-4">
-      <p className="landing-section__eyebrow mb-2">Donor record</p>
+      {isAdmin && donorModalInitial && id ? (
+        <EditDonorModal
+          open={editOpen}
+          onClose={() => setEditOpen(false)}
+          onSaved={() => void reloadDonor()}
+          supporterId={Number(id)}
+          initialDonor={donorModalInitial}
+        />
+      ) : null}
+      <div className="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
+        <div>
+          <p className="landing-section__eyebrow mb-2">Donor record</p>
+          <h1 className="mb-0">{name}</h1>
+        </div>
+        <div className="d-flex flex-wrap gap-2 align-items-start">
+          {isAdmin ? (
+            <button
+              type="button"
+              className="btn btn-outline-primary"
+              onClick={() => setEditOpen(true)}
+            >
+              Edit donor
+            </button>
+          ) : null}
+          <AdminDeleteRecordButton
+            entity="Donor"
+            id={id}
+            label="Delete donor record"
+            confirmMessage={`Delete donor "${name}" (ID ${id})? Donation rows linked to this supporter may be removed too. This cannot be undone.`}
+            redirectTo="/admin/all-donors"
+          />
+        </div>
+      </div>
       <div className="row g-4 mb-4">
         <div className="col-lg-6">
-          <h1 className="mb-3">{name}</h1>
           <div className="card beacon-detail-card">
             <div className="card-body">
               <table className="table table-sm mb-0">
