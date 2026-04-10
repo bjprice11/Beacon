@@ -7,6 +7,12 @@ import { AddHealthRecordModal } from "../components/resident/AddHealthRecordModa
 import { AddProcessRecordingModal } from "../components/resident/AddProcessRecordingModal";
 import { AddHomeVisitationModal } from "../components/resident/AddHomeVisitationModal";
 import { AddIncidentReportModal } from "../components/resident/AddIncidentReportModal";
+import {
+  CreateResidentModal,
+  CreatePartnerModal,
+  CreateDonorModal,
+  CreateSafehouseModal,
+} from "../components/admin/AdminCreateEntityModals";
 
 const navLinks = [
   { to: "/admin/all-residents", label: "Residents" },
@@ -33,10 +39,20 @@ const addResidentRecordLinks: { key: ResidentRecordModalKey; label: string }[] =
   { key: "incident", label: "Add incident report" },
 ];
 
+type AdminEntityModalKey = "resident" | "partner" | "donor" | "safehouse";
+
+const addProfileLinks: { key: AdminEntityModalKey; label: string }[] = [
+  { key: "resident", label: "Add resident" },
+  { key: "partner", label: "Add partner" },
+  { key: "donor", label: "Add donor" },
+  { key: "safehouse", label: "Add safehouse" },
+];
+
 function AdminDashboardPage() {
   const [residentRecordModal, setResidentRecordModal] = useState<ResidentRecordModalKey | null>(
     null,
   );
+  const [adminEntityModal, setAdminEntityModal] = useState<AdminEntityModalKey | null>(null);
   const [adminHeroFallback, setAdminHeroFallback] = useState(false);
 
   return (
@@ -91,23 +107,46 @@ function AdminDashboardPage() {
           <div className="row g-4 align-items-stretch mt-lg-2 mt-4">
             <div className="col-12">
               <div className="admin-dashboard__nav-card">
-                <p className="landing-section__eyebrow mb-3">Resident records</p>
-                <p className="landing-section__body small text-muted mb-3">
-                  Open a form to enter a new record. You will be prompted for the resident ID (and
-                  other required fields) on each form.
-                </p>
-                <nav className="admin-dashboard__nav" aria-label="Add resident record">
-                  {addResidentRecordLinks.map(({ key, label }) => (
-                    <button
-                      key={key}
-                      type="button"
-                      className="admin-dashboard__nav-link"
-                      onClick={() => setResidentRecordModal(key)}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </nav>
+                <div className="row g-4 g-lg-5">
+                  <div className="col-12 col-lg-6">
+                    <p className="landing-section__eyebrow mb-3">Resident records</p>
+                    <p className="landing-section__body small text-muted mb-3">
+                      Open a form to enter a new record. You will be prompted for the resident ID
+                      (and other required fields) on each form.
+                    </p>
+                    <nav className="admin-dashboard__nav" aria-label="Add resident record">
+                      {addResidentRecordLinks.map(({ key, label }) => (
+                        <button
+                          key={key}
+                          type="button"
+                          className="admin-dashboard__nav-link"
+                          onClick={() => setResidentRecordModal(key)}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </nav>
+                  </div>
+                  <div className="col-12 col-lg-6 admin-dashboard__profiles-column">
+                    <p className="landing-section__eyebrow mb-3">Profiles</p>
+                    <p className="landing-section__body small text-muted mb-3">
+                      Create a new resident, partner, donor, or safehouse. Forms open in a modal;
+                      lists on each admin page update when you save from there.
+                    </p>
+                    <nav className="admin-dashboard__nav" aria-label="Add profile or location">
+                      {addProfileLinks.map(({ key, label }) => (
+                        <button
+                          key={key}
+                          type="button"
+                          className="admin-dashboard__nav-link"
+                          onClick={() => setAdminEntityModal(key)}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </nav>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -138,6 +177,26 @@ function AdminDashboardPage() {
         open={residentRecordModal === "incident"}
         onClose={() => setResidentRecordModal(null)}
         onCreated={() => setResidentRecordModal(null)}
+      />
+      <CreateResidentModal
+        open={adminEntityModal === "resident"}
+        onClose={() => setAdminEntityModal(null)}
+        onCreated={() => setAdminEntityModal(null)}
+      />
+      <CreatePartnerModal
+        open={adminEntityModal === "partner"}
+        onClose={() => setAdminEntityModal(null)}
+        onCreated={() => setAdminEntityModal(null)}
+      />
+      <CreateDonorModal
+        open={adminEntityModal === "donor"}
+        onClose={() => setAdminEntityModal(null)}
+        onCreated={() => setAdminEntityModal(null)}
+      />
+      <CreateSafehouseModal
+        open={adminEntityModal === "safehouse"}
+        onClose={() => setAdminEntityModal(null)}
+        onCreated={() => setAdminEntityModal(null)}
       />
     </div>
   );

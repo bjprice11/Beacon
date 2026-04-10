@@ -9,6 +9,7 @@ import AdminGlassFilterBar, {
   type AdminGlassFilterSection,
 } from "../components/AdminGlassFilterBar";
 import { useAdminSearch } from "../context/AdminSearchContext";
+import { CreateResidentModal } from "../components/admin/AdminCreateEntityModals";
 
 function calculateAge(dateStr: string): number {
   const dob = new Date(dateStr);
@@ -92,14 +93,18 @@ function AdminAllResidentsPage() {
     "time-housed": "",
     age: "",
   });
+  const [createOpen, setCreateOpen] = useState(false);
+  const [refreshList, setRefreshList] = useState(0);
 
   useEffect(() => {
+    setLoading(true);
+    setError(null);
     fetch(`${BASE_URL}/AllResidents`, { credentials: "include" })
       .then((res) => res.json())
       .then(setResidents)
       .catch((err) => setError((err as Error).message))
       .finally(() => setLoading(false));
-  }, []);
+  }, [refreshList]);
 
   const normalizedQuery = query.trim().toLowerCase();
 
@@ -234,6 +239,11 @@ function AdminAllResidentsPage() {
 
   return (
     <div className="beacon-page container py-4 admin-list-page">
+      <CreateResidentModal
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onCreated={() => setRefreshList((n) => n + 1)}
+      />
       <AdminDashboardBackLink />
       <AdminSearchInput placeholder="Search residents by name, ID, safehouse, status, or risk..." />
 
@@ -253,19 +263,30 @@ function AdminAllResidentsPage() {
           <p className="landing-section__eyebrow mb-1">Admin</p>
           <h1 className="mb-0">All Residents</h1>
         </div>
-        <div className="btn-group">
+        <div className="d-flex flex-wrap gap-2 align-items-center">
           <button
-            className={`btn ${view === "table" ? "btn-primary" : "btn-outline-primary"}`}
-            onClick={() => setView("table")}
+            type="button"
+            className="btn btn-success"
+            onClick={() => setCreateOpen(true)}
           >
-            Table
+            New resident
           </button>
-          <button
-            className={`btn ${view === "card" ? "btn-primary" : "btn-outline-primary"}`}
-            onClick={() => setView("card")}
-          >
-            Cards
-          </button>
+          <div className="btn-group">
+            <button
+              type="button"
+              className={`btn ${view === "table" ? "btn-primary" : "btn-outline-primary"}`}
+              onClick={() => setView("table")}
+            >
+              Table
+            </button>
+            <button
+              type="button"
+              className={`btn ${view === "card" ? "btn-primary" : "btn-outline-primary"}`}
+              onClick={() => setView("card")}
+            >
+              Cards
+            </button>
+          </div>
         </div>
       </div>
 

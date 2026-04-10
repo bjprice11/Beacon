@@ -6,6 +6,7 @@ import Pagination from "../components/Pagination";
 import AdminSearchInput from "../components/AdminSearchInput";
 import AdminDashboardBackLink from "../components/AdminDashboardBackLink";
 import { useAdminSearch } from "../context/AdminSearchContext";
+import { CreateSafehouseModal } from "../components/admin/AdminCreateEntityModals";
 
 function AdminAllSafehousesPage() {
   const [safehouses, setSafehouses] = useState<Safehouse[]>([]);
@@ -14,14 +15,18 @@ function AdminAllSafehousesPage() {
   const [page, setPage] = useState(1);
   const pageSize = 15;
   const { query } = useAdminSearch();
+  const [createOpen, setCreateOpen] = useState(false);
+  const [refreshList, setRefreshList] = useState(0);
 
   useEffect(() => {
+    setLoading(true);
+    setError(null);
     fetch(`${BASE_URL}/Safehouses`, { credentials: "include" })
       .then((res) => res.json())
       .then(setSafehouses)
       .catch((err) => setError((err as Error).message))
       .finally(() => setLoading(false));
-  }, []);
+  }, [refreshList]);
 
   const normalizedQuery = query.trim().toLowerCase();
   const filteredSafehouses = useMemo(
@@ -65,10 +70,26 @@ function AdminAllSafehousesPage() {
 
   return (
     <div className="beacon-page container py-4 admin-list-page">
+      <CreateSafehouseModal
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onCreated={() => setRefreshList((n) => n + 1)}
+      />
       <AdminDashboardBackLink />
       <AdminSearchInput placeholder="Search safehouses by city, province, country, or status..." />
-      <p className="landing-section__eyebrow mb-1">Admin</p>
-      <h1 className="mb-4">All Safehouses</h1>
+      <div className="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+          <p className="landing-section__eyebrow mb-1">Admin</p>
+          <h1 className="mb-0">All Safehouses</h1>
+        </div>
+        <button
+          type="button"
+          className="btn btn-success"
+          onClick={() => setCreateOpen(true)}
+        >
+          New safehouse
+        </button>
+      </div>
       <div className="row g-4">
         {visibleSafehouses.map((s) => {
           const title = s.city ?? s.name ?? "Unknown safehouse";
