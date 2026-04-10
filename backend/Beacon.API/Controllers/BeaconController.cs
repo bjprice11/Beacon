@@ -2483,7 +2483,21 @@ public class BeaconController : ControllerBase
                 })
             .ToList();
 
-        return Ok(new { partner, safehouseAssignments = assignments });
+        var assignmentCount = _beaconContext.PartnerAssignments.Count(pa => pa.PartnerId == id);
+        var distinctSafehouseCount = _beaconContext.PartnerAssignments
+            .AsNoTracking()
+            .Where(pa => pa.PartnerId == id && pa.SafehouseId != null)
+            .Select(pa => pa.SafehouseId)
+            .Distinct()
+            .Count();
+
+        return Ok(new
+        {
+            partner,
+            safehouseAssignments = assignments,
+            assignmentCount,
+            distinctSafehouseCount,
+        });
     }
 
     //GET SINGLE SAFEHOUSE WITH ASSIGNED PARTNER NAMES
@@ -2503,7 +2517,16 @@ public class BeaconController : ControllerBase
             .Distinct()
             .ToList();
 
-        return Ok(new { safehouse, assignedPartners = partners });
+        var residentCount = _beaconContext.Residents.Count(r => r.SafehouseId == id);
+        var partnerAssignmentCount = _beaconContext.PartnerAssignments.Count(pa => pa.SafehouseId == id);
+
+        return Ok(new
+        {
+            safehouse,
+            assignedPartners = partners,
+            residentCount,
+            partnerAssignmentCount,
+        });
     }
 
     //ADMIN: ALL RESIDENTS WITH SAFEHOUSE CITY

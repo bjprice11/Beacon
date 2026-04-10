@@ -1763,7 +1763,11 @@ a.admin-all-residents-card-link:focus-visible .admin-all-residents-card {
    ADMIN DASHBOARD (matches landing branding)
    ═══════════════════════════════════════════════ */
 .admin-dashboard {
-  background: var(--beacon-bg);
+  /* Same atmospheric stack as donor dashboard / landing-era pages */
+  background:
+    radial-gradient(circle at 12% 22%, rgba(114, 159, 147, 0.12), transparent 40%),
+    radial-gradient(circle at 88% 11%, rgba(225, 181, 129, 0.12), transparent 36%),
+    linear-gradient(180deg, #f5f7f4 0%, #edf2ec 100%);
   min-height: 100%;
 }
 
@@ -1807,6 +1811,15 @@ a.admin-all-residents-card-link:focus-visible .admin-all-residents-card {
   );
 }
 
+.admin-dashboard:not(.donor-dashboard) .admin-dashboard__hero-overlay {
+  background: linear-gradient(
+    0deg,
+    rgba(20, 33, 27, 0.6) 0%,
+    rgba(20, 33, 27, 0.24) 55%,
+    rgba(20, 33, 27, 0.05) 100%
+  );
+}
+
 .admin-dashboard__hero-content {
   position: relative;
   z-index: 2;
@@ -1846,6 +1859,32 @@ a.admin-all-residents-card-link:focus-visible .admin-all-residents-card {
 .admin-list-page {
   padding-top: var(--beacon-fixed-nav-clearance);
   box-sizing: border-box;
+}
+
+.beacon-page.admin-list-page,
+.beacon-page.resident-profile-page {
+  min-height: 100%;
+  background:
+    radial-gradient(circle at 12% 22%, rgba(114, 159, 147, 0.12), transparent 40%),
+    radial-gradient(circle at 88% 11%, rgba(225, 181, 129, 0.12), transparent 36%),
+    linear-gradient(180deg, #f5f7f4 0%, #edf2ec 100%);
+}
+
+.beacon-page.admin-list-page {
+  padding-bottom: 3rem;
+}
+
+.beacon-page.resident-profile-page {
+  padding-bottom: 3.5rem;
+}
+
+/* Safehouse / partner admin detail: loading & error shells (no .admin-dashboard wrapper) */
+.beacon-page.entity-dashboard.glass-nav-offset {
+  min-height: 100%;
+  background:
+    radial-gradient(circle at 12% 22%, rgba(114, 159, 147, 0.12), transparent 40%),
+    radial-gradient(circle at 88% 11%, rgba(225, 181, 129, 0.12), transparent 36%),
+    linear-gradient(180deg, #f5f7f4 0%, #edf2ec 100%);
 }
 
 /* Donor dashboard loading / error shells (not using admin-list-page) */
@@ -1907,6 +1946,22 @@ a.admin-all-residents-card-link:focus-visible .admin-all-residents-card {
   transform: translateY(-4px);
   box-shadow: 0 14px 36px rgba(27, 38, 29, 0.1);
   border-color: rgba(45, 79, 53, 0.2);
+}
+
+/* Admin hub + entity detail (non-donor): frosted panels like donor dashboard */
+.admin-dashboard:not(.donor-dashboard) .admin-dashboard__panel:not(.donor-dashboard__glass-panel),
+.admin-dashboard:not(.donor-dashboard) .admin-dashboard__nav-card:not(.donor-dashboard__glass-panel) {
+  border: 1px solid rgba(255, 255, 255, 0.65) !important;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.82), rgba(246, 249, 246, 0.72)) !important;
+  box-shadow: 0 12px 30px rgba(39, 58, 46, 0.08) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.admin-dashboard:not(.donor-dashboard) .admin-dashboard__panel:not(.donor-dashboard__glass-panel):hover,
+.admin-dashboard:not(.donor-dashboard) .admin-dashboard__nav-card:not(.donor-dashboard__glass-panel):hover {
+  box-shadow: 0 20px 48px rgba(39, 58, 46, 0.14) !important;
+  border-color: rgba(255, 255, 255, 0.95) !important;
 }
 
 .admin-dashboard__nav-card {
@@ -2028,8 +2083,8 @@ button.admin-dashboard__nav-link {
 .admin-list-page a.admin-all-residents-card-link:hover .admin-all-residents-card,
 .admin-list-page a.admin-all-residents-card-link:focus-visible .admin-all-residents-card {
   transform: translateY(-5px);
-  box-shadow: 0 14px 36px rgba(45, 79, 53, 0.12);
-  border-color: rgba(45, 79, 53, 0.22);
+  box-shadow: 0 18px 44px rgba(39, 58, 46, 0.14) !important;
+  border-color: rgba(255, 255, 255, 0.9) !important;
 }
 
 .admin-list-page .admin-hub-summary-card {
@@ -2038,8 +2093,8 @@ button.admin-dashboard__nav-link {
 
 .admin-list-page .admin-hub-summary-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(45, 79, 53, 0.12);
-  border-color: rgba(45, 79, 53, 0.2);
+  box-shadow: 0 18px 40px rgba(39, 58, 46, 0.13) !important;
+  border-color: rgba(255, 255, 255, 0.88) !important;
 }
 
 .admin-list-page .post-planner__form-card,
@@ -2070,6 +2125,21 @@ button.admin-dashboard__nav-link {
   transform: translateX(-3px);
 }
 
+.admin-list-page .beacon-detail-card,
+.admin-list-page .admin-all-residents-card,
+.admin-list-page .admin-hub-summary-card {
+  border: 1px solid rgba(255, 255, 255, 0.58) !important;
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.9), rgba(248, 250, 247, 0.82)) !important;
+  box-shadow: 0 10px 28px rgba(39, 58, 46, 0.07) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.admin-list-page .admin-hub-search .input-group,
+.admin-list-page .admin-hub-search .form-control {
+  background: rgba(255, 255, 255, 0.78);
+}
+
 /* Resident profile (/resident/:id) — detail + record preview cards */
 .resident-profile-page .beacon-detail-card {
   transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
@@ -2077,8 +2147,18 @@ button.admin-dashboard__nav-link {
 
 .resident-profile-page .beacon-detail-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 12px 30px rgba(27, 38, 29, 0.1);
-  border-color: rgba(45, 79, 53, 0.18);
+  box-shadow: 0 16px 36px rgba(39, 58, 46, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.resident-profile-page .beacon-detail-card,
+.resident-profile-page .resident-record-preview-card,
+.resident-profile-page .resident-profile-flags-bar {
+  border: 1px solid rgba(255, 255, 255, 0.58) !important;
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.9), rgba(248, 250, 247, 0.82)) !important;
+  box-shadow: 0 10px 28px rgba(39, 58, 46, 0.07) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .resident-profile-page .resident-record-preview-card {
@@ -2087,8 +2167,8 @@ button.admin-dashboard__nav-link {
 
 .resident-profile-page .resident-record-preview-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(45, 79, 53, 0.11);
-  border-color: rgba(45, 79, 53, 0.2);
+  box-shadow: 0 16px 40px rgba(39, 58, 46, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.88) !important;
 }
 
 .resident-profile-page__name {
@@ -2349,14 +2429,27 @@ button.admin-dashboard__nav-link {
   transform: translateX(5px);
   box-shadow: 0 4px 16px rgba(45, 79, 53, 0.1);
 }
-.donor-dashboard .beacon-stat-value {
+.donor-dashboard .beacon-stat-value,
+.admin-dashboard.entity-dashboard .beacon-stat-value {
   font-family: "Plus Jakarta Sans", sans-serif;
   font-size: clamp(1.35rem, 2.1vw, 1.95rem);
   font-weight: 700;
   line-height: 1.2;
   letter-spacing: -0.01em;
 }
-.donor-dashboard .donor-overview-profile-eyebrow {
+
+.admin-dashboard.entity-dashboard .beacon-stat-card.donor-dashboard__glass-panel {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.admin-dashboard.entity-dashboard .beacon-stat-card.donor-dashboard__glass-panel:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 18px 42px rgba(39, 58, 46, 0.13) !important;
+  border-color: rgba(255, 255, 255, 0.92) !important;
+}
+
+.donor-dashboard .donor-overview-profile-eyebrow,
+.admin-dashboard.entity-dashboard .donor-overview-profile-eyebrow {
   font-family: "Plus Jakarta Sans", sans-serif;
   font-size: 0.78rem;
   font-weight: 600;
@@ -2365,7 +2458,8 @@ button.admin-dashboard__nav-link {
   color: var(--beacon-text-muted);
   margin: 0;
 }
-.donor-dashboard .donor-overview-meta {
+.donor-dashboard .donor-overview-meta,
+.admin-dashboard.entity-dashboard .donor-overview-meta {
   display: flex;
   flex-direction: column;
   margin-top: 0.25rem;
@@ -2376,13 +2470,15 @@ button.admin-dashboard__nav-link {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
-.donor-dashboard .donor-overview-meta:hover {
+.donor-dashboard .donor-overview-meta:hover,
+.admin-dashboard.entity-dashboard .donor-overview-meta:hover {
   border-color: rgba(45, 79, 53, 0.2);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.95),
     0 8px 24px rgba(45, 79, 53, 0.06);
 }
-.donor-dashboard .donor-overview-meta__row {
+.donor-dashboard .donor-overview-meta__row,
+.admin-dashboard.entity-dashboard .donor-overview-meta__row {
   display: grid;
   grid-template-columns: minmax(7.5rem, 32%) 1fr;
   align-items: baseline;
@@ -2395,13 +2491,16 @@ button.admin-dashboard__nav-link {
   background: transparent;
   transition: background 0.15s ease;
 }
-.donor-dashboard .donor-overview-meta__row:last-child {
+.donor-dashboard .donor-overview-meta__row:last-child,
+.admin-dashboard.entity-dashboard .donor-overview-meta__row:last-child {
   border-bottom: none;
 }
-.donor-dashboard .donor-overview-meta__row:hover {
+.donor-dashboard .donor-overview-meta__row:hover,
+.admin-dashboard.entity-dashboard .donor-overview-meta__row:hover {
   background: rgba(45, 79, 53, 0.035);
 }
-.donor-dashboard .donor-overview-meta__label {
+.donor-dashboard .donor-overview-meta__label,
+.admin-dashboard.entity-dashboard .donor-overview-meta__label {
   margin: 0;
   font-size: 0.7rem;
   font-weight: 700;
@@ -2410,7 +2509,8 @@ button.admin-dashboard__nav-link {
   color: var(--beacon-text-muted);
   line-height: 1.35;
 }
-.donor-dashboard .donor-overview-meta__value {
+.donor-dashboard .donor-overview-meta__value,
+.admin-dashboard.entity-dashboard .donor-overview-meta__value {
   font-size: 0.98rem;
   font-weight: 600;
   color: var(--beacon-text);
@@ -4595,7 +4695,9 @@ main.main-with-site-announcement .beacon-page--auth:not(.login-page):not(.regist
 
 .beacon-modal-backdrop.modal,
 .beacon-modal-backdrop.modal.show {
-  background-color: rgba(27, 38, 29, 0.5) !important;
+  background-color: rgba(27, 38, 29, 0.48) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
 /* Post planner (admin marketing tool) */
@@ -5095,7 +5197,9 @@ main.main-with-site-announcement .beacon-page--auth:not(.login-page):not(.regist
   position: fixed;
   inset: 0;
   z-index: 1055;
-  background: rgba(27, 38, 29, 0.52);
+  background: rgba(27, 38, 29, 0.46);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -5136,6 +5240,18 @@ main.main-with-site-announcement .beacon-page--auth:not(.login-page):not(.regist
   flex-direction: column;
   overflow: hidden;
   animation: residentModalPop 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid rgba(255, 255, 255, 0.72) !important;
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.94), rgba(246, 249, 246, 0.9)) !important;
+  box-shadow:
+    0 28px 64px rgba(27, 38, 29, 0.22),
+    0 0 0 1px rgba(45, 79, 53, 0.06) !important;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.resident-record-modal-dialog .resident-record-modal-header.card-header {
+  background: rgba(255, 255, 255, 0.45) !important;
+  border-bottom-color: rgba(45, 79, 53, 0.1) !important;
 }
 
 .resident-record-modal-below {
