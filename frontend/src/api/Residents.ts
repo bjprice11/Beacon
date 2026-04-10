@@ -3,6 +3,8 @@ import type { Resident } from "../types/Resident";
 import type { ResidentList } from "../types/ResidentList";
 
 export interface ResidentInput {
+  firstName: string;
+  lastInitial: string;
   caseControlNo: string;
   internalCode: string;
   safehouseId: number;
@@ -16,6 +18,8 @@ export interface ResidentInput {
 function buildResidentJsonBody(resident: ResidentInput): Record<string, unknown> {
   const dob = resident.dateOfBirth?.trim();
   return {
+    firstName: resident.firstName?.trim() || null,
+    lastInitial: resident.lastInitial?.trim() || null,
     caseControlNo: resident.caseControlNo?.trim() || null,
     internalCode: resident.internalCode?.trim() || null,
     safehouseId: resident.safehouseId,
