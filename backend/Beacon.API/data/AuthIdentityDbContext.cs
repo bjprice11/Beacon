@@ -166,6 +166,58 @@ public class AuthIdentityDbContext : IdentityDbContext<ApplicationUser>, IDataPr
                 {status})",
             cancellationToken);
     }
+
+    /// <summary>
+    /// Inserts a resident with only the columns needed for admin create. Production schemas imported from CSV
+    /// may omit columns the EF model maps (e.g. <c>family_is4ps</c>); raw SQL avoids generating INSERT …
+    /// for every mapped property.
+    /// </summary>
+    public Task<int> InsertResidentRowAsync(
+        int residentId,
+        string? firstName,
+        string? lastInitial,
+        string? caseControlNo,
+        string? internalCode,
+        int safehouseId,
+        string? caseStatus,
+        string? sex,
+        DateOnly? dateOfBirth,
+        string? initialRiskLevel,
+        string? currentRiskLevel,
+        DateTime createdAtUtc,
+        CancellationToken cancellationToken = default)
+    {
+        return Database.ExecuteSqlInterpolatedAsync(
+            $@"
+            INSERT INTO residents (
+                resident_id,
+                first_name,
+                last_initial,
+                case_control_no,
+                internal_code,
+                safehouse_id,
+                case_status,
+                sex,
+                date_of_birth,
+                initial_risk_level,
+                current_risk_level,
+                created_at
+            ) VALUES (
+                {residentId},
+                {firstName},
+                {lastInitial},
+                {caseControlNo},
+                {internalCode},
+                {safehouseId},
+                {caseStatus},
+                {sex},
+                {dateOfBirth},
+                {initialRiskLevel},
+                {currentRiskLevel},
+                {createdAtUtc})",
+            cancellationToken);
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // THIS MUST BE THE FIRST LINE IN THIS METHOD

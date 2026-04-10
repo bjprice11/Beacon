@@ -14,6 +14,8 @@ import {
 } from "../resident/residentRecordFormUtils";
 
 const emptyResidentForm: ResidentInput = {
+  firstName: "",
+  lastInitial: "",
   caseControlNo: "",
   internalCode: "",
   safehouseId: 0,
@@ -117,6 +119,38 @@ export function CreateResidentModal({ open, onClose, onCreated }: ModalShellProp
           />
           <div id="create-res-id-help" className="form-text">
             The next id is assigned on the server when you save (sequential key — not entered here).
+          </div>
+        </div>
+
+        <div className="row g-3 mb-2">
+          <div className="col-md-6">
+            <label className="form-label" htmlFor="create-res-fn">
+              First name
+            </label>
+            <input
+              id="create-res-fn"
+              className="form-control"
+              autoComplete="given-name"
+              value={form.firstName}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, firstName: e.target.value }))
+              }
+            />
+          </div>
+          <div className="col-md-6">
+            <label className="form-label" htmlFor="create-res-li">
+              Last initial
+            </label>
+            <input
+              id="create-res-li"
+              className="form-control"
+              autoComplete="family-name"
+              maxLength={8}
+              value={form.lastInitial}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, lastInitial: e.target.value }))
+              }
+            />
           </div>
         </div>
 

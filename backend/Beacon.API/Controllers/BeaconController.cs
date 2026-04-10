@@ -111,37 +111,41 @@ public class BeaconController : ControllerBase
         }
 
         var dob = ParseOptionalDateOnly(body.DateOfBirth);
+        var createdAt = DateTime.UtcNow;
+        var firstName = NullIfWhiteSpace(body.FirstName);
+        var lastInitial = NullIfWhiteSpace(body.LastInitial);
+        var caseControlNo = NullIfWhiteSpace(body.CaseControlNo);
+        var internalCode = NullIfWhiteSpace(body.InternalCode);
+        var caseStatus = NullIfWhiteSpace(body.CaseStatus);
+        var sex = NullIfWhiteSpace(body.Sex);
+        var initialRisk = NullIfWhiteSpace(body.InitialRiskLevel);
+        var currentRisk = NullIfWhiteSpace(body.CurrentRiskLevel);
+
         const int maxAttempts = 8;
         for (var attempt = 0; attempt < maxAttempts; attempt++)
         {
             var residentId = await _beaconContext.AllocateNextResidentIdAsync();
-            var resident = new Resident
-            {
-                ResidentId = residentId,
-                CaseControlNo = NullIfWhiteSpace(body.CaseControlNo),
-                InternalCode = NullIfWhiteSpace(body.InternalCode),
-                SafehouseId = body.SafehouseId,
-                CaseStatus = NullIfWhiteSpace(body.CaseStatus),
-                Sex = NullIfWhiteSpace(body.Sex),
-                DateOfBirth = dob,
-                InitialRiskLevel = NullIfWhiteSpace(body.InitialRiskLevel),
-                CurrentRiskLevel = NullIfWhiteSpace(body.CurrentRiskLevel),
-                CreatedAt = DateTime.UtcNow,
-            };
-
-            _beaconContext.Residents.Add(resident);
             try
             {
-                await _beaconContext.SaveChangesAsync();
-                return Created($"/residents/{resident.ResidentId}", resident);
+                await _beaconContext.InsertResidentRowAsync(
+                    residentId,
+                    firstName,
+                    lastInitial,
+                    caseControlNo,
+                    internalCode,
+                    body.SafehouseId,
+                    caseStatus,
+                    sex,
+                    dob,
+                    initialRisk,
+                    currentRisk,
+                    createdAt,
+                    HttpContext.RequestAborted);
             }
-            catch (DbUpdateException ex)
+            catch (Exception ex)
             {
-                _beaconContext.Entry(resident).State = EntityState.Detached;
-
                 if (TryGetPostgresException(ex, out var pgEx) && pgEx is { } pg)
                 {
-                    // Concurrent inserts can race on MAX(resident_id)+1; retry only for PK conflicts.
                     if (attempt < maxAttempts - 1
                         && string.Equals(pg.SqlState, PostgresErrorCodes.UniqueViolation, StringComparison.Ordinal)
                         && IsResidentsPrimaryKeyViolation(pg))
@@ -172,6 +176,29 @@ public class BeaconController : ControllerBase
                     detail: "The database rejected this insert. Check logs for details.",
                     statusCode: StatusCodes.Status409Conflict);
             }
+
+            var resident = new Resident
+            {
+                ResidentId = residentId,
+                FirstName = firstName,
+                LastInitial = lastInitial,
+                CaseControlNo = caseControlNo,
+                InternalCode = internalCode,
+                SafehouseId = body.SafehouseId,
+                CaseStatus = caseStatus,
+                Sex = sex,
+                DateOfBirth = dob,
+                InitialRiskLevel = initialRisk,
+                CurrentRiskLevel = currentRisk,
+                CreatedAt = createdAt,
+                EducationRecords = new List<EducationRecord>(),
+                HealthWellbeingRecords = new List<HealthWellbeingRecord>(),
+                HomeVisitations = new List<HomeVisitation>(),
+                IncidentReports = new List<IncidentReport>(),
+                InterventionPlans = new List<InterventionPlan>(),
+                ProcessRecordings = new List<ProcessRecording>(),
+            };
+            return Created($"/residents/{resident.ResidentId}", resident);
         }
 
         return Problem(

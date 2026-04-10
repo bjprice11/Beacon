@@ -6,6 +6,10 @@ namespace Beacon.API.Models;
 /// </summary>
 public sealed class AdminCreateResidentRequest
 {
+    public string? FirstName { get; set; }
+
+    public string? LastInitial { get; set; }
+
     public string? CaseControlNo { get; set; }
 
     public string? InternalCode { get; set; }
