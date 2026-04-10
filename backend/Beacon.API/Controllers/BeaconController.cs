@@ -2813,4 +2813,78 @@ public class BeaconController : ControllerBase
 
         return Ok(new { supporter, donationHistory = history });
     }
+
+    /// <summary>
+    /// Logged-in donor (or admin linked to a supporter): record a monetary donation row and a single allocation
+    /// so donor dashboards and admin donation lists continue to work (they join <c>donation_allocations</c>).
+    /// </summary>
+    [Authorize(Policy = AuthPolicies.DonorOnly)]
+    [HttpPost("DonorSelf/MonetaryDonation")]
+    public async Task<IActionResult> SubmitMonetaryDonation([FromBody] SubmitMonetaryDonationRequest? body)
+    {
+        if (body is null)
+        {
+            return BadRequest(new { message = "Request body required." });
+        }
+
+        if (body.Amount <= 0m)
+        {
+            return BadRequest(new { message = "Amount must be greater than zero." });
+        }
+
+        var supporterId = await GetCurrentSupporterIdAsync();
+        if (supporterId is null)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new
+            {
+                message = "Your account is not linked to a donor profile. Complete sign-in or profile setup, then try again."
+            });
+        }
+
+        var safehouseId = await _beaconContext.Safehouses
+            .AsNoTracking()
+            .OrderBy(s => s.SafehouseId)
+            .Select(s => (int?)s.SafehouseId)
+            .FirstOrDefaultAsync();
+
+        if (safehouseId is null)
+        {
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new
+            {
+                message = "No safehouses are configured; cannot record a donation allocation."
+            });
+        }
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        var donation = new Donation
+        {
+            SupporterId = supporterId.Value,
+            DonationType = "monetary",
+            DonationDate = today,
+            IsRecurring = body.IsRecurring,
+            CampaignName = null,
+            ChannelSource = "direct",
+            CurrencyCode = "PHP",
+            Amount = body.Amount,
+            EstimatedValue = body.Amount,
+            ImpactUnit = "pesos",
+            Notes = null,
+            ReferralPostId = null
+        };
+
+        donation.DonationAllocations.Add(new DonationAllocation
+        {
+            SafehouseId = safehouseId.Value,
+            ProgramArea = null,
+            AmountAllocated = body.Amount,
+            AllocationDate = today,
+            AllocationNotes = null
+        });
+
+        _beaconContext.Donations.Add(donation);
+        await _beaconContext.SaveChangesAsync();
+
+        return Ok(new { donationId = donation.DonationId });
+    }
 }
