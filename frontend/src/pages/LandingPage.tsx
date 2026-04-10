@@ -436,13 +436,22 @@ function LandingPage() {
 
       {/* 5b ─── GIVE: Philippines video + donate card (full-width section) ─── */}
       <section className="landing-donate-video landing-donate-video--featured" id="give">
-        <div className="landing-donate-video__bg">
+        <div className="landing-donate-video__bg" aria-hidden="true">
           <img
             className="landing-donate-video__bg-img"
             src="/BackwardsJump.jpg"
             alt=""
             loading="lazy"
             decoding="async"
+          />
+          <video
+            className="landing-donate-video__video"
+            src="/philippines_video.mp4"
+            poster="/BackwardsJump.jpg"
+            autoPlay
+            muted
+            loop
+            playsInline
           />
           <div className="landing-donate-video__overlay" />
         </div>
@@ -518,14 +527,12 @@ function LandingPage() {
             </div>
             <div className="col-lg-6">
               <figure className="campaign-media">
-                <video
-                  className="campaign-media__video"
-                  src="/philippines_video.mp4"
-                  poster="/BackwardsJump.jpg"
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
+                <img
+                  className="campaign-media__img"
+                  src="/BackwardsJump.jpg"
+                  alt="Girls holding hands and jumping together"
+                  loading="lazy"
+                  decoding="async"
                 />
                 <figcaption className="campaign-media__caption">Wheels of Hope — getting girls where they need to be, safely.</figcaption>
               </figure>
