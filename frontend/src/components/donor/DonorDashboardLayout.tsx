@@ -42,8 +42,10 @@ export type DonorDashboardLayoutProps = {
   /** Overrides auto welcome line for donor mode */
   heroEyebrow?: string;
   heroTitle?: string;
-  /** Rendered above the hero (e.g. admin actions) */
-  headerSlot?: ReactNode;
+  /** Admin: back links row inside hero (under fixed nav) */
+  adminHeroToolbar?: ReactNode;
+  /** Admin: actions at bottom of page (e.g. edit / delete) */
+  footerSlot?: ReactNode;
 };
 
 export function DonorDashboardLayout({
@@ -51,7 +53,8 @@ export function DonorDashboardLayout({
   mode,
   heroEyebrow,
   heroTitle,
-  headerSlot,
+  adminHeroToolbar,
+  footerSlot,
 }: DonorDashboardLayoutProps) {
   const fullName =
     data.supporter.displayName ??
@@ -210,9 +213,6 @@ export function DonorDashboardLayout({
 
   return (
     <div className="admin-dashboard beacon-page donor-dashboard">
-      {headerSlot ? (
-        <div className="container donor-dashboard__header-slot py-3">{headerSlot}</div>
-      ) : null}
       <header className="admin-dashboard__hero" aria-label="Donor dashboard header">
         <img
           className="admin-dashboard__hero-img"
@@ -221,6 +221,11 @@ export function DonorDashboardLayout({
           decoding="async"
         />
         <div className="admin-dashboard__hero-overlay" aria-hidden="true" />
+        {adminHeroToolbar ? (
+          <div className="donor-dashboard__admin-hero-toolbar">
+            <div className="container">{adminHeroToolbar}</div>
+          </div>
+        ) : null}
         <div className="container admin-dashboard__hero-content">
           <p className="admin-dashboard__hero-eyebrow">{resolvedEyebrow}</p>
           <h1 className="admin-dashboard__hero-title">{resolvedTitle}</h1>
@@ -459,6 +464,11 @@ export function DonorDashboardLayout({
           ) : null}
         </div>
       </section>
+      {footerSlot ? (
+        <div className="donor-dashboard__admin-footer">
+          <div className="container py-4">{footerSlot}</div>
+        </div>
+      ) : null}
     </div>
   );
 }
