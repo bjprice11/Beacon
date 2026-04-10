@@ -2,6 +2,8 @@ import { useState } from "react";
 import SearchBar from "../components/SearchBar";
 import { Link } from "react-router-dom";
 import heroForestImage from "../assets/forrest.jpg";
+import { fetchAdminOverviewStats, type AdminOverviewStats } from "../api/adminOverview";
+import { useEffect } from "react";
 import { AddEducationRecordModal } from "../components/resident/AddEducationRecordModal";
 import { AddHealthRecordModal } from "../components/resident/AddHealthRecordModal";
 import { AddProcessRecordingModal } from "../components/resident/AddProcessRecordingModal";
@@ -52,6 +54,50 @@ function AdminDashboardPage() {
   );
   const [adminEntityModal, setAdminEntityModal] = useState<AdminEntityModalKey | null>(null);
   const [adminHeroFallback, setAdminHeroFallback] = useState(false);
+  const [overviewStats, setOverviewStats] = useState<AdminOverviewStats | null>(null);
+  const [overviewError, setOverviewError] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchAdminOverviewStats()
+      .then((s) => {
+        if (cancelled) return;
+        if (s) setOverviewStats(s);
+        else setOverviewError(true);
+      })
+      .catch(() => {
+        if (!cancelled) setOverviewError(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  type NeedItem = { key: string; label: string; to: string };
+  const needs: NeedItem[] = [];
+  if (overviewStats) {
+    if (overviewStats.unresolvedIncidents > 0) {
+      needs.push({
+        key: "incidents",
+        label: `${overviewStats.unresolvedIncidents} unresolved incident${overviewStats.unresolvedIncidents === 1 ? "" : "s"}`,
+        to: "/admin/risk",
+      });
+    }
+    if (overviewStats.safehousesOverCapacity > 0) {
+      needs.push({
+        key: "capacity",
+        label: `${overviewStats.safehousesOverCapacity} safehouse${overviewStats.safehousesOverCapacity === 1 ? "" : "s"} over capacity`,
+        to: "/admin/all-safehouses",
+      });
+    }
+    if (overviewStats.residentsMissingRiskLevel > 0) {
+      needs.push({
+        key: "risk",
+        label: `${overviewStats.residentsMissingRiskLevel} resident${overviewStats.residentsMissingRiskLevel === 1 ? "" : "s"} missing risk level`,
+        to: "/admin/all-residents",
+      });
+    }
+  }
 
   return (
     <div className="admin-dashboard beacon-page">
@@ -80,11 +126,59 @@ function AdminDashboardPage() {
             <div className="col-lg-8">
               <div className="admin-dashboard__panel h-100">
                 <p className="landing-section__eyebrow mb-2">Overview</p>
-                <h2 className="landing-section__heading mb-3">Welcome back</h2>
-                <p className="landing-section__body mb-0">
-                  Search above to open a record quickly, or use the links to manage
-                  residents, safehouses, partners, donors, and donations.
-                </p>
+                <h2 className="landing-section__heading mb-3">At a glance</h2>
+
+                {overviewStats ? (
+                  <>
+                    <div className="admin-overview__kpis" role="list" aria-label="Key metrics">
+                      <div className="admin-kpi" role="listitem">
+                        <div className="admin-kpi__value">{overviewStats.currentResidents}</div>
+                        <div className="admin-kpi__label">Current residents</div>
+                      </div>
+                      <div className="admin-kpi" role="listitem">
+                        <div className="admin-kpi__value">{overviewStats.activeSafehouses}</div>
+                        <div className="admin-kpi__label">Active safehouses</div>
+                      </div>
+                      <div className="admin-kpi" role="listitem">
+                        <div className="admin-kpi__value">{overviewStats.totalResidentsServed}</div>
+                        <div className="admin-kpi__label">Residents served</div>
+                      </div>
+                      <div className="admin-kpi" role="listitem">
+                        <div className="admin-kpi__value">{overviewStats.totalSupporters}</div>
+                        <div className="admin-kpi__label">Supporters</div>
+                      </div>
+                      <div className="admin-kpi" role="listitem">
+                        <div className="admin-kpi__value">{overviewStats.totalPartners}</div>
+                        <div className="admin-kpi__label">Partners</div>
+                      </div>
+                      <div className="admin-kpi" role="listitem">
+                        <div className="admin-kpi__value">{overviewStats.donationsLast30Days}</div>
+                        <div className="admin-kpi__label">Donations (30 days)</div>
+                      </div>
+                    </div>
+
+                    <div className="admin-overview__needs" aria-label="Needs attention">
+                      <p className="admin-overview__needs-title">Needs attention</p>
+                      {needs.length ? (
+                        <ul className="admin-overview__needs-list">
+                          {needs.map((n) => (
+                            <li key={n.key}>
+                              <Link to={n.to}>{n.label}</Link>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="admin-overview__needs-empty mb-0">All caught up.</p>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <p className="landing-section__body mb-0">
+                    {overviewError
+                      ? "Stats are unavailable right now. Use the links to manage residents, safehouses, partners, donors, and donations."
+                      : "Loading overview stats…"}
+                  </p>
+                )}
               </div>
             </div>
 
