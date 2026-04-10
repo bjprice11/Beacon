@@ -1636,6 +1636,22 @@ a.admin-all-residents-card-link:focus-visible .admin-all-residents-card {
   border-color: rgba(45, 79, 53, 0.2);
 }
 
+/* Second column inside the “Resident records” card: stack on small screens, split with rule on lg+ */
+.admin-dashboard__profiles-column {
+  border-top: 1px solid var(--beacon-border);
+  padding-top: 1.25rem;
+}
+
+@media (min-width: 992px) {
+  .admin-dashboard__profiles-column {
+    border-top: none;
+    padding-top: 0;
+    border-left: 1px solid var(--beacon-border);
+    padding-left: 1.5rem;
+    margin-left: 0.25rem;
+  }
+}
+
 .admin-dashboard__nav {
   display: flex;
   flex-direction: column;

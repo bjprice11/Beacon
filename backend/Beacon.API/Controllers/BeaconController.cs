@@ -92,6 +92,138 @@ public class BeaconController : ControllerBase
         return Created($"/residents/{resident.ResidentId}", resident);
     }
 
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
+    [HttpPost("Partners")]
+    public async Task<IActionResult> CreatePartner([FromBody] AdminCreatePartnerRequest? body)
+    {
+        if (body == null)
+            return BadRequest(new { message = "Invalid request body." });
+        if (string.IsNullOrWhiteSpace(body.PartnerName))
+            return BadRequest(new { message = "Partner name is required.", errors = new Dictionary<string, string> { ["partner_name"] = "Required" } });
+
+        var entity = new Partner
+        {
+            PartnerName = body.PartnerName.Trim(),
+            PartnerType = NullIfWhiteSpace(body.PartnerType),
+            RoleType = NullIfWhiteSpace(body.RoleType),
+            ContactName = NullIfWhiteSpace(body.ContactName),
+            Email = NullIfWhiteSpace(body.Email),
+            Phone = NullIfWhiteSpace(body.Phone),
+            Region = NullIfWhiteSpace(body.Region),
+            Status = NullIfWhiteSpace(body.Status),
+            StartDate = body.StartDate,
+            EndDate = body.EndDate,
+            Notes = NullIfWhiteSpace(body.Notes),
+        };
+        _beaconContext.Partners.Add(entity);
+        await _beaconContext.SaveChangesAsync();
+        return StatusCode(StatusCodes.Status201Created, entity);
+    }
+
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
+    [HttpPost("Safehouses")]
+    public async Task<IActionResult> CreateSafehouse([FromBody] AdminCreateSafehouseRequest? body)
+    {
+        if (body == null)
+            return BadRequest(new { message = "Invalid request body." });
+        if (string.IsNullOrWhiteSpace(body.SafehouseCode))
+            return BadRequest(new { message = "Safehouse code is required.", errors = new Dictionary<string, string> { ["safehouse_code"] = "Required" } });
+        if (string.IsNullOrWhiteSpace(body.Name))
+            return BadRequest(new { message = "Name is required.", errors = new Dictionary<string, string> { ["name"] = "Required" } });
+
+        var entity = new Safehouse
+        {
+            SafehouseCode = body.SafehouseCode.Trim(),
+            Name = body.Name.Trim(),
+            Region = NullIfWhiteSpace(body.Region),
+            City = NullIfWhiteSpace(body.City),
+            Province = NullIfWhiteSpace(body.Province),
+            Country = NullIfWhiteSpace(body.Country),
+            OpenDate = body.OpenDate,
+            Status = NullIfWhiteSpace(body.Status),
+            CapacityGirls = body.CapacityGirls,
+            CapacityStaff = body.CapacityStaff,
+            CurrentOccupancy = body.CurrentOccupancy,
+            Notes = NullIfWhiteSpace(body.Notes),
+        };
+        _beaconContext.Safehouses.Add(entity);
+        await _beaconContext.SaveChangesAsync();
+        return StatusCode(StatusCodes.Status201Created, entity);
+    }
+
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
+    [HttpPost("Supporters")]
+    public async Task<IActionResult> CreateSupporterAdmin([FromBody] AdminCreateSupporterRequest? body)
+    {
+        if (body == null)
+            return BadRequest(new { message = "Invalid request body." });
+
+        var display = BuildAdminSupporterDisplayName(body);
+        if (string.IsNullOrWhiteSpace(display))
+        {
+            return BadRequest(new
+            {
+                message = "Provide a display name, organization name, or first and/or last name.",
+                errors = new Dictionary<string, string>
+                {
+                    ["display_name"] = "At least one identifying field is required.",
+                },
+            });
+        }
+
+        var supporterId = await _beaconContext.AllocateNextSupporterIdAsync();
+        var entity = new Supporter
+        {
+            SupporterId = supporterId,
+            SupporterType = NullIfWhiteSpace(body.SupporterType),
+            DisplayName = display,
+            OrganizationName = NullIfWhiteSpace(body.OrganizationName),
+            FirstName = NullIfWhiteSpace(body.FirstName),
+            LastName = NullIfWhiteSpace(body.LastName),
+            RelationshipType = NullIfWhiteSpace(body.RelationshipType),
+            Region = NullIfWhiteSpace(body.Region),
+            Country = NullIfWhiteSpace(body.Country),
+            Email = NullIfWhiteSpace(body.Email),
+            Phone = NullIfWhiteSpace(body.Phone),
+            Status = string.IsNullOrWhiteSpace(body.Status) ? "Active" : body.Status.Trim(),
+            CreatedAt = DateTime.UtcNow,
+            FirstDonationDate = body.FirstDonationDate,
+            AcquisitionChannel = NullIfWhiteSpace(body.AcquisitionChannel),
+        };
+        _beaconContext.Supporters.Add(entity);
+        try
+        {
+            await _beaconContext.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex)
+        {
+            _logger.LogError(ex, "CreateSupporterAdmin: database insert failed");
+            return Problem(
+                title: "Could not create donor record",
+                detail: "The database rejected this insert. Check logs for details.",
+                statusCode: StatusCodes.Status409Conflict);
+        }
+
+        return StatusCode(StatusCodes.Status201Created, entity);
+    }
+
+    private static string BuildAdminSupporterDisplayName(AdminCreateSupporterRequest body)
+    {
+        if (!string.IsNullOrWhiteSpace(body.DisplayName))
+            return body.DisplayName.Trim();
+        var fn = body.FirstName?.Trim() ?? string.Empty;
+        var ln = body.LastName?.Trim() ?? string.Empty;
+        if (fn.Length > 0 && ln.Length > 0)
+            return $"{fn} {ln}";
+        if (fn.Length > 0)
+            return fn;
+        if (ln.Length > 0)
+            return ln;
+        if (!string.IsNullOrWhiteSpace(body.OrganizationName))
+            return body.OrganizationName.Trim();
+        return string.Empty;
+    }
+
     //SEARCH BAR FUNCTIONALITY
     [HttpGet("Search")]
     public OkObjectResult Search([FromQuery] string q)
