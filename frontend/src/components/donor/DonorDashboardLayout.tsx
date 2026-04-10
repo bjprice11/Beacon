@@ -93,12 +93,14 @@ export function DonorDashboardLayout({
   );
   const grandTotal = monetaryTotal + nonMonetaryTotal;
 
-  const byProgramArea = data.donationHistory.reduce<Record<string, number>>((acc, item) => {
+  /** Same weighting as the allocation pie chart: sum (amount + estimatedValue), or 1 per row when both are zero. */
+  const programAreaWeights = data.donationHistory.reduce<Record<string, number>>((acc, item) => {
     const key = item.programArea?.trim() || "Unspecified";
-    acc[key] = (acc[key] ?? 0) + 1;
+    const numericValue = (item.amount ?? 0) + (item.estimatedValue ?? 0);
+    const weight = numericValue > 0 ? numericValue : 1;
+    acc[key] = (acc[key] ?? 0) + weight;
     return acc;
   }, {});
-  const topProgramArea = Object.entries(byProgramArea).sort((a, b) => b[1] - a[1])[0];
 
   const profileRows =
     mode === "admin"
@@ -125,17 +127,12 @@ export function DonorDashboardLayout({
     : "No donations yet";
 
   const allocationPalette = ["#6a9a8c", "#d28b63", "#55628e", "#bfa15a", "#8f74b6"];
-  const programAllocations = Object.entries(
-    data.donationHistory.reduce<Record<string, number>>((acc, item) => {
-      const key = item.programArea?.trim() || "Unspecified";
-      const numericValue = (item.amount ?? 0) + (item.estimatedValue ?? 0);
-      const weight = numericValue > 0 ? numericValue : 1;
-      acc[key] = (acc[key] ?? 0) + weight;
-      return acc;
-    }, {}),
-  )
+  const programAllocations = Object.entries(programAreaWeights)
     .map(([program, value]) => ({ program, value }))
     .sort((a, b) => b.value - a.value);
+
+  const topSupportedProgramLabel =
+    programAllocations.length > 0 ? programAllocations[0].program : "N/A";
 
   const totalAllocationWeight = programAllocations.reduce((sum, item) => sum + item.value, 0) || 1;
   const hasCurrencyAllocations = programAllocations.some((item) => item.value > 1);
@@ -343,9 +340,7 @@ export function DonorDashboardLayout({
               <div className="card beacon-stat-card donor-dashboard__glass-panel h-100">
                 <div className="card-body">
                   <p className="beacon-section-subtitle mb-2">Most supported area</p>
-                  <p className="beacon-stat-value h4 mb-0">
-                    {topProgramArea ? topProgramArea[0] : "N/A"}
-                  </p>
+                  <p className="beacon-stat-value h4 mb-0">{topSupportedProgramLabel}</p>
                 </div>
               </div>
             </div>
