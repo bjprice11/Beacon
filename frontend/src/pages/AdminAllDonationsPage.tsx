@@ -8,6 +8,7 @@ import AdminGlassFilterBar, {
   type AdminGlassFilterSection,
 } from "../components/AdminGlassFilterBar";
 import { useAdminSearch } from "../context/AdminSearchContext";
+import BeaconLoadingMark from "../components/BeaconLoadingMark.tsx";
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
@@ -225,9 +226,7 @@ function AdminAllDonationsPage() {
   if (loading) {
     return (
       <div className="beacon-page beacon-page--loading text-center admin-list-page">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
+        <BeaconLoadingMark />
       </div>
     );
   }

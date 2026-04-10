@@ -6,7 +6,11 @@ import Pagination from "../components/Pagination";
 import AdminSearchInput from "../components/AdminSearchInput";
 import AdminDashboardBackLink from "../components/AdminDashboardBackLink";
 import { useAdminSearch } from "../context/AdminSearchContext";
+<<<<<<< Updated upstream
 import { CreateSafehouseModal } from "../components/admin/AdminCreateEntityModals";
+=======
+import BeaconLoadingMark from "../components/BeaconLoadingMark.tsx";
+>>>>>>> Stashed changes
 
 function AdminAllSafehousesPage() {
   const [safehouses, setSafehouses] = useState<Safehouse[]>([]);
@@ -53,9 +57,7 @@ function AdminAllSafehousesPage() {
   if (loading) {
     return (
       <div className="beacon-page beacon-page--loading text-center admin-list-page">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
+        <BeaconLoadingMark />
       </div>
     );
   }

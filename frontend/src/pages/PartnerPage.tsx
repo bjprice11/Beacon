@@ -2,12 +2,16 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { BASE_URL } from "../config/api";
 import type { Partner } from "../types/Partner";
+<<<<<<< Updated upstream
 import { AdminDeleteRecordButton } from "../components/admin/AdminDeleteRecordButton";
 import {
   CreatePartnerModal,
   type PartnerModalInitial,
 } from "../components/admin/AdminCreateEntityModals";
 import { useAuth } from "../context/AuthContext";
+=======
+import BeaconLoadingMark from "../components/BeaconLoadingMark.tsx";
+>>>>>>> Stashed changes
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
@@ -82,9 +86,7 @@ function PartnerPage() {
   if (loading) {
     return (
       <div className="beacon-page beacon-page--loading text-center">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
+        <BeaconLoadingMark />
       </div>
     );
   }

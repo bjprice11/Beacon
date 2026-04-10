@@ -24,32 +24,29 @@ export default function CookieBanner() {
   if (!isVisible) return null
 
   return (
-    <div
-      className="fixed-bottom p-3 bg-dark text-white shadow-lg"
-      style={{ zIndex: 1050 }}
-    >
-      <div className="container">
-        <div className="row align-items-center">
-          <div className="col-md-8 mb-3 mb-md-0">
-            <p className="mb-0">
+    <div className="cookie-banner fixed-bottom shadow" style={{ zIndex: 1050 }}>
+      <div className="container py-2 px-3">
+        <div className="row align-items-center g-2 gy-2">
+          <div className="col-md">
+            <p className="cookie-banner__text mb-0">
               We use strictly necessary cookies to authenticate your session and keep your account secure.
               By continuing to use this site, you consent to our use of these essential cookies.
-              Read our <Link to="/privacy-policy" className="text-info text-decoration-none">Privacy Policy</Link> for more details.
+              Read our{' '}
+              <Link to="/privacy-policy" className="link-light link-underline-opacity-75">
+                Privacy Policy
+              </Link>{' '}
+              for more details.
             </p>
           </div>
-          <div className="col-md-4 text-md-end text-center">
+          <div className="col-md-auto d-flex flex-wrap gap-2 justify-content-md-end justify-content-center">
             <button
               type="button"
-              className="btn btn-outline-light me-2 mb-2 mb-md-0"
+              className="btn btn-sm btn-outline-light"
               onClick={handleDecline}
             >
               Essential Only
             </button>
-            <button
-              type="button"
-              className="btn btn-primary mb-2 mb-md-0"
-              onClick={handleAccept}
-            >
+            <button type="button" className="btn btn-sm btn-primary" onClick={handleAccept}>
               Accept All
             </button>
           </div>

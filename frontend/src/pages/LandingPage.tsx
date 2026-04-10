@@ -3,27 +3,9 @@ import { Link, useLocation } from "react-router-dom";
 import Footer from "../components/Footer";
 import { SiteAnnouncementBar } from "../components/SiteAnnouncementBar";
 import { BASE_URL } from "../config/api";
+import { useCountUp } from "../hooks/useCountUp";
 
 /* ── helpers ── */
-
-function useCountUp(target: number, duration = 2000, start = false) {
-  const [count, setCount] = useState(0);
-  const hasRun = useRef(false);
-  useEffect(() => {
-    if (!start || hasRun.current) return;
-    hasRun.current = true;
-    const t0 = performance.now();
-    let raf: number;
-    const step = (now: number) => {
-      const p = Math.min((now - t0) / duration, 1);
-      setCount(Math.round((1 - Math.pow(1 - p, 3)) * target));
-      if (p < 1) raf = requestAnimationFrame(step);
-    };
-    raf = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(raf);
-  }, [start, target, duration]);
-  return count;
-}
 
 function AnimatedStat({ value, label }: { value: string; label: string }) {
   const num = parseInt(value.replace(/[^0-9]/g, ""), 10);
@@ -43,7 +25,12 @@ function AnimatedStat({ value, label }: { value: string; label: string }) {
   const displayed = useCountUp(num, 2000, visible);
   return (
     <div className="impact-stat" ref={ref}>
-      <span className="impact-stat__value">{displayed}{suffix}</span>
+      <span className="impact-stat__value">
+        <span className="impact-stat__value-num">{displayed}</span>
+        {suffix ? (
+          <span className="impact-stat__value-suffix">{suffix}</span>
+        ) : null}
+      </span>
       <span className="impact-stat__label">{label}</span>
     </div>
   );

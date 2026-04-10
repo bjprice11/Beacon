@@ -9,7 +9,11 @@ import {
   type RiskSummary,
 } from "../api/Risk";
 import AdminDashboardBackLink from "../components/AdminDashboardBackLink";
+<<<<<<< Updated upstream
 import Pagination from "../components/Pagination";
+=======
+import BeaconLoadingMark from "../components/BeaconLoadingMark.tsx";
+>>>>>>> Stashed changes
 
 type Tab = "residents-incident" | "residents-reintegration" | "supporters";
 
@@ -96,9 +100,7 @@ export default function RiskManagementCenter() {
   if (loading) {
     return (
       <div className="beacon-page beacon-page--loading text-center admin-list-page">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading…</span>
-        </div>
+        <BeaconLoadingMark label="Loading" />
       </div>
     );
   }
