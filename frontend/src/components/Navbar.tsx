@@ -18,6 +18,7 @@ function Navbar() {
     location.pathname === "/login" ||
     location.pathname === "/logout" ||
     location.pathname === "/register" ||
+    location.pathname === "/complete-profile" ||
     location.pathname === "/donate" ||
     location.pathname === "/about" ||
     location.pathname === "/impact" ||

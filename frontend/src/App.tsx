@@ -30,6 +30,7 @@ import ContactPage from './pages/ContactPage.tsx'
 import ImpactPage from './pages/ImpactPage.tsx'
 import AboutPage from './pages/AboutPage.tsx'
 import RiskManagementCenter from './pages/RiskManagementCenter.tsx'
+import ScrollToTop from './components/ScrollToTop.tsx'
 
 function RoutedMain({ children }: { children: ReactNode }) {
   const location = useLocation()
@@ -58,6 +59,7 @@ function App() {
     <>
       <AuthProvider>
         <Router>
+          <ScrollToTop />
           <a href="#main-content" className="visually-hidden-focusable position-absolute top-0 start-0 z-3 m-2 btn btn-sm btn-primary">
             Skip to main content
           </a>
