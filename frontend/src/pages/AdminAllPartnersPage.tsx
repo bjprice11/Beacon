@@ -8,7 +8,11 @@ import AdminGlassFilterBar, {
 } from "../components/AdminGlassFilterBar";
 import { useAdminSearch } from "../context/AdminSearchContext";
 import { BASE_URL } from "../config/api";
+<<<<<<< Updated upstream
 import { CreatePartnerModal } from "../components/admin/AdminCreateEntityModals";
+=======
+import BeaconLoadingMark from "../components/BeaconLoadingMark.tsx";
+>>>>>>> Stashed changes
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
@@ -204,9 +208,7 @@ function AdminAllPartnersPage() {
   if (loading) {
     return (
       <div className="beacon-page beacon-page--loading text-center admin-list-page">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
+        <BeaconLoadingMark />
       </div>
     );
   }

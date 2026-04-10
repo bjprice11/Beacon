@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { ResidentList } from "../types/ResidentList";
 import { getResidentList } from "../api/Residents";
+import BeaconLoadingMark from "./BeaconLoadingMark.tsx";
 
 function ResidentListComponent() {
   const [residents, setResidents] = useState<ResidentList[]>([]);
@@ -27,10 +28,10 @@ function ResidentListComponent() {
   if (loading) {
     return (
       <div className="text-center py-5">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading residents…</span>
-        </div>
-        <p className="text-muted small mt-3 mb-0">Loading residents…</p>
+        <BeaconLoadingMark label="Loading residents" />
+        <p className="text-muted small mt-3 mb-0" aria-hidden="true">
+          Loading residents…
+        </p>
       </div>
     );
   }

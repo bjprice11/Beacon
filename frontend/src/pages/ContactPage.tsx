@@ -48,21 +48,23 @@ function ContactPage() {
                 </p>
                 <div className="contact-page__socials mb-0">
                   <a
-                    className="contact-page__social"
+                    className="contact-page__social contact-page__social--facebook"
                     href="https://www.facebook.com/LighthouseSanctuary"
                     target="_blank"
                     rel="noopener noreferrer"
                     title={fbTooltip}
                   >
+                    <i className="bi bi-facebook contact-page__social-icon" aria-hidden="true" />
                     Facebook
                   </a>
                   <a
-                    className="contact-page__social"
+                    className="contact-page__social contact-page__social--youtube"
                     href="https://www.youtube.com/@LighthouseSanctuary"
                     target="_blank"
                     rel="noopener noreferrer"
                     title={ytTooltip}
                   >
+                    <i className="bi bi-youtube contact-page__social-icon" aria-hidden="true" />
                     YouTube
                   </a>
                 </div>

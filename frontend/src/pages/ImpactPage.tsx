@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { fetchImpactPublicStats, type ImpactPublicStats } from "../api/impactStats";
 import Footer from "../components/Footer";
+import { useCountUp } from "../hooks/useCountUp";
 
 const impactPosts = [
   {
@@ -32,6 +33,69 @@ const impactStatsFallback: { label: string; value: string }[] = [
   { label: "Current residents in care", value: "15" },
   { label: "Years of operation", value: "5+" },
 ];
+
+/** Split "100+" / "95%" / "1,234" for clearer typographic hierarchy */
+function splitImpactStatValue(value: string): { main: string; suffix: string } {
+  const t = value.trim();
+  if (!t || t === "…" || t === "—") return { main: t, suffix: "" };
+  const m = t.match(/^([\d,]+)([^\d]*)$/u);
+  if (m) return { main: m[1], suffix: m[2] };
+  return { main: t, suffix: "" };
+}
+
+function ImpactStatValueStatic({ value }: { value: string }) {
+  const { main, suffix } = splitImpactStatValue(value);
+  return (
+    <p className="impact-page__stat-value mb-1">
+      <span className="impact-page__stat-value-inner">
+        <span className="impact-page__stat-value-num">{main}</span>
+        {suffix ? <span className="impact-page__stat-value-suffix">{suffix}</span> : null}
+      </span>
+    </p>
+  );
+}
+
+/** Same count-up + intersection pattern as landing `AnimatedStat`. */
+function ImpactAnimatedStatValue({ value }: { value: string }) {
+  const ref = useRef<HTMLParagraphElement>(null);
+  const [visible, setVisible] = useState(false);
+  const onIntersect = useCallback((entries: IntersectionObserverEntry[]) => {
+    if (entries[0]?.isIntersecting) setVisible(true);
+  }, []);
+
+  const t = value.trim();
+  const { main, suffix } = splitImpactStatValue(value);
+  const numericTarget = parseInt(main.replace(/\D/g, ""), 10);
+  const isStatic =
+    t === "…" || t === "—" || !Number.isFinite(numericTarget);
+  const safeTarget = Number.isFinite(numericTarget) ? numericTarget : 0;
+
+  useEffect(() => {
+    if (isStatic) return;
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(onIntersect, { threshold: 0.35 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [isStatic, onIntersect]);
+
+  const displayed = useCountUp(safeTarget, 2000, !isStatic && visible);
+
+  if (isStatic) {
+    return <ImpactStatValueStatic value={value} />;
+  }
+
+  const displayMain = main.includes(",") ? displayed.toLocaleString() : String(displayed);
+
+  return (
+    <p ref={ref} className="impact-page__stat-value mb-1">
+      <span className="impact-page__stat-value-inner">
+        <span className="impact-page__stat-value-num">{displayMain}</span>
+        {suffix ? <span className="impact-page__stat-value-suffix">{suffix}</span> : null}
+      </span>
+    </p>
+  );
+}
 
 function formatImpactStatRows(data: ImpactPublicStats | null): { label: string; value: string }[] {
   if (!data) return impactStatsFallback;
@@ -89,7 +153,7 @@ function ImpactPage() {
             {impactStatRows.map((stat) => (
               <div className="col-6 col-lg-3 d-flex" key={stat.label}>
                 <div className="impact-page__stat">
-                  <p className="impact-page__stat-value mb-1">{stat.value}</p>
+                  <ImpactAnimatedStatValue value={stat.value} />
                   <p className="impact-page__stat-label mb-0">{stat.label}</p>
                 </div>
               </div>

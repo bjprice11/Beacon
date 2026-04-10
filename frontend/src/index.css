@@ -14,6 +14,8 @@
   --beacon-border: rgba(45, 79, 53, 0.1);
   --beacon-border-strong: rgba(45, 79, 53, 0.18);
   --beacon-radius: 0.75rem;
+  /* Fixed glass/solid navbar: keep page heroes & auth shells aligned (see App.css) */
+  --beacon-fixed-nav-clearance: 4.75rem;
 
   --bs-primary: var(--beacon-primary);
   --bs-primary-rgb: 45, 79, 53;

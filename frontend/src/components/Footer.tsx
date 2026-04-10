@@ -4,29 +4,32 @@ function Footer() {
   return (
     <footer className="landing-footer">
       <div className="container">
-        <div className="row g-4 align-items-start landing-footer__grid">
-          <div className="col-md-2 col-lg-2 text-center text-md-start">
-            <img
-              src="/logo.png"
-              alt="Beacon"
-              className="landing-footer__logo landing-footer__logo--aside"
-            />
+        <div className="row g-4 g-lg-5 align-items-start landing-footer__grid">
+          <div className="col-12 col-md-3 col-lg-3 text-center text-md-start landing-footer__brand-col">
+            <Link to="/" className="landing-footer__brand-link" aria-label="Beacon home">
+              <img
+                src="/logo.png"
+                alt=""
+                className="landing-footer__logo landing-footer__logo--aside"
+                decoding="async"
+              />
+            </Link>
           </div>
-          <div className="col-md-4 col-lg-4">
+          <div className="col-12 col-md-9 col-lg-3">
             <p className="landing-footer__text landing-footer__quote">
               We treat each other as family where each individual is seen,
               heard, and loved. We create fun memories, we fight for justice,
               and we acknowledge God in all we do.
             </p>
           </div>
-          <div className="col-6 col-md-2 col-lg-2">
+          <div className="col-6 col-md-6 col-lg-2">
             <h6 className="landing-footer__heading">About</h6>
             <ul className="landing-footer__list">
               <li><a href="/#mission">Our Mission</a></li>
               <li><Link to="/login">Sign in</Link></li>
             </ul>
           </div>
-          <div className="col-6 col-md-2 col-lg-2">
+          <div className="col-6 col-md-6 col-lg-2">
             <h6 className="landing-footer__heading">Get Involved</h6>
             <ul className="landing-footer__list">
               <li><Link to="/donate">Donate</Link></li>

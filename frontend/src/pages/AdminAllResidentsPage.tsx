@@ -9,7 +9,11 @@ import AdminGlassFilterBar, {
   type AdminGlassFilterSection,
 } from "../components/AdminGlassFilterBar";
 import { useAdminSearch } from "../context/AdminSearchContext";
+<<<<<<< Updated upstream
 import { CreateResidentModal } from "../components/admin/AdminCreateEntityModals";
+=======
+import BeaconLoadingMark from "../components/BeaconLoadingMark.tsx";
+>>>>>>> Stashed changes
 
 function calculateAge(dateStr: string): number {
   const dob = new Date(dateStr);
@@ -222,9 +226,7 @@ function AdminAllResidentsPage() {
   if (loading) {
     return (
       <div className="beacon-page beacon-page--loading text-center admin-list-page">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
+        <BeaconLoadingMark />
       </div>
     );
   }

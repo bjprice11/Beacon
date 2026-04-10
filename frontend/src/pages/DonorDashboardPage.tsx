@@ -2,6 +2,7 @@ import { useEffect, useState, type CSSProperties } from "react";
 import { Link, useParams } from "react-router-dom";
 import { getDonorDashboard } from "../api/Donors";
 import type { DonorDashboard } from "../types/DonorDashboard";
+import BeaconLoadingMark from "../components/BeaconLoadingMark.tsx";
 
 function formatCurrency(value: number): string {
   return `PHP ${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
@@ -53,9 +54,7 @@ function DonorDashboardPage() {
   if (loading) {
     return (
       <div className="beacon-page beacon-page--loading text-center glass-nav-offset">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
+        <BeaconLoadingMark />
       </div>
     );
   }

@@ -47,7 +47,7 @@ function DonatePage() {
       <div className="donate-external__wrap">
         <div className="donate-external__card">
           <div className="donate-external__brand">
-            <img src="/logo.png" alt="" className="donate-external__logo" />
+            <img src="/logo-color.png" alt="" className="donate-external__logo" />
           </div>
           <p className="donate-external__preline">Donate to</p>
           <h1 className="donate-external__org">

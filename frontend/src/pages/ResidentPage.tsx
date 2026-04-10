@@ -8,9 +8,13 @@ import { HealthRecordsSection } from "../components/resident/HealthRecordsSectio
 import { MentalWellbeingRecordsSection } from "../components/resident/MentalWellbeingRecordsSection";
 import { HomeVisitsRecordsSection } from "../components/resident/HomeVisitsRecordsSection";
 import { IncidentReportsSection } from "../components/resident/IncidentReportsSection";
+<<<<<<< Updated upstream
 import { AdminDeleteRecordButton } from "../components/admin/AdminDeleteRecordButton";
 import { CreateResidentModal } from "../components/admin/AdminCreateEntityModals";
 import type { ResidentInput } from "../api/Residents";
+=======
+import BeaconLoadingMark from "../components/BeaconLoadingMark.tsx";
+>>>>>>> Stashed changes
 
 function calculateAge(dateStr: string): number {
   const dob = new Date(dateStr);
@@ -139,9 +143,7 @@ function ResidentPage() {
   if (loading) {
     return (
       <div className="beacon-page beacon-page--loading text-center">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
+        <BeaconLoadingMark />
       </div>
     );
   }

@@ -13,6 +13,7 @@ function Navbar() {
     : "/login";
   const location = useLocation();
   const isLanding = location.pathname === "/";
+  const isDonatePage = location.pathname === "/donate";
   const globalSiteAnnouncement = showGlobalSiteAnnouncement(location.pathname);
   const isAuthOverlay =
     location.pathname === "/login" ||
@@ -45,8 +46,9 @@ function Navbar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, [isFixedGlassNav, location.pathname]);
 
-  const glassAtTop = isFixedGlassNav && !scrolled;
-  const solidAfterScroll = isFixedGlassNav && scrolled;
+  /* Donate: keep hero glass nav when scrolling — no switch to solid scrolled bar */
+  const glassAtTop = isFixedGlassNav && (!scrolled || isDonatePage);
+  const solidAfterScroll = isFixedGlassNav && scrolled && !isDonatePage;
 
   const navClass = [
     "beacon-navbar",

@@ -2,6 +2,7 @@ import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { completeDonorProfile } from '../lib/authAPI';
 import { useAuth } from '../context/AuthContext';
+import BeaconLoadingMark from '../components/BeaconLoadingMark.tsx';
 
 function CompleteProfilePage() {
   const navigate = useNavigate();
@@ -77,9 +78,7 @@ function CompleteProfilePage() {
   if (isLoading) {
     return (
       <div className="beacon-page beacon-page--loading text-center glass-nav-offset">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
+        <BeaconLoadingMark />
       </div>
     );
   }
