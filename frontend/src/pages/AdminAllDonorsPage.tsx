@@ -7,11 +7,8 @@ import AdminGlassFilterBar, {
   type AdminGlassFilterSection,
 } from "../components/AdminGlassFilterBar";
 import { useAdminSearch } from "../context/AdminSearchContext";
-<<<<<<< Updated upstream
-=======
 import BeaconLoadingMark from "../components/BeaconLoadingMark.tsx";
 
->>>>>>> Stashed changes
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
   const mm = String(d.getMonth() + 1).padStart(2, "0");

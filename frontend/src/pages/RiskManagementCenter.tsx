@@ -9,11 +9,8 @@ import {
   type RiskSummary,
 } from "../api/Risk";
 import AdminDashboardBackLink from "../components/AdminDashboardBackLink";
-<<<<<<< Updated upstream
 import Pagination from "../components/Pagination";
-=======
 import BeaconLoadingMark from "../components/BeaconLoadingMark.tsx";
->>>>>>> Stashed changes
 
 type Tab = "residents-incident" | "residents-reintegration" | "supporters";
 

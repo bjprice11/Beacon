@@ -5,7 +5,6 @@ type BeaconLoadingMarkProps = {
   label?: string
 }
 
-/** Full-color Beacon mark (public/logo-color.png) — use on light backgrounds. */
 export default function BeaconLoadingMark({ size = 'md', label = 'Loading' }: BeaconLoadingMarkProps) {
   return (
     <div
@@ -13,14 +12,7 @@ export default function BeaconLoadingMark({ size = 'md', label = 'Loading' }: Be
       role="status"
       aria-live="polite"
     >
-      <img
-        src="/logo-color.png"
-        alt=""
-        className="beacon-loading-mark__img"
-        decoding="async"
-        width={160}
-        height={160}
-      />
+      <span className="beacon-loading-mark__spinner" aria-hidden="true" />
       <span className="visually-hidden">{label}</span>
     </div>
   )

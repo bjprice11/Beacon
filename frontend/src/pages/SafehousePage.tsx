@@ -2,15 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { BASE_URL } from "../config/api";
 import type { Safehouse } from "../types/Safehouse";
-<<<<<<< Updated upstream
 import { AdminDeleteRecordButton } from "../components/admin/AdminDeleteRecordButton";
 import {
   CreateSafehouseModal,
   type SafehouseModalInitial,
 } from "../components/admin/AdminCreateEntityModals";
-=======
 import BeaconLoadingMark from "../components/BeaconLoadingMark.tsx";
->>>>>>> Stashed changes
 
 interface SafehousePageData {
   safehouse: Safehouse;

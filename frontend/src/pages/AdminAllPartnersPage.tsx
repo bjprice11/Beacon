@@ -8,11 +8,8 @@ import AdminGlassFilterBar, {
 } from "../components/AdminGlassFilterBar";
 import { useAdminSearch } from "../context/AdminSearchContext";
 import { BASE_URL } from "../config/api";
-<<<<<<< Updated upstream
 import { CreatePartnerModal } from "../components/admin/AdminCreateEntityModals";
-=======
 import BeaconLoadingMark from "../components/BeaconLoadingMark.tsx";
->>>>>>> Stashed changes
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
