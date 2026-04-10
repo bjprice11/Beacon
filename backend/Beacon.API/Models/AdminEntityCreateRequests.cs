@@ -37,8 +37,6 @@ public sealed class AdminCreatePartnerRequest
 
     public string? RoleType { get; set; }
 
-    public string? ContactName { get; set; }
-
     public string? Email { get; set; }
 
     public string? Phone { get; set; }
@@ -49,16 +47,12 @@ public sealed class AdminCreatePartnerRequest
 
     public DateOnly? StartDate { get; set; }
 
-    public DateOnly? EndDate { get; set; }
-
     public string? Notes { get; set; }
 }
 
 /// <summary>Admin-only create body for <c>safehouses</c>; PK is database-generated.</summary>
 public sealed class AdminCreateSafehouseRequest
 {
-    public string SafehouseCode { get; set; } = string.Empty;
-
     public string Name { get; set; } = string.Empty;
 
     public string? Region { get; set; }
@@ -78,18 +72,12 @@ public sealed class AdminCreateSafehouseRequest
     public int? CapacityStaff { get; set; }
 
     public int? CurrentOccupancy { get; set; }
-
-    public string? Notes { get; set; }
 }
 
 /// <summary>Admin-only create body for <c>supporters</c> (donors); PK is allocated in application code.</summary>
 public sealed class AdminCreateSupporterRequest
 {
     public string? SupporterType { get; set; }
-
-    public string? DisplayName { get; set; }
-
-    public string? OrganizationName { get; set; }
 
     public string? FirstName { get; set; }
 
@@ -99,15 +87,11 @@ public sealed class AdminCreateSupporterRequest
 
     public string? Region { get; set; }
 
-    public string? Country { get; set; }
-
     public string? Email { get; set; }
 
     public string? Phone { get; set; }
 
     public string? Status { get; set; }
-
-    public DateOnly? FirstDonationDate { get; set; }
 
     public string? AcquisitionChannel { get; set; }
 }

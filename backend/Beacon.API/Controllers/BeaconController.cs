@@ -216,22 +216,63 @@ public class BeaconController : ControllerBase
         if (string.IsNullOrWhiteSpace(body.PartnerName))
             return BadRequest(new { message = "Partner name is required.", errors = new Dictionary<string, string> { ["partner_name"] = "Required" } });
 
+        var partnerName = body.PartnerName.Trim();
+        var contactName = partnerName;
+
+        int partnerId;
+        try
+        {
+            partnerId = await _beaconContext.InsertPartnerRowAsync(
+                partnerName,
+                NullIfWhiteSpace(body.PartnerType),
+                NullIfWhiteSpace(body.RoleType),
+                contactName,
+                NullIfWhiteSpace(body.Email),
+                NullIfWhiteSpace(body.Phone),
+                NullIfWhiteSpace(body.Region),
+                NullIfWhiteSpace(body.Status),
+                body.StartDate,
+                NullIfWhiteSpace(body.Notes),
+                HttpContext.RequestAborted);
+        }
+        catch (Exception ex)
+        {
+            if (TryGetPostgresException(ex, out var pgEx) && pgEx is { } pg)
+            {
+                var detail = !string.IsNullOrWhiteSpace(pg.Detail)
+                    ? pg.Detail!
+                    : (pg.MessageText ?? "Database rejected the insert.");
+                var status = string.Equals(pg.SqlState, PostgresErrorCodes.ForeignKeyViolation, StringComparison.Ordinal)
+                    ? StatusCodes.Status400BadRequest
+                    : StatusCodes.Status409Conflict;
+                return Problem(
+                    title: "Could not create partner",
+                    detail: detail,
+                    statusCode: status);
+            }
+
+            _logger.LogError(ex, "CreatePartner: database insert failed");
+            return Problem(
+                title: "Could not create partner",
+                detail: "The database rejected this insert. Check logs for details.",
+                statusCode: StatusCodes.Status409Conflict);
+        }
+
         var entity = new Partner
         {
-            PartnerName = body.PartnerName.Trim(),
+            PartnerId = partnerId,
+            PartnerName = partnerName,
             PartnerType = NullIfWhiteSpace(body.PartnerType),
             RoleType = NullIfWhiteSpace(body.RoleType),
-            ContactName = NullIfWhiteSpace(body.ContactName),
+            ContactName = contactName,
             Email = NullIfWhiteSpace(body.Email),
             Phone = NullIfWhiteSpace(body.Phone),
             Region = NullIfWhiteSpace(body.Region),
             Status = NullIfWhiteSpace(body.Status),
             StartDate = body.StartDate,
-            EndDate = body.EndDate,
+            EndDate = null,
             Notes = NullIfWhiteSpace(body.Notes),
         };
-        _beaconContext.Partners.Add(entity);
-        await _beaconContext.SaveChangesAsync();
         return StatusCode(StatusCodes.Status201Created, entity);
     }
 
@@ -241,15 +282,56 @@ public class BeaconController : ControllerBase
     {
         if (body == null)
             return BadRequest(new { message = "Invalid request body." });
-        if (string.IsNullOrWhiteSpace(body.SafehouseCode))
-            return BadRequest(new { message = "Safehouse code is required.", errors = new Dictionary<string, string> { ["safehouse_code"] = "Required" } });
         if (string.IsNullOrWhiteSpace(body.Name))
             return BadRequest(new { message = "Name is required.", errors = new Dictionary<string, string> { ["name"] = "Required" } });
 
+        var name = body.Name.Trim();
+
+        int safehouseId;
+        string safehouseCode;
+        try
+        {
+            (safehouseId, safehouseCode) = await _beaconContext.InsertSafehouseRowAsync(
+                name,
+                NullIfWhiteSpace(body.Region),
+                NullIfWhiteSpace(body.City),
+                NullIfWhiteSpace(body.Province),
+                NullIfWhiteSpace(body.Country),
+                body.OpenDate,
+                NullIfWhiteSpace(body.Status),
+                body.CapacityGirls,
+                body.CurrentOccupancy,
+                body.CapacityStaff,
+                HttpContext.RequestAborted);
+        }
+        catch (Exception ex)
+        {
+            if (TryGetPostgresException(ex, out var pgEx) && pgEx is { } pg)
+            {
+                var detail = !string.IsNullOrWhiteSpace(pg.Detail)
+                    ? pg.Detail!
+                    : (pg.MessageText ?? "Database rejected the insert.");
+                var status = string.Equals(pg.SqlState, PostgresErrorCodes.ForeignKeyViolation, StringComparison.Ordinal)
+                    ? StatusCodes.Status400BadRequest
+                    : StatusCodes.Status409Conflict;
+                return Problem(
+                    title: "Could not create safehouse",
+                    detail: detail,
+                    statusCode: status);
+            }
+
+            _logger.LogError(ex, "CreateSafehouse: database insert failed");
+            return Problem(
+                title: "Could not create safehouse",
+                detail: "The database rejected this insert. Check logs for details.",
+                statusCode: StatusCodes.Status409Conflict);
+        }
+
         var entity = new Safehouse
         {
-            SafehouseCode = body.SafehouseCode.Trim(),
-            Name = body.Name.Trim(),
+            SafehouseId = safehouseId,
+            SafehouseCode = safehouseCode,
+            Name = name,
             Region = NullIfWhiteSpace(body.Region),
             City = NullIfWhiteSpace(body.City),
             Province = NullIfWhiteSpace(body.Province),
@@ -259,10 +341,8 @@ public class BeaconController : ControllerBase
             CapacityGirls = body.CapacityGirls,
             CapacityStaff = body.CapacityStaff,
             CurrentOccupancy = body.CurrentOccupancy,
-            Notes = NullIfWhiteSpace(body.Notes),
+            Notes = null,
         };
-        _beaconContext.Safehouses.Add(entity);
-        await _beaconContext.SaveChangesAsync();
         return StatusCode(StatusCodes.Status201Created, entity);
     }
 
@@ -273,70 +353,104 @@ public class BeaconController : ControllerBase
         if (body == null)
             return BadRequest(new { message = "Invalid request body." });
 
-        var display = BuildAdminSupporterDisplayName(body);
-        if (string.IsNullOrWhiteSpace(display))
+        if (string.IsNullOrWhiteSpace(body.FirstName) || string.IsNullOrWhiteSpace(body.LastName))
         {
             return BadRequest(new
             {
-                message = "Provide a display name, organization name, or first and/or last name.",
+                message = "First name and last name are required.",
                 errors = new Dictionary<string, string>
                 {
-                    ["display_name"] = "At least one identifying field is required.",
+                    ["firstName"] = "Required",
+                    ["lastName"] = "Required",
                 },
             });
         }
 
-        var supporterId = await _beaconContext.AllocateNextSupporterIdAsync();
-        var entity = new Supporter
+        var displayName = $"{body.FirstName.Trim()} {body.LastName.Trim()}";
+        var status = string.IsNullOrWhiteSpace(body.Status) ? "Active" : body.Status.Trim();
+        var createdAt = DateTime.UtcNow;
+
+        const int maxAttempts = 8;
+        for (var attempt = 0; attempt < maxAttempts; attempt++)
         {
-            SupporterId = supporterId,
-            SupporterType = NullIfWhiteSpace(body.SupporterType),
-            DisplayName = display,
-            OrganizationName = NullIfWhiteSpace(body.OrganizationName),
-            FirstName = NullIfWhiteSpace(body.FirstName),
-            LastName = NullIfWhiteSpace(body.LastName),
-            RelationshipType = NullIfWhiteSpace(body.RelationshipType),
-            Region = NullIfWhiteSpace(body.Region),
-            Country = NullIfWhiteSpace(body.Country),
-            Email = NullIfWhiteSpace(body.Email),
-            Phone = NullIfWhiteSpace(body.Phone),
-            Status = string.IsNullOrWhiteSpace(body.Status) ? "Active" : body.Status.Trim(),
-            CreatedAt = DateTime.UtcNow,
-            FirstDonationDate = body.FirstDonationDate,
-            AcquisitionChannel = NullIfWhiteSpace(body.AcquisitionChannel),
-        };
-        _beaconContext.Supporters.Add(entity);
-        try
-        {
-            await _beaconContext.SaveChangesAsync();
-        }
-        catch (DbUpdateException ex)
-        {
-            _logger.LogError(ex, "CreateSupporterAdmin: database insert failed");
-            return Problem(
-                title: "Could not create donor record",
-                detail: "The database rejected this insert. Check logs for details.",
-                statusCode: StatusCodes.Status409Conflict);
+            var supporterId = await _beaconContext.AllocateNextSupporterIdAsync();
+            try
+            {
+                await _beaconContext.InsertSupporterAdminRowAsync(
+                    supporterId,
+                    NullIfWhiteSpace(body.SupporterType),
+                    displayName,
+                    NullIfWhiteSpace(body.FirstName),
+                    NullIfWhiteSpace(body.LastName),
+                    NullIfWhiteSpace(body.RelationshipType),
+                    NullIfWhiteSpace(body.Region),
+                    NullIfWhiteSpace(body.Email),
+                    NullIfWhiteSpace(body.Phone),
+                    status,
+                    createdAt,
+                    NullIfWhiteSpace(body.AcquisitionChannel),
+                    HttpContext.RequestAborted);
+            }
+            catch (Exception ex)
+            {
+                if (TryGetPostgresException(ex, out var pgEx) && pgEx is { } pg)
+                {
+                    if (attempt < maxAttempts - 1
+                        && string.Equals(pg.SqlState, PostgresErrorCodes.UniqueViolation, StringComparison.Ordinal)
+                        && IsSupportersPrimaryKeyViolation(pg))
+                    {
+                        _logger.LogWarning(
+                            "CreateSupporterAdmin: supporter PK conflict on id {SupporterId} (attempt {Attempt}); retrying. {Detail}",
+                            supporterId,
+                            attempt + 1,
+                            pg.Detail ?? pg.MessageText);
+                        continue;
+                    }
+
+                    var detail = !string.IsNullOrWhiteSpace(pg.Detail)
+                        ? pg.Detail!
+                        : (pg.MessageText ?? "Database rejected the insert.");
+                    var httpStatus = string.Equals(pg.SqlState, PostgresErrorCodes.ForeignKeyViolation, StringComparison.Ordinal)
+                        ? StatusCodes.Status400BadRequest
+                        : StatusCodes.Status409Conflict;
+                    return Problem(
+                        title: "Could not create donor record",
+                        detail: detail,
+                        statusCode: httpStatus);
+                }
+
+                _logger.LogError(ex, "CreateSupporterAdmin: database insert failed");
+                return Problem(
+                    title: "Could not create donor record",
+                    detail: "The database rejected this insert. Check logs for details.",
+                    statusCode: StatusCodes.Status409Conflict);
+            }
+
+            var entity = new Supporter
+            {
+                SupporterId = supporterId,
+                SupporterType = NullIfWhiteSpace(body.SupporterType),
+                DisplayName = displayName,
+                OrganizationName = null,
+                FirstName = NullIfWhiteSpace(body.FirstName),
+                LastName = NullIfWhiteSpace(body.LastName),
+                RelationshipType = NullIfWhiteSpace(body.RelationshipType),
+                Region = NullIfWhiteSpace(body.Region),
+                Country = null,
+                Email = NullIfWhiteSpace(body.Email),
+                Phone = NullIfWhiteSpace(body.Phone),
+                Status = status,
+                CreatedAt = createdAt,
+                FirstDonationDate = null,
+                AcquisitionChannel = NullIfWhiteSpace(body.AcquisitionChannel),
+            };
+            return StatusCode(StatusCodes.Status201Created, entity);
         }
 
-        return StatusCode(StatusCodes.Status201Created, entity);
-    }
-
-    private static string BuildAdminSupporterDisplayName(AdminCreateSupporterRequest body)
-    {
-        if (!string.IsNullOrWhiteSpace(body.DisplayName))
-            return body.DisplayName.Trim();
-        var fn = body.FirstName?.Trim() ?? string.Empty;
-        var ln = body.LastName?.Trim() ?? string.Empty;
-        if (fn.Length > 0 && ln.Length > 0)
-            return $"{fn} {ln}";
-        if (fn.Length > 0)
-            return fn;
-        if (ln.Length > 0)
-            return ln;
-        if (!string.IsNullOrWhiteSpace(body.OrganizationName))
-            return body.OrganizationName.Trim();
-        return string.Empty;
+        return Problem(
+            title: "Could not create donor record",
+            detail: "Could not allocate a unique supporter id after several attempts. Try again in a moment.",
+            statusCode: StatusCodes.Status409Conflict);
     }
 
     //SEARCH BAR FUNCTIONALITY
@@ -1706,6 +1820,12 @@ public class BeaconController : ControllerBase
 
     private static bool TryGetPostgresException(Exception ex, out PostgresException? pg)
     {
+        if (ex is PostgresException direct)
+        {
+            pg = direct;
+            return true;
+        }
+
         for (var e = ex.InnerException; e != null; e = e.InnerException)
         {
             if (e is PostgresException p)
@@ -1726,6 +1846,14 @@ public class BeaconController : ControllerBase
             return true;
         var d = pg.Detail ?? string.Empty;
         return d.Contains("(resident_id)", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsSupportersPrimaryKeyViolation(PostgresException pg)
+    {
+        if (string.Equals(pg.ConstraintName, "pk_supporters", StringComparison.OrdinalIgnoreCase))
+            return true;
+        var d = pg.Detail ?? string.Empty;
+        return d.Contains("(supporter_id)", StringComparison.OrdinalIgnoreCase);
     }
 
     private static List<string> MergeDistinctStrings(IEnumerable<string> fromDb, IEnumerable<string> defaults) =>

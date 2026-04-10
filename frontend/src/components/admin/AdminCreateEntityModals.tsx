@@ -3,6 +3,14 @@ import { BASE_URL } from "../../config/api";
 import { createResident, type ResidentInput } from "../../api/Residents";
 import type { Safehouse } from "../../types/Safehouse";
 import {
+  ENTITY_ACTIVE_INACTIVE_OPTIONS,
+  PARTNER_ROLE_TYPE_OPTIONS,
+  PARTNER_TYPE_OPTIONS,
+  SUPPORTER_ACQUISITION_CHANNEL_OPTIONS,
+  SUPPORTER_RELATIONSHIP_OPTIONS,
+  SUPPORTER_TYPE_OPTIONS,
+} from "../../constants/adminEntityCreateForm";
+import {
   RESIDENT_CASE_STATUS_OPTIONS,
   RESIDENT_RISK_LEVEL_OPTIONS,
 } from "../../constants/residentCreateForm";
@@ -339,13 +347,11 @@ export function CreatePartnerModal({ open, onClose, onCreated }: ModalShellProps
   const [partnerName, setPartnerName] = useState("");
   const [partnerType, setPartnerType] = useState("");
   const [roleType, setRoleType] = useState("");
-  const [contactName, setContactName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [region, setRegion] = useState("");
   const [status, setStatus] = useState("");
   const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -355,13 +361,11 @@ export function CreatePartnerModal({ open, onClose, onCreated }: ModalShellProps
     setPartnerName("");
     setPartnerType("");
     setRoleType("");
-    setContactName("");
     setEmail("");
     setPhone("");
     setRegion("");
     setStatus("");
     setStartDate("");
-    setEndDate("");
     setNotes("");
     setError(null);
   }, [open]);
@@ -373,19 +377,21 @@ export function CreatePartnerModal({ open, onClose, onCreated }: ModalShellProps
       setError("Partner name is required.");
       return;
     }
+    if (!status) {
+      setError("Choose Active or Inactive.");
+      return;
+    }
     setSubmitting(true);
     try {
       const body = {
         partnerName: partnerName.trim(),
         partnerType: partnerType.trim() || null,
         roleType: roleType.trim() || null,
-        contactName: contactName.trim() || null,
         email: email.trim() || null,
         phone: phone.trim() || null,
         region: region.trim() || null,
         status: status.trim() || null,
         startDate: startDate.trim() || null,
-        endDate: endDate.trim() || null,
         notes: notes.trim() || null,
       };
       const res = await postBeaconJson("Partners", body);
@@ -408,6 +414,21 @@ export function CreatePartnerModal({ open, onClose, onCreated }: ModalShellProps
       <form className="p-4" onSubmit={onSubmit}>
         {error ? <div className="alert alert-danger py-2">{error}</div> : null}
         <div className="mb-3">
+          <label className="form-label" htmlFor="create-par-id">
+            Partner ID
+          </label>
+          <input
+            id="create-par-id"
+            type="text"
+            className="form-control"
+            readOnly
+            disabled
+            value=""
+            placeholder="Assigned on save"
+          />
+          <div className="form-text">The database assigns the next partner id when you save.</div>
+        </div>
+        <div className="mb-3">
           <label className="form-label" htmlFor="create-par-name">
             Partner name <span className="text-danger">*</span>
           </label>
@@ -418,41 +439,45 @@ export function CreatePartnerModal({ open, onClose, onCreated }: ModalShellProps
             value={partnerName}
             onChange={(e) => setPartnerName(e.target.value)}
           />
+          <div className="form-text">Contact name in the database is set to match partner name.</div>
         </div>
         <div className="row g-2 mb-2">
           <div className="col-md-6">
             <label className="form-label" htmlFor="create-par-ptype">
-              Organization type
+              Partner type
             </label>
-            <input
+            <select
               id="create-par-ptype"
-              className="form-control"
+              className="form-select"
               value={partnerType}
               onChange={(e) => setPartnerType(e.target.value)}
-            />
+            >
+              <option value="">—</option>
+              {PARTNER_TYPE_OPTIONS.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="col-md-6">
             <label className="form-label" htmlFor="create-par-role">
               Role type
             </label>
-            <input
+            <select
               id="create-par-role"
-              className="form-control"
+              className="form-select"
               value={roleType}
               onChange={(e) => setRoleType(e.target.value)}
-            />
+            >
+              <option value="">—</option>
+              {PARTNER_ROLE_TYPE_OPTIONS.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
           </div>
-        </div>
-        <div className="mb-3">
-          <label className="form-label" htmlFor="create-par-contact">
-            Contact name
-          </label>
-          <input
-            id="create-par-contact"
-            className="form-control"
-            value={contactName}
-            onChange={(e) => setContactName(e.target.value)}
-          />
         </div>
         <div className="row g-2 mb-2">
           <div className="col-md-6">
@@ -493,41 +518,37 @@ export function CreatePartnerModal({ open, onClose, onCreated }: ModalShellProps
           </div>
           <div className="col-md-6">
             <label className="form-label" htmlFor="create-par-status">
-              Status
+              Status <span className="text-danger">*</span>
             </label>
-            <input
+            <select
               id="create-par-status"
-              className="form-control"
+              className="form-select"
+              required
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-            />
+            >
+              <option value="" disabled>
+                Select status…
+              </option>
+              {ENTITY_ACTIVE_INACTIVE_OPTIONS.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
-        <div className="row g-2 mb-2">
-          <div className="col-md-6">
-            <label className="form-label" htmlFor="create-par-start">
-              Start date
-            </label>
-            <input
-              id="create-par-start"
-              type="date"
-              className="form-control"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-            />
-          </div>
-          <div className="col-md-6">
-            <label className="form-label" htmlFor="create-par-end">
-              End date
-            </label>
-            <input
-              id="create-par-end"
-              type="date"
-              className="form-control"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-            />
-          </div>
+        <div className="mb-3">
+          <label className="form-label" htmlFor="create-par-start">
+            Start date
+          </label>
+          <input
+            id="create-par-start"
+            type="date"
+            className="form-control"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+          />
         </div>
         <div className="mb-3">
           <label className="form-label" htmlFor="create-par-notes">
@@ -555,7 +576,6 @@ export function CreatePartnerModal({ open, onClose, onCreated }: ModalShellProps
 }
 
 export function CreateSafehouseModal({ open, onClose, onCreated }: ModalShellProps) {
-  const [safehouseCode, setSafehouseCode] = useState("");
   const [name, setName] = useState("");
   const [region, setRegion] = useState("");
   const [city, setCity] = useState("");
@@ -566,13 +586,11 @@ export function CreateSafehouseModal({ open, onClose, onCreated }: ModalShellPro
   const [capacityGirls, setCapacityGirls] = useState("");
   const [capacityStaff, setCapacityStaff] = useState("");
   const [currentOccupancy, setCurrentOccupancy] = useState("");
-  const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
-    setSafehouseCode("");
     setName("");
     setRegion("");
     setCity("");
@@ -583,22 +601,25 @@ export function CreateSafehouseModal({ open, onClose, onCreated }: ModalShellPro
     setCapacityGirls("");
     setCapacityStaff("");
     setCurrentOccupancy("");
-    setNotes("");
     setError(null);
   }, [open]);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!safehouseCode.trim() || !name.trim()) {
-      setError("Safehouse code and name are required.");
+    if (!name.trim()) {
+      setError("Name is required.");
+      return;
+    }
+    if (!status) {
+      setError("Choose Active or Inactive.");
       return;
     }
     const capG = capacityGirls.trim() ? Number(capacityGirls) : null;
     const capS = capacityStaff.trim() ? Number(capacityStaff) : null;
     const occ = currentOccupancy.trim() ? Number(currentOccupancy) : null;
     if (capacityGirls.trim() && !Number.isInteger(capG)) {
-      setError("Girls capacity must be a whole number.");
+      setError("Capacity must be a whole number.");
       return;
     }
     if (capacityStaff.trim() && !Number.isInteger(capS)) {
@@ -612,7 +633,6 @@ export function CreateSafehouseModal({ open, onClose, onCreated }: ModalShellPro
     setSubmitting(true);
     try {
       const body = {
-        safehouseCode: safehouseCode.trim(),
         name: name.trim(),
         region: region.trim() || null,
         city: city.trim() || null,
@@ -623,7 +643,6 @@ export function CreateSafehouseModal({ open, onClose, onCreated }: ModalShellPro
         capacityGirls: capG,
         capacityStaff: capS,
         currentOccupancy: occ,
-        notes: notes.trim() || null,
       };
       const res = await postBeaconJson("Safehouses", body);
       const { payload } = await readResponseJson(res);
@@ -644,31 +663,34 @@ export function CreateSafehouseModal({ open, onClose, onCreated }: ModalShellPro
     <ResidentRecordModal title="New safehouse" open={open} onClose={onClose} narrow>
       <form className="p-4" onSubmit={onSubmit}>
         {error ? <div className="alert alert-danger py-2">{error}</div> : null}
-        <div className="row g-2 mb-2">
-          <div className="col-md-6">
-            <label className="form-label" htmlFor="create-sh-code">
-              Safehouse code <span className="text-danger">*</span>
-            </label>
-            <input
-              id="create-sh-code"
-              className="form-control"
-              required
-              value={safehouseCode}
-              onChange={(e) => setSafehouseCode(e.target.value)}
-            />
+        <div className="mb-3">
+          <label className="form-label" htmlFor="create-sh-id">
+            Safehouse ID
+          </label>
+          <input
+            id="create-sh-id"
+            type="text"
+            className="form-control"
+            readOnly
+            disabled
+            value=""
+            placeholder="Assigned on save"
+          />
+          <div className="form-text">
+            Safehouse code is assigned on save (e.g. SH-12 for id 12).
           </div>
-          <div className="col-md-6">
-            <label className="form-label" htmlFor="create-sh-name">
-              Name <span className="text-danger">*</span>
-            </label>
-            <input
-              id="create-sh-name"
-              className="form-control"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </div>
+        </div>
+        <div className="mb-3">
+          <label className="form-label" htmlFor="create-sh-name">
+            Name <span className="text-danger">*</span>
+          </label>
+          <input
+            id="create-sh-name"
+            className="form-control"
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
         </div>
         <div className="row g-2 mb-2">
           <div className="col-md-6">
@@ -733,20 +755,30 @@ export function CreateSafehouseModal({ open, onClose, onCreated }: ModalShellPro
           </div>
           <div className="col-md-6">
             <label className="form-label" htmlFor="create-sh-status">
-              Status
+              Status <span className="text-danger">*</span>
             </label>
-            <input
+            <select
               id="create-sh-status"
-              className="form-control"
+              className="form-select"
+              required
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-            />
+            >
+              <option value="" disabled>
+                Select status…
+              </option>
+              {ENTITY_ACTIVE_INACTIVE_OPTIONS.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
         <div className="row g-2 mb-2">
           <div className="col-md-4">
             <label className="form-label" htmlFor="create-sh-capg">
-              Capacity (girls)
+              Capacity
             </label>
             <input
               id="create-sh-capg"
@@ -781,18 +813,6 @@ export function CreateSafehouseModal({ open, onClose, onCreated }: ModalShellPro
             />
           </div>
         </div>
-        <div className="mb-3">
-          <label className="form-label" htmlFor="create-sh-notes">
-            Notes
-          </label>
-          <textarea
-            id="create-sh-notes"
-            className="form-control"
-            rows={2}
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-          />
-        </div>
         <div className="d-flex gap-2 justify-content-end">
           <button type="button" className="btn btn-outline-secondary" onClick={onClose}>
             Cancel
@@ -807,36 +827,28 @@ export function CreateSafehouseModal({ open, onClose, onCreated }: ModalShellPro
 }
 
 export function CreateDonorModal({ open, onClose, onCreated }: ModalShellProps) {
-  const [displayName, setDisplayName] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [organizationName, setOrganizationName] = useState("");
   const [supporterType, setSupporterType] = useState("");
   const [relationshipType, setRelationshipType] = useState("");
   const [region, setRegion] = useState("");
-  const [country, setCountry] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [status, setStatus] = useState("Active");
-  const [firstDonationDate, setFirstDonationDate] = useState("");
   const [acquisitionChannel, setAcquisitionChannel] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
-    setDisplayName("");
     setFirstName("");
     setLastName("");
-    setOrganizationName("");
     setSupporterType("");
     setRelationshipType("");
     setRegion("");
-    setCountry("");
     setEmail("");
     setPhone("");
     setStatus("Active");
-    setFirstDonationDate("");
     setAcquisitionChannel("");
     setError(null);
   }, [open]);
@@ -844,30 +856,25 @@ export function CreateDonorModal({ open, onClose, onCreated }: ModalShellProps) 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    const hasId =
-      displayName.trim() ||
-      organizationName.trim() ||
-      firstName.trim() ||
-      lastName.trim();
-    if (!hasId) {
-      setError("Enter a display name, organization, or first/last name.");
+    if (!firstName.trim() || !lastName.trim()) {
+      setError("First name and last name are required.");
+      return;
+    }
+    if (!status) {
+      setError("Choose Active or Inactive.");
       return;
     }
     setSubmitting(true);
     try {
       const body = {
         supporterType: supporterType.trim() || null,
-        displayName: displayName.trim() || null,
-        organizationName: organizationName.trim() || null,
-        firstName: firstName.trim() || null,
-        lastName: lastName.trim() || null,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
         relationshipType: relationshipType.trim() || null,
         region: region.trim() || null,
-        country: country.trim() || null,
         email: email.trim() || null,
         phone: phone.trim() || null,
         status: status.trim() || null,
-        firstDonationDate: firstDonationDate.trim() || null,
         acquisitionChannel: acquisitionChannel.trim() || null,
       };
       const res = await postBeaconJson("Supporters", body);
@@ -894,98 +901,96 @@ export function CreateDonorModal({ open, onClose, onCreated }: ModalShellProps) 
           this is for offline or admin-entered records.
         </p>
         <div className="mb-3">
-          <label className="form-label" htmlFor="create-don-dn">
-            Display name
+          <label className="form-label" htmlFor="create-don-id">
+            Supporter ID
           </label>
           <input
-            id="create-don-dn"
+            id="create-don-id"
+            type="text"
             className="form-control"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
+            readOnly
+            disabled
+            value=""
+            placeholder="Assigned on save"
           />
+          <div className="form-text">
+            Display name is saved as first + last name. <code>created_at</code> is set on the server.
+          </div>
         </div>
         <div className="row g-2 mb-2">
           <div className="col-md-6">
             <label className="form-label" htmlFor="create-don-fn">
-              First name
+              First name <span className="text-danger">*</span>
             </label>
             <input
               id="create-don-fn"
               className="form-control"
+              required
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
             />
           </div>
           <div className="col-md-6">
             <label className="form-label" htmlFor="create-don-ln">
-              Last name
+              Last name <span className="text-danger">*</span>
             </label>
             <input
               id="create-don-ln"
               className="form-control"
+              required
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
             />
           </div>
-        </div>
-        <div className="mb-3">
-          <label className="form-label" htmlFor="create-don-org">
-            Organization name
-          </label>
-          <input
-            id="create-don-org"
-            className="form-control"
-            value={organizationName}
-            onChange={(e) => setOrganizationName(e.target.value)}
-          />
         </div>
         <div className="row g-2 mb-2">
           <div className="col-md-6">
             <label className="form-label" htmlFor="create-don-stype">
               Supporter type
             </label>
-            <input
+            <select
               id="create-don-stype"
-              className="form-control"
+              className="form-select"
               value={supporterType}
               onChange={(e) => setSupporterType(e.target.value)}
-            />
+            >
+              <option value="">—</option>
+              {SUPPORTER_TYPE_OPTIONS.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="col-md-6">
             <label className="form-label" htmlFor="create-don-rel">
               Relationship
             </label>
-            <input
+            <select
               id="create-don-rel"
-              className="form-control"
+              className="form-select"
               value={relationshipType}
               onChange={(e) => setRelationshipType(e.target.value)}
-            />
+            >
+              <option value="">—</option>
+              {SUPPORTER_RELATIONSHIP_OPTIONS.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
-        <div className="row g-2 mb-2">
-          <div className="col-md-6">
-            <label className="form-label" htmlFor="create-don-region">
-              Region
-            </label>
-            <input
-              id="create-don-region"
-              className="form-control"
-              value={region}
-              onChange={(e) => setRegion(e.target.value)}
-            />
-          </div>
-          <div className="col-md-6">
-            <label className="form-label" htmlFor="create-don-country">
-              Country
-            </label>
-            <input
-              id="create-don-country"
-              className="form-control"
-              value={country}
-              onChange={(e) => setCountry(e.target.value)}
-            />
-          </div>
+        <div className="mb-3">
+          <label className="form-label" htmlFor="create-don-region">
+            Region
+          </label>
+          <input
+            id="create-don-region"
+            className="form-control"
+            value={region}
+            onChange={(e) => setRegion(e.target.value)}
+          />
         </div>
         <div className="row g-2 mb-2">
           <div className="col-md-6">
@@ -1015,38 +1020,40 @@ export function CreateDonorModal({ open, onClose, onCreated }: ModalShellProps) 
         <div className="row g-2 mb-2">
           <div className="col-md-6">
             <label className="form-label" htmlFor="create-don-status">
-              Status
+              Status <span className="text-danger">*</span>
             </label>
-            <input
+            <select
               id="create-don-status"
-              className="form-control"
+              className="form-select"
+              required
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-            />
+            >
+              {ENTITY_ACTIVE_INACTIVE_OPTIONS.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="col-md-6">
-            <label className="form-label" htmlFor="create-don-firstd">
-              First donation date
+            <label className="form-label" htmlFor="create-don-acq">
+              Acquisition channel
             </label>
-            <input
-              id="create-don-firstd"
-              type="date"
-              className="form-control"
-              value={firstDonationDate}
-              onChange={(e) => setFirstDonationDate(e.target.value)}
-            />
+            <select
+              id="create-don-acq"
+              className="form-select"
+              value={acquisitionChannel}
+              onChange={(e) => setAcquisitionChannel(e.target.value)}
+            >
+              <option value="">—</option>
+              {SUPPORTER_ACQUISITION_CHANNEL_OPTIONS.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
           </div>
-        </div>
-        <div className="mb-3">
-          <label className="form-label" htmlFor="create-don-acq">
-            Acquisition channel
-          </label>
-          <input
-            id="create-don-acq"
-            className="form-control"
-            value={acquisitionChannel}
-            onChange={(e) => setAcquisitionChannel(e.target.value)}
-          />
         </div>
         <div className="d-flex gap-2 justify-content-end">
           <button type="button" className="btn btn-outline-secondary" onClick={onClose}>

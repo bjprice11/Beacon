@@ -1,8 +1,11 @@
+using System.Data;
+using Beacon.API.Models;
 using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using Beacon.API.Models;
+using Microsoft.EntityFrameworkCore.Storage;
+using Npgsql;
 
 namespace Beacon.API.Data;
 
@@ -216,6 +219,196 @@ public class AuthIdentityDbContext : IdentityDbContext<ApplicationUser>, IDataPr
                 {currentRiskLevel},
                 {createdAtUtc})",
             cancellationToken);
+    }
+
+    /// <summary>
+    /// Inserts a partner row with only columns used by admin create (avoids schema drift on imported DBs).
+    /// <c>contact_name</c> is set server-side (same as partner name when not collected on the form).
+    /// </summary>
+    public async Task<int> InsertPartnerRowAsync(
+        string partnerName,
+        string? partnerType,
+        string? roleType,
+        string contactName,
+        string? email,
+        string? phone,
+        string? region,
+        string? status,
+        DateOnly? startDate,
+        string? notes,
+        CancellationToken cancellationToken = default)
+    {
+        return await ExecuteInsertReturningIntAsync(
+            """
+            INSERT INTO partners (
+                partner_name, partner_type, role_type, contact_name, email, phone, region, status,
+                start_date, end_date, notes, identity_user_id)
+            VALUES (
+                @name, @ptype, @rtype, @contact, @email, @phone, @region, @status,
+                @start_date, NULL, @notes, NULL)
+            RETURNING partner_id
+            """,
+            cmd =>
+            {
+                cmd.Parameters.AddWithValue("name", partnerName);
+                cmd.Parameters.AddWithValue("ptype", (object?)partnerType ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("rtype", (object?)roleType ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("contact", contactName);
+                cmd.Parameters.AddWithValue("email", (object?)email ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("phone", (object?)phone ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("region", (object?)region ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("status", (object?)status ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("start_date", (object?)startDate ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("notes", (object?)notes ?? DBNull.Value);
+            },
+            cancellationToken);
+    }
+
+    /// <summary>
+    /// Inserts a safehouse; assigns a temporary unique <c>safehouse_code</c>, then sets <c>SH-{id}</c>.
+    /// </summary>
+    public async Task<(int SafehouseId, string SafehouseCode)> InsertSafehouseRowAsync(
+        string name,
+        string? region,
+        string? city,
+        string? province,
+        string? country,
+        DateOnly? openDate,
+        string? status,
+        int? capacityGirls,
+        int? currentOccupancy,
+        int? capacityStaff,
+        CancellationToken cancellationToken = default)
+    {
+        await using var tx = await Database.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            var tempCode = "TMP-" + Guid.NewGuid().ToString("N");
+            var id = await ExecuteInsertReturningIntAsync(
+                """
+                INSERT INTO safehouses (
+                    safehouse_code, name, region, city, province, country, open_date, status,
+                    capacity_girls, current_occupancy, capacity_staff, notes)
+                VALUES (
+                    @code, @name, @region, @city, @province, @country, @open_date, @status,
+                    @cap_girls, @occ, @cap_staff, NULL)
+                RETURNING safehouse_id
+                """,
+                cmd =>
+                {
+                    cmd.Parameters.AddWithValue("code", tempCode);
+                    cmd.Parameters.AddWithValue("name", name);
+                    cmd.Parameters.AddWithValue("region", (object?)region ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("city", (object?)city ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("province", (object?)province ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("country", (object?)country ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("open_date", (object?)openDate ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("status", (object?)status ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("cap_girls", (object?)capacityGirls ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("occ", (object?)currentOccupancy ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("cap_staff", (object?)capacityStaff ?? DBNull.Value);
+                },
+                cancellationToken);
+
+            var finalCode = $"SH-{id}";
+            await Database.ExecuteSqlInterpolatedAsync(
+                $@"UPDATE safehouses SET safehouse_code = {finalCode} WHERE safehouse_id = {id}",
+                cancellationToken);
+            await tx.CommitAsync(cancellationToken);
+            return (id, finalCode);
+        }
+        catch
+        {
+            await tx.RollbackAsync(cancellationToken);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Admin create for <c>supporters</c>: explicit <c>supporter_id</c> and narrow column list.
+    /// </summary>
+    public Task InsertSupporterAdminRowAsync(
+        int supporterId,
+        string? supporterType,
+        string displayName,
+        string? firstName,
+        string? lastName,
+        string? relationshipType,
+        string? region,
+        string? email,
+        string? phone,
+        string status,
+        DateTime createdAtUtc,
+        string? acquisitionChannel,
+        CancellationToken cancellationToken = default)
+    {
+        return Database.ExecuteSqlInterpolatedAsync(
+            $@"
+            INSERT INTO supporters (
+                supporter_id,
+                supporter_type,
+                display_name,
+                organization_name,
+                first_name,
+                last_name,
+                relationship_type,
+                region,
+                country,
+                email,
+                phone,
+                status,
+                created_at,
+                first_donation_date,
+                acquisition_channel,
+                identity_user_id)
+            VALUES (
+                {supporterId},
+                {supporterType},
+                {displayName},
+                NULL,
+                {firstName},
+                {lastName},
+                {relationshipType},
+                {region},
+                NULL,
+                {email},
+                {phone},
+                {status},
+                {createdAtUtc},
+                NULL,
+                {acquisitionChannel},
+                NULL)",
+            cancellationToken);
+    }
+
+    private async Task<int> ExecuteInsertReturningIntAsync(
+        string sql,
+        Action<NpgsqlCommand> bind,
+        CancellationToken cancellationToken)
+    {
+        var conn = (NpgsqlConnection)Database.GetDbConnection();
+        var hadTransaction = Database.CurrentTransaction != null;
+        var openedHere = conn.State != ConnectionState.Open;
+        if (openedHere)
+            await Database.OpenConnectionAsync(cancellationToken);
+
+        try
+        {
+            await using var cmd = new NpgsqlCommand(sql, conn);
+            var tx = Database.CurrentTransaction?.GetDbTransaction();
+            if (tx != null)
+                cmd.Transaction = (NpgsqlTransaction)tx;
+            bind(cmd);
+            var scalar = await cmd.ExecuteScalarAsync(cancellationToken);
+            if (scalar is null || scalar is DBNull)
+                throw new InvalidOperationException("INSERT … RETURNING did not return a value.");
+            return Convert.ToInt32(scalar, System.Globalization.CultureInfo.InvariantCulture);
+        }
+        finally
+        {
+            if (openedHere && !hadTransaction)
+                await Database.CloseConnectionAsync();
+        }
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
