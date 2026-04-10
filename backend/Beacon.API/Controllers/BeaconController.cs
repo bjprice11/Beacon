@@ -2330,7 +2330,10 @@ public class BeaconController : ControllerBase
             var supporterId = await GetCurrentSupporterIdAsync();
             if (supporterId is null || supporterId.Value != id)
             {
-                return Forbid();
+                return StatusCode(StatusCodes.Status403Forbidden, new
+                {
+                    message = "You do not have access to this account."
+                });
             }
         }
 
@@ -2528,7 +2531,10 @@ public class BeaconController : ControllerBase
             var supporterId = await GetCurrentSupporterIdAsync();
             if (supporterId is null || supporterId.Value != id)
             {
-                return Forbid();
+                return StatusCode(StatusCodes.Status403Forbidden, new
+                {
+                    message = "You do not have access to this account."
+                });
             }
         }
 
