@@ -87,7 +87,14 @@ function App() {
             <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
             <Route path="/" element={<LandingPage />} />
             <Route path="/about" element={<AboutPage />} />
-            <Route path="/donate" element={<DonatePage />} />
+            <Route
+              path="/donate"
+              element={
+                <RequireAuth>
+                  <DonatePage />
+                </RequireAuth>
+              }
+            />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/impact" element={<ImpactPage />} />
             <Route path="/login" element={<LoginPage />} />
