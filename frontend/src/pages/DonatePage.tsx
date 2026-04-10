@@ -31,7 +31,6 @@ function DonatePage() {
   }, [searchParams]);
 
   const paypalUrl = paypalHref(monthly);
-  const anyLink = Boolean(paypalUrl || donateLinks.venmo || donateLinks.debitOrCard);
 
   const onSubmitDonation = async () => {
     setSubmitMessage(null);
@@ -151,20 +150,6 @@ function DonatePage() {
               </button>
             </div>
           </div>
-
-          {!anyLink && (
-            <div className="donate-external__setup-note" role="status">
-              <p>
-                Payment buttons will appear here once your team adds third-party
-                donate links (for example PayPal hosted donate URLs) to the frontend
-                environment variables. See <code>.env.example</code>.
-              </p>
-              <p className="mb-0">
-                Questions?{" "}
-                <a href="mailto:info@beacon.org">info@beacon.org</a>
-              </p>
-            </div>
-          )}
 
           <div className="donate-external__actions">
             <button
