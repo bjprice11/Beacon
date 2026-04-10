@@ -892,7 +892,7 @@ namespace Beacon.API.Migrations
 
                     b.Property<bool?>("FamilyIs4ps")
                         .HasColumnType("boolean")
-                        .HasColumnName("family_is4ps");
+                        .HasColumnName("family_is_4ps");
 
                     b.Property<bool?>("FamilyParentPwd")
                         .HasColumnType("boolean")

@@ -256,7 +256,7 @@ public class AuthIdentityDbContext : IdentityDbContext<ApplicationUser>, IDataPr
                 current_risk_level,
                 birth_status,
                 place_of_birth,
-                family_is4ps,
+                family_is_4ps,
                 family_solo_parent,
                 family_indigenous,
                 family_parent_pwd,
@@ -525,7 +525,7 @@ public class AuthIdentityDbContext : IdentityDbContext<ApplicationUser>, IDataPr
                 current_risk_level = {currentRiskLevel},
                 birth_status = {birthStatus},
                 place_of_birth = {placeOfBirth},
-                family_is4ps = {familyIs4ps},
+                family_is_4ps = {familyIs4ps},
                 family_solo_parent = {familySoloParent},
                 family_indigenous = {familyIndigenous},
                 family_parent_pwd = {familyParentPwd},
@@ -720,9 +720,12 @@ public class AuthIdentityDbContext : IdentityDbContext<ApplicationUser>, IDataPr
             entity.Property(s => s.SupporterId).ValueGeneratedNever();
         });
 
-        modelBuilder.Entity<Resident>()
-            .Property(r => r.ResidentId)
-            .ValueGeneratedNever();
+        modelBuilder.Entity<Resident>(entity =>
+        {
+            entity.Property(r => r.ResidentId).ValueGeneratedNever();
+            // Imported / legacy DBs use family_is_4ps (not family_is4ps).
+            entity.Property(r => r.FamilyIs4ps).HasColumnName("family_is_4ps");
+        });
 
         // Legacy/imported tables: integer PKs without PG IDENTITY; inserts must supply keys explicitly.
         modelBuilder.Entity<EducationRecord>()
