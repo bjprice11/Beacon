@@ -1,10 +1,10 @@
 import Footer from "../components/Footer";
 
 const boardMembers = [
-  { name: "Sione Tuiasoa", image: "/sioneheadshot.jpg" },
-  { name: "Elias Fobert", image: "/eliheadshot.jpeg" },
-  { name: "Cole Evans", image: "/coleheadshot.jpg" },
-  { name: "Brandon Price", image: "/brandonheadshot.PNG" },
+  { name: "Sione Tuiasoa", image: "/sioneheadshot.jpg", frameClass: "about-page__board-photo--sione" },
+  { name: "Elias Fobert", image: "/eliheadshot.jpeg", frameClass: "about-page__board-photo--eli" },
+  { name: "Cole Evans", image: "/coleheadshot.jpg", frameClass: "" },
+  { name: "Brandon Price", image: "/brandonheadshot.PNG", frameClass: "about-page__board-photo--brandon" },
 ] as const;
 
 function AboutPage() {
@@ -74,7 +74,7 @@ function AboutPage() {
                       <img
                         src={member.image}
                         alt={member.name}
-                        className="about-page__board-photo"
+                        className={`about-page__board-photo ${member.frameClass}`.trim()}
                         loading="lazy"
                         decoding="async"
                       />

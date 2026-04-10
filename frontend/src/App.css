@@ -5020,7 +5020,19 @@ main.main-with-site-announcement .beacon-page--auth:not(.login-page):not(.regist
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center;
   display: block;
+}
+.about-page__board-photo--eli {
+  object-position: center 62%;
+}
+.about-page__board-photo--sione {
+  transform: scale(1.06);
+  transform-origin: center;
+}
+.about-page__board-photo--brandon {
+  transform: scale(1.06);
+  transform-origin: center;
 }
 .about-page__board-copy {
   border: 1px solid rgba(59, 82, 69, 0.12);
@@ -5537,6 +5549,20 @@ main.main-with-site-announcement .beacon-page--auth:not(.login-page):not(.regist
   font-size: 0.8rem;
   color: var(--beacon-text-muted);
 }
+.risk-distribution__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.15rem;
+}
+.risk-distribution__totals {
+  font-size: 0.75rem;
+  color: var(--beacon-text-muted);
+  font-family: "Plus Jakarta Sans", sans-serif;
+}
+.risk-distribution__totals strong {
+  color: var(--beacon-text);
+}
 .risk-distribution__row + .risk-distribution__row {
   margin-top: 0.95rem;
 }
@@ -5576,24 +5602,7 @@ main.main-with-site-announcement .beacon-page--auth:not(.login-page):not(.regist
   aspect-ratio: 1;
   border-radius: 50%;
   background: #fff;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
   box-shadow: inset 0 0 0 1px rgba(27, 38, 29, 0.08);
-}
-.risk-distribution__donut-total {
-  font-family: "Plus Jakarta Sans", sans-serif;
-  font-size: 0.95rem;
-  font-weight: 700;
-  line-height: 1;
-  color: var(--beacon-text);
-}
-.risk-distribution__donut-total-label {
-  font-size: 0.58rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--beacon-text-muted);
 }
 .risk-distribution__legend {
   display: grid;
@@ -5662,6 +5671,9 @@ main.main-with-site-announcement .beacon-page--auth:not(.login-page):not(.regist
   text-align: left;
 }
 @media (max-width: 900px) {
+  .risk-distribution__meta {
+    align-items: flex-start;
+  }
   .risk-distribution__donut-wrap {
     grid-template-columns: 78px 1fr;
     gap: 0.7rem;

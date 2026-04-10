@@ -14,7 +14,17 @@ import BeaconLoadingMark from "../components/BeaconLoadingMark.tsx";
 import heroForestImage from "../assets/forrest.jpg";
 
 type Tab = "residents-incident" | "residents-reintegration" | "supporters";
-type QuickFilter = "incident-high" | "reintegration-ready" | "supporter-high" | "supporter-low" | null;
+type QuickFilter =
+  | "incident-high"
+  | "incident-medium"
+  | "incident-low"
+  | "reintegration-ready"
+  | "reintegration-developing"
+  | "reintegration-not-ready"
+  | "supporter-high"
+  | "supporter-medium"
+  | "supporter-low"
+  | null;
 type BandCount = { label: string; count: number; tone: "high" | "medium" | "low"; onClick?: () => void };
 
 function tierTone(band: string | null | undefined): "high" | "medium" | "low" {
@@ -100,21 +110,36 @@ export default function RiskManagementCenter() {
   );
 
   const residentsIncidentDisplay = useMemo(() => {
-    if (quickFilter !== "incident-high") return residentsByIncident;
-    return residentsByIncident.filter((r) => (r.incidentRiskBand ?? "").toLowerCase() === "high");
+    const incidentBandMap: Record<string, string> = {
+      "incident-high": "high",
+      "incident-medium": "medium",
+      "incident-low": "low",
+    };
+    const target = quickFilter ? incidentBandMap[quickFilter] : undefined;
+    if (!target) return residentsByIncident;
+    return residentsByIncident.filter((r) => (r.incidentRiskBand ?? "").toLowerCase() === target);
   }, [quickFilter, residentsByIncident]);
 
   const residentsReintegrationDisplay = useMemo(() => {
-    if (quickFilter !== "reintegration-ready") return residentsByReintegration;
-    return residentsByReintegration.filter((r) => (r.reintegrationBand ?? "").toLowerCase() === "ready");
+    const reintegrationBandMap: Record<string, string> = {
+      "reintegration-ready": "ready",
+      "reintegration-developing": "developing",
+      "reintegration-not-ready": "not ready",
+    };
+    const target = quickFilter ? reintegrationBandMap[quickFilter] : undefined;
+    if (!target) return residentsByReintegration;
+    return residentsByReintegration.filter((r) => (r.reintegrationBand ?? "").toLowerCase() === target);
   }, [quickFilter, residentsByReintegration]);
 
   const supportersDisplay = useMemo(() => {
-    if (quickFilter === "supporter-high") {
-      return supportersByChurn.filter((s) => (s.riskTier ?? "").toLowerCase() === "high");
-    }
-    if (quickFilter === "supporter-low") {
-      return supportersByChurn.filter((s) => (s.riskTier ?? "").toLowerCase() === "low");
+    const supporterTierMap: Record<string, string> = {
+      "supporter-high": "high",
+      "supporter-medium": "medium",
+      "supporter-low": "low",
+    };
+    const target = quickFilter ? supporterTierMap[quickFilter] : undefined;
+    if (target) {
+      return supportersByChurn.filter((s) => (s.riskTier ?? "").toLowerCase() === target);
     }
     return supportersByChurn;
   }, [quickFilter, supportersByChurn]);
@@ -206,7 +231,12 @@ export default function RiskManagementCenter() {
             <div className="card-body">
               <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2 mb-3">
                 <h3 className="risk-distribution__title mb-0">Risk distribution snapshot</h3>
-                <span className="risk-distribution__hint">Click a segment to drill into that group</span>
+                <div className="risk-distribution__meta">
+                  <span className="risk-distribution__totals">
+                    Residents: <strong>{residents.length}</strong> | Supporters: <strong>{supporters.length}</strong>
+                  </span>
+                  <span className="risk-distribution__hint">Click a segment to drill into that group</span>
+                </div>
               </div>
 
               <DonutBandRow
@@ -218,8 +248,18 @@ export default function RiskManagementCenter() {
                     tone: "low",
                     onClick: () => jumpToFilter("residents-incident", "incident-high"),
                   },
-                  { label: "Medium", count: countFor(summary?.residentIncidentBands, "Medium"), tone: "medium" },
-                  { label: "Low", count: countFor(summary?.residentIncidentBands, "Low"), tone: "high" },
+                  {
+                    label: "Medium",
+                    count: countFor(summary?.residentIncidentBands, "Medium"),
+                    tone: "medium",
+                    onClick: () => jumpToFilter("residents-incident", "incident-medium"),
+                  },
+                  {
+                    label: "Low",
+                    count: countFor(summary?.residentIncidentBands, "Low"),
+                    tone: "high",
+                    onClick: () => jumpToFilter("residents-incident", "incident-low"),
+                  },
                 ]}
               />
 
@@ -232,8 +272,18 @@ export default function RiskManagementCenter() {
                     tone: "high",
                     onClick: () => jumpToFilter("residents-reintegration", "reintegration-ready"),
                   },
-                  { label: "Developing", count: countFor(summary?.residentReintegrationBands, "Developing"), tone: "medium" },
-                  { label: "Not ready", count: countFor(summary?.residentReintegrationBands, "Not Ready"), tone: "low" },
+                  {
+                    label: "Developing",
+                    count: countFor(summary?.residentReintegrationBands, "Developing"),
+                    tone: "medium",
+                    onClick: () => jumpToFilter("residents-reintegration", "reintegration-developing"),
+                  },
+                  {
+                    label: "Not ready",
+                    count: countFor(summary?.residentReintegrationBands, "Not Ready"),
+                    tone: "low",
+                    onClick: () => jumpToFilter("residents-reintegration", "reintegration-not-ready"),
+                  },
                 ]}
               />
 
@@ -246,7 +296,12 @@ export default function RiskManagementCenter() {
                     tone: "low",
                     onClick: () => jumpToFilter("supporters", "supporter-high"),
                   },
-                  { label: "Medium", count: countFor(summary?.supporterChurnTiers, "Medium"), tone: "medium" },
+                  {
+                    label: "Medium",
+                    count: countFor(summary?.supporterChurnTiers, "Medium"),
+                    tone: "medium",
+                    onClick: () => jumpToFilter("supporters", "supporter-medium"),
+                  },
                   {
                     label: "Low",
                     count: countFor(summary?.supporterChurnTiers, "Low"),
@@ -468,10 +523,7 @@ function DonutBandRow({ label, bands }: { label: string; bands: BandCount[] }) {
         aria-label={`${label}: ${bands.map((b) => `${b.label} ${b.count}`).join(", ")}`}
       >
         <div className="risk-distribution__donut" style={donutStyle}>
-          <div className="risk-distribution__donut-center">
-            <span className="risk-distribution__donut-total">{total}</span>
-            <span className="risk-distribution__donut-total-label">Total</span>
-          </div>
+          <div className="risk-distribution__donut-center" aria-hidden="true" />
         </div>
         <div className="risk-distribution__legend">
         {bands.map((b) => {
